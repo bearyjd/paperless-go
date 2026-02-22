@@ -1,0 +1,148 @@
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../core/api/api_providers.dart';
+import '../../core/models/document.dart';
+
+part 'documents_notifier.g.dart';
+
+class DocumentsFilter {
+  final String? query;
+  final String ordering;
+  final List<int>? tagIds;
+  final int? correspondentId;
+  final int? documentTypeId;
+
+  const DocumentsFilter({
+    this.query,
+    this.ordering = '-created',
+    this.tagIds,
+    this.correspondentId,
+    this.documentTypeId,
+  });
+
+  DocumentsFilter copyWith({
+    String? query,
+    String? ordering,
+    List<int>? tagIds,
+    int? correspondentId,
+    int? documentTypeId,
+    bool clearQuery = false,
+    bool clearCorrespondent = false,
+    bool clearDocumentType = false,
+    bool clearTags = false,
+  }) {
+    return DocumentsFilter(
+      query: clearQuery ? null : (query ?? this.query),
+      ordering: ordering ?? this.ordering,
+      tagIds: clearTags ? null : (tagIds ?? this.tagIds),
+      correspondentId: clearCorrespondent ? null : (correspondentId ?? this.correspondentId),
+      documentTypeId: clearDocumentType ? null : (documentTypeId ?? this.documentTypeId),
+    );
+  }
+}
+
+class DocumentsState {
+  final List<Document> documents;
+  final int totalCount;
+  final bool isLoadingMore;
+  final bool hasMore;
+  final int currentPage;
+  final DocumentsFilter filter;
+
+  const DocumentsState({
+    this.documents = const [],
+    this.totalCount = 0,
+    this.isLoadingMore = false,
+    this.hasMore = true,
+    this.currentPage = 1,
+    this.filter = const DocumentsFilter(),
+  });
+
+  DocumentsState copyWith({
+    List<Document>? documents,
+    int? totalCount,
+    bool? isLoadingMore,
+    bool? hasMore,
+    int? currentPage,
+    DocumentsFilter? filter,
+  }) {
+    return DocumentsState(
+      documents: documents ?? this.documents,
+      totalCount: totalCount ?? this.totalCount,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMore: hasMore ?? this.hasMore,
+      currentPage: currentPage ?? this.currentPage,
+      filter: filter ?? this.filter,
+    );
+  }
+}
+
+@riverpod
+class DocumentsNotifier extends _$DocumentsNotifier {
+  static const _pageSize = 25;
+
+  @override
+  Future<DocumentsState> build() async {
+    return _fetchPage(1, const DocumentsFilter());
+  }
+
+  Future<DocumentsState> _fetchPage(int page, DocumentsFilter filter) async {
+    final api = ref.read(paperlessApiProvider);
+    final response = await api.getDocuments(
+      page: page,
+      pageSize: _pageSize,
+      query: filter.query,
+      ordering: filter.ordering,
+      tagIds: filter.tagIds,
+      correspondentId: filter.correspondentId,
+      documentTypeId: filter.documentTypeId,
+    );
+    return DocumentsState(
+      documents: response.results,
+      totalCount: response.count,
+      hasMore: response.next != null,
+      currentPage: page,
+      filter: filter,
+    );
+  }
+
+  Future<void> applyFilter(DocumentsFilter filter) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _fetchPage(1, filter));
+  }
+
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || current.isLoadingMore || !current.hasMore) return;
+
+    state = AsyncData(current.copyWith(isLoadingMore: true));
+
+    try {
+      final api = ref.read(paperlessApiProvider);
+      final nextPage = current.currentPage + 1;
+      final response = await api.getDocuments(
+        page: nextPage,
+        pageSize: _pageSize,
+        query: current.filter.query,
+        ordering: current.filter.ordering,
+        tagIds: current.filter.tagIds,
+        correspondentId: current.filter.correspondentId,
+        documentTypeId: current.filter.documentTypeId,
+      );
+
+      state = AsyncData(current.copyWith(
+        documents: [...current.documents, ...response.results],
+        isLoadingMore: false,
+        hasMore: response.next != null,
+        currentPage: nextPage,
+      ));
+    } catch (_) {
+      state = AsyncData(current.copyWith(isLoadingMore: false));
+    }
+  }
+
+  Future<void> refresh() async {
+    final filter = state.valueOrNull?.filter ?? const DocumentsFilter();
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _fetchPage(1, filter));
+  }
+}
