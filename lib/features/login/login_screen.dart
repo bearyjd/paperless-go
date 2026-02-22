@@ -1,0 +1,248 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/auth/auth_provider.dart';
+import '../../core/auth/auth_service.dart';
+
+class LoginScreen extends ConsumerStatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _serverUrlController = TextEditingController(text: 'https://');
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _tokenController = TextEditingController();
+
+  bool _useTokenLogin = false;
+  bool _obscurePassword = true;
+  bool _testing = false;
+  bool? _connectionOk;
+
+  @override
+  void dispose() {
+    _serverUrlController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _testConnection() async {
+    final url = _normalizeUrl(_serverUrlController.text.trim());
+    if (url.isEmpty) return;
+
+    setState(() { _testing = true; _connectionOk = null; });
+    final authService = ref.read(authServiceProvider);
+    final ok = await authService.testConnection(url);
+    if (mounted) {
+      setState(() { _testing = false; _connectionOk = ok; });
+    }
+  }
+
+  String _normalizeUrl(String url) {
+    if (url.isEmpty) return '';
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://$url';
+    }
+    return url.replaceAll(RegExp(r'/+$'), '');
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final serverUrl = _normalizeUrl(_serverUrlController.text.trim());
+    final authNotifier = ref.read(authStateProvider.notifier);
+
+    try {
+      if (_useTokenLogin) {
+        await authNotifier.loginWithToken(serverUrl, _tokenController.text.trim());
+      } else {
+        await authNotifier.loginWithCredentials(
+          serverUrl,
+          _usernameController.text.trim(),
+          _passwordController.text,
+        );
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Connection error: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+    final isLoading = authState.isLoading;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Icon(
+                      Icons.description_outlined,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Paperless Go',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Connect to your Paperless-ngx server',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Server URL
+                    TextFormField(
+                      controller: _serverUrlController,
+                      decoration: InputDecoration(
+                        labelText: 'Server URL',
+                        hintText: 'https://paperless.example.com',
+                        prefixIcon: const Icon(Icons.dns_outlined),
+                        suffixIcon: _testing
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 20, height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            : IconButton(
+                                icon: Icon(
+                                  _connectionOk == null
+                                      ? Icons.wifi_find
+                                      : _connectionOk!
+                                          ? Icons.check_circle
+                                          : Icons.error,
+                                  color: _connectionOk == null
+                                      ? null
+                                      : _connectionOk!
+                                          ? Colors.green
+                                          : Colors.red,
+                                ),
+                                onPressed: _testConnection,
+                                tooltip: 'Test connection',
+                              ),
+                      ),
+                      keyboardType: TextInputType.url,
+                      autocorrect: false,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty || v.trim() == 'https://') {
+                          return 'Enter your server URL';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Token/credentials toggle
+                    SwitchListTile(
+                      title: const Text('Login with API token'),
+                      value: _useTokenLogin,
+                      onChanged: (v) => setState(() => _useTokenLogin = v),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    const SizedBox(height: 8),
+
+                    if (_useTokenLogin) ...[
+                      TextFormField(
+                        controller: _tokenController,
+                        decoration: const InputDecoration(
+                          labelText: 'API Token',
+                          prefixIcon: Icon(Icons.key_outlined),
+                        ),
+                        autocorrect: false,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Enter your API token';
+                          return null;
+                        },
+                      ),
+                    ] else ...[
+                      TextFormField(
+                        controller: _usernameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Username',
+                          prefixIcon: Icon(Icons.person_outlined),
+                        ),
+                        autocorrect: false,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Enter your username';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: const Icon(Icons.lock_outlined),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined),
+                            onPressed: () =>
+                                setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                        ),
+                        obscureText: _obscurePassword,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Enter your password';
+                          return null;
+                        },
+                      ),
+                    ],
+
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: isLoading ? null : _submit,
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20, height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Login'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
