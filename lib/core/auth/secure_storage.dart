@@ -34,6 +34,18 @@ class SecureStorageService {
   Future<String?> getAiChatUrl() =>
       _storage.read(key: StorageKeys.aiChatUrl);
 
+  Future<void> saveAiChatUsername(String username) =>
+      _storage.write(key: StorageKeys.aiChatUsername, value: username);
+
+  Future<String?> getAiChatUsername() =>
+      _storage.read(key: StorageKeys.aiChatUsername);
+
+  Future<void> saveAiChatPassword(String password) =>
+      _storage.write(key: StorageKeys.aiChatPassword, value: password);
+
+  Future<String?> getAiChatPassword() =>
+      _storage.read(key: StorageKeys.aiChatPassword);
+
   Future<void> saveThemeMode(String mode) =>
       _storage.write(key: StorageKeys.themeMode, value: mode);
 

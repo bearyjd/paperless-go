@@ -40,31 +40,85 @@ class DocumentReference {
 
 class ChatService {
   final Dio _dio;
+  String? _jwt;
 
   ChatService(this._dio);
 
-  /// Send a RAG chat message and get a response.
-  /// The Paperless-AI API at /api/chat accepts a message and returns
-  /// a response with potential document references.
-  Future<ChatMessage> sendMessage(String message, List<ChatMessage> history) async {
+  /// Login to Paperless-AI and store JWT for subsequent requests.
+  Future<void> login(String username, String password) async {
     try {
-      final payload = {
-        'message': message,
-        'history': history.map((m) => {
-          'role': m.role,
-          'content': m.content,
-        }).toList(),
-      };
-
-      // Dio doesn't follow redirects for POST requests, so we handle
-      // 301/302 manually by re-posting to the Location header URL.
-      var response = await _dio.post(
-        'api/chat/',
-        data: payload,
+      final response = await _dio.post(
+        'login',
+        data: 'username=${Uri.encodeComponent(username)}&password=${Uri.encodeComponent(password)}',
         options: Options(
+          contentType: 'application/x-www-form-urlencoded',
           validateStatus: (status) => status != null && status < 400,
           followRedirects: false,
         ),
+      );
+
+      // Extract JWT from Set-Cookie header
+      final cookies = response.headers['set-cookie'];
+      if (cookies != null) {
+        for (final cookie in cookies) {
+          if (cookie.startsWith('jwt=')) {
+            _jwt = cookie.split('=')[1].split(';')[0];
+            return;
+          }
+        }
+      }
+
+      // If 302 redirect to dashboard, login succeeded but no cookie parsed
+      if (response.statusCode == 302) {
+        // Try extracting from the raw header value
+        final setCookie = response.headers.value('set-cookie');
+        if (setCookie != null && setCookie.contains('jwt=')) {
+          _jwt = setCookie.split('jwt=')[1].split(';')[0];
+          return;
+        }
+      }
+
+      throw Exception('Login succeeded but no JWT received');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception('Invalid Paperless-AI credentials');
+      }
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw Exception('Cannot connect to Paperless-AI.');
+      }
+      throw Exception('Login error: ${e.message}');
+    }
+  }
+
+  Options _authOptions({
+    ResponseType? responseType,
+    bool followRedirects = false,
+  }) {
+    final headers = <String, dynamic>{};
+    if (_jwt != null) {
+      // Bearer for /chat/* routes, Cookie for /api/rag/* routes
+      headers['Authorization'] = 'Bearer $_jwt';
+      headers['Cookie'] = 'jwt=$_jwt';
+    }
+    return Options(
+      validateStatus: (status) => status != null && status < 400,
+      followRedirects: followRedirects,
+      responseType: responseType,
+      headers: headers.isNotEmpty ? headers : null,
+    );
+  }
+
+  /// Send a RAG chat message and get a response.
+  /// Uses POST /api/rag/ask with {"question": "..."} → {"answer": "...", "sources": [...]}
+  Future<ChatMessage> sendMessage(String message, List<ChatMessage> history) async {
+    try {
+      final payload = {'question': message};
+
+      var response = await _dio.post(
+        'api/rag/ask',
+        data: payload,
+        options: _authOptions(),
       );
 
       // Follow redirects manually for POST
@@ -80,19 +134,22 @@ class ChatService {
         if (location == null) {
           throw Exception('Redirect without Location header');
         }
+        if (location.contains('/login')) {
+          throw Exception('Authentication required. Check your Paperless-AI credentials in Settings.');
+        }
         response = await _dio.post(
           location,
           data: payload,
-          options: Options(
-            validateStatus: (status) => status != null && status < 400,
-            followRedirects: false,
-          ),
+          options: _authOptions(),
         );
       }
 
       final data = response.data;
 
       if (data is String) {
+        if (data.trimLeft().startsWith('<') || data.trimLeft().startsWith('<!DOCTYPE')) {
+          throw Exception('Received HTML instead of JSON. Check your Paperless-AI URL and credentials.');
+        }
         return ChatMessage(
           role: 'assistant',
           content: data,
@@ -100,23 +157,23 @@ class ChatService {
       }
 
       final responseData = data as Map<String, dynamic>;
-      final content = responseData['response'] as String? ??
+      final content = responseData['answer'] as String? ??
+          responseData['response'] as String? ??
           responseData['message'] as String? ??
           responseData['content'] as String? ??
           data.toString();
 
-      // Parse document references if present
+      // Parse document sources if present
       final refs = <DocumentReference>[];
-      if (responseData.containsKey('documents')) {
-        final docs = responseData['documents'] as List<dynamic>?;
-        if (docs != null) {
-          for (final doc in docs) {
-            if (doc is Map<String, dynamic>) {
-              refs.add(DocumentReference(
-                id: doc['id'] as int? ?? 0,
-                title: doc['title'] as String? ?? 'Unknown',
-              ));
-            }
+      final sources = responseData['sources'] as List<dynamic>? ??
+          responseData['documents'] as List<dynamic>?;
+      if (sources != null) {
+        for (final doc in sources) {
+          if (doc is Map<String, dynamic>) {
+            refs.add(DocumentReference(
+              id: doc['doc_id'] as int? ?? doc['id'] as int? ?? 0,
+              title: doc['title'] as String? ?? 'Unknown',
+            ));
           }
         }
       }
@@ -128,7 +185,7 @@ class ChatService {
       );
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
-        throw Exception('Chat endpoint not found. Check your Paperless-AI URL.');
+        throw Exception('RAG endpoint not found. Check your Paperless-AI URL.');
       }
       if (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout) {
@@ -141,15 +198,30 @@ class ChatService {
   /// Initialize a document chat session.
   Future<void> initDocumentChat(int documentId) async {
     try {
-      await _dio.get(
+      final response = await _dio.get(
         'chat/init/$documentId',
-        options: Options(
-          validateStatus: (status) => status != null && status < 400,
-        ),
+        options: _authOptions(followRedirects: true),
       );
+
+      // Detect HTML responses (e.g., login page or error page)
+      final data = response.data;
+      if (data is String) {
+        final trimmed = data.trimLeft();
+        if (trimmed.startsWith('<') || trimmed.startsWith('<!DOCTYPE')) {
+          throw Exception(
+            'Received HTML instead of JSON from chat init. Check your Paperless-AI credentials in Settings.',
+          );
+        }
+      }
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
         throw Exception('Document chat endpoint not found. Check your Paperless-AI URL.');
+      }
+      if (e.response?.statusCode == 302) {
+        final location = e.response?.headers.value('location') ?? '';
+        if (location.contains('/login')) {
+          throw Exception('Authentication required. Check your Paperless-AI credentials in Settings.');
+        }
       }
       if (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout) {
@@ -161,54 +233,69 @@ class ChatService {
 
   /// Send a message for document-specific chat and return an SSE stream of content chunks.
   Stream<String> sendDocumentMessage(int documentId, String message) async* {
+    final payload = {
+      'documentId': documentId,
+      'message': message,
+    };
+
     try {
-      final response = await _dio.post(
+      var response = await _dio.post(
         'chat/message',
-        data: {
-          'documentId': '$documentId',
-          'message': message,
-        },
-        options: Options(
-          responseType: ResponseType.stream,
-          validateStatus: (status) => status != null && status < 400,
-          followRedirects: false,
-        ),
+        data: payload,
+        options: _authOptions(responseType: ResponseType.stream),
       );
 
       // Follow redirects manually for POST with stream
-      var finalResponse = response;
       var redirectCount = 0;
-      while (finalResponse.statusCode == 301 ||
-          finalResponse.statusCode == 302 ||
-          finalResponse.statusCode == 307 ||
-          finalResponse.statusCode == 308) {
+      while (response.statusCode == 301 ||
+          response.statusCode == 302 ||
+          response.statusCode == 307 ||
+          response.statusCode == 308) {
         if (++redirectCount > 5) {
           throw Exception('Too many redirects');
         }
-        final location = finalResponse.headers.value('location');
+        final location = response.headers.value('location');
         if (location == null) {
           throw Exception('Redirect without Location header');
         }
-        finalResponse = await _dio.post(
+        if (location.contains('/login')) {
+          throw Exception('Authentication required. Check your Paperless-AI credentials in Settings.');
+        }
+        response = await _dio.post(
           location,
-          data: {
-            'documentId': '$documentId',
-            'message': message,
-          },
-          options: Options(
-            responseType: ResponseType.stream,
-            validateStatus: (status) => status != null && status < 400,
-            followRedirects: false,
-          ),
+          data: payload,
+          options: _authOptions(responseType: ResponseType.stream),
         );
       }
 
-      final stream = finalResponse.data.stream as Stream<List<int>>;
+      // Check content-type to detect HTML responses
+      final contentType = response.headers.value('content-type') ?? '';
+      if (contentType.contains('text/html')) {
+        throw Exception(
+          'Received HTML instead of SSE stream. Check your Paperless-AI credentials in Settings.',
+        );
+      }
+
+      final stream = response.data.stream as Stream<List<int>>;
       var accumulated = '';
       var buffer = '';
+      var firstChunk = true;
 
       await for (final chunk in stream) {
-        buffer += utf8.decode(chunk);
+        final decoded = utf8.decode(chunk);
+
+        // Detect HTML on first chunk
+        if (firstChunk) {
+          firstChunk = false;
+          final trimmed = decoded.trimLeft();
+          if (trimmed.startsWith('<') || trimmed.startsWith('<!DOCTYPE')) {
+            throw Exception(
+              'Received HTML instead of SSE stream. Check your Paperless-AI URL and credentials.',
+            );
+          }
+        }
+
+        buffer += decoded;
 
         // Process complete SSE lines
         while (buffer.contains('\n')) {

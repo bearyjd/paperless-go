@@ -19,14 +19,13 @@ ChatService chatService(Ref ref) {
   final dio = Dio(BaseOptions(
     baseUrl: normalizedUrl,
     connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 60),
+    receiveTimeout: const Duration(seconds: 120),
     followRedirects: true,
     maxRedirects: 5,
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     },
-    // Allow redirect status codes so manual redirect handling works
     validateStatus: (status) => status != null && status < 500,
   ));
   return ChatService(dio);
@@ -72,8 +71,30 @@ class ChatState {
 
 @riverpod
 class ChatNotifier extends _$ChatNotifier {
+  bool _loggedIn = false;
+
   @override
-  ChatState build() => const ChatState();
+  ChatState build() {
+    _loggedIn = false;
+    return const ChatState();
+  }
+
+  /// Ensure the ChatService is logged in with Paperless-AI credentials.
+  Future<void> _ensureLoggedIn() async {
+    if (_loggedIn) return;
+
+    final username = ref.read(aiChatUsernameProvider);
+    final password = ref.read(aiChatPasswordProvider);
+    if (username == null || username.isEmpty ||
+        password == null || password.isEmpty) {
+      // No credentials configured — proceed without auth (may work on internal networks)
+      return;
+    }
+
+    final service = ref.read(chatServiceProvider);
+    await service.login(username, password);
+    _loggedIn = true;
+  }
 
   Future<void> initDocumentMode(int documentId, String title) async {
     state = ChatState(
@@ -83,6 +104,7 @@ class ChatNotifier extends _$ChatNotifier {
     );
 
     try {
+      await _ensureLoggedIn();
       final service = ref.read(chatServiceProvider);
       await service.initDocumentChat(documentId);
     } catch (e) {
@@ -108,6 +130,7 @@ class ChatNotifier extends _$ChatNotifier {
     );
 
     try {
+      await _ensureLoggedIn();
       final service = ref.read(chatServiceProvider);
       final response = await service.sendMessage(text, previousMessages);
       state = state.copyWith(
@@ -136,6 +159,7 @@ class ChatNotifier extends _$ChatNotifier {
     );
 
     try {
+      await _ensureLoggedIn();
       final service = ref.read(chatServiceProvider);
       final stream = service.sendDocumentMessage(documentId, text);
 
@@ -161,6 +185,7 @@ class ChatNotifier extends _$ChatNotifier {
   }
 
   void clearHistory() {
+    _loggedIn = false;
     if (state.mode == ChatMode.document) {
       state = ChatState(
         mode: ChatMode.document,

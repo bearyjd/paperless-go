@@ -140,6 +140,60 @@ class AiChatUrl extends _$AiChatUrl {
 }
 
 @riverpod
+class AiChatUsername extends _$AiChatUsername {
+  bool _userChanged = false;
+
+  @override
+  String? build() {
+    _userChanged = false;
+    _load();
+    return null;
+  }
+
+  Future<void> _load() async {
+    final storage = ref.read(secureStorageProvider);
+    final value = await storage.getAiChatUsername();
+    if (!_userChanged && value != null && value.isNotEmpty) {
+      state = value;
+    }
+  }
+
+  Future<void> set(String value) async {
+    _userChanged = true;
+    final storage = ref.read(secureStorageProvider);
+    await storage.saveAiChatUsername(value);
+    state = value.isEmpty ? null : value;
+  }
+}
+
+@riverpod
+class AiChatPassword extends _$AiChatPassword {
+  bool _userChanged = false;
+
+  @override
+  String? build() {
+    _userChanged = false;
+    _load();
+    return null;
+  }
+
+  Future<void> _load() async {
+    final storage = ref.read(secureStorageProvider);
+    final value = await storage.getAiChatPassword();
+    if (!_userChanged && value != null && value.isNotEmpty) {
+      state = value;
+    }
+  }
+
+  Future<void> set(String value) async {
+    _userChanged = true;
+    final storage = ref.read(secureStorageProvider);
+    await storage.saveAiChatPassword(value);
+    state = value.isEmpty ? null : value;
+  }
+}
+
+@riverpod
 class ThemeModeNotifier extends _$ThemeModeNotifier {
   bool _userChanged = false;
 
