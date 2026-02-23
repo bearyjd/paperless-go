@@ -10,7 +10,10 @@ import 'chat_notifier.dart';
 import 'chat_service.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key});
+  final int? documentId;
+  final String? documentTitle;
+
+  const ChatScreen({super.key, this.documentId, this.documentTitle});
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -20,6 +23,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
+  bool _initialized = false;
+
+  bool get _isDocumentMode => widget.documentId != null;
 
   @override
   void dispose() {
@@ -35,6 +41,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final aiUrl = ref.watch(aiChatUrlProvider);
     final isConfigured = aiUrl != null && aiUrl.isNotEmpty;
 
+    // Initialize document mode once
+    if (_isDocumentMode && !_initialized) {
+      _initialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(chatNotifierProvider.notifier).initDocumentMode(
+              widget.documentId!,
+              widget.documentTitle ?? 'Document',
+            );
+      });
+    }
+
     // Listen for errors
     ref.listen(chatNotifierProvider, (prev, next) {
       if (next.error != null && prev?.error != next.error) {
@@ -45,8 +62,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         }
         ref.read(chatNotifierProvider.notifier).dismissError();
       }
-      // Scroll to bottom on new messages
-      if (next.messages.length > (prev?.messages.length ?? 0)) {
+      // Scroll to bottom on new messages or streaming updates
+      if (next.messages.length > (prev?.messages.length ?? 0) ||
+          (next.messages.isNotEmpty &&
+              prev != null &&
+              prev.messages.isNotEmpty &&
+              next.messages.last.content != prev.messages.last.content)) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
             _scrollController.animateTo(
@@ -59,9 +80,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     });
 
+    final appBarTitle = _isDocumentMode
+        ? widget.documentTitle ?? 'Document Chat'
+        : 'AI Chat';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Chat'),
+        title: Text(appBarTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           if (chatState.messages.isNotEmpty)
             IconButton(
@@ -69,11 +94,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               tooltip: 'Clear chat',
               onPressed: () => ref.read(chatNotifierProvider.notifier).clearHistory(),
             ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-            onPressed: () => context.push('/settings'),
-          ),
+          if (!_isDocumentMode)
+            IconButton(
+              icon: const Icon(Icons.settings),
+              tooltip: 'Settings',
+              onPressed: () => context.push('/settings'),
+            ),
         ],
       ),
       body: !isConfigured
@@ -88,13 +114,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
                           itemCount: chatState.messages.length +
-                              (chatState.isLoading ? 1 : 0),
+                              (chatState.isLoading &&
+                                      (chatState.mode == ChatMode.rag ||
+                                          chatState.messages.isEmpty ||
+                                          chatState.messages.last.content.isEmpty)
+                                  ? 1
+                                  : 0),
                           itemBuilder: (_, i) {
                             if (i >= chatState.messages.length) {
                               return _buildTypingIndicator(context);
                             }
+                            final message = chatState.messages[i];
+                            // Skip empty placeholder messages (streaming will fill them)
+                            if (message.role == 'assistant' && message.content.isEmpty) {
+                              return _buildTypingIndicator(context);
+                            }
                             return _MessageBubble(
-                              message: chatState.messages[i],
+                              message: message,
                               onDocumentTap: (docId) =>
                                   context.push('/documents/$docId'),
                             );
@@ -142,22 +178,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildEmptyChat(BuildContext context) {
+    final icon = _isDocumentMode ? Icons.chat : Icons.auto_awesome;
+    final title = _isDocumentMode
+        ? 'Ask questions about this document'
+        : 'Ask about your documents';
+    final subtitle = _isDocumentMode
+        ? 'Chat with AI to understand, summarize, and explore this document.'
+        : 'Chat with AI to search, summarize, and understand your documents.';
+
+    final suggestions = _isDocumentMode
+        ? [
+            'Summarize this document',
+            'What are the key points?',
+            'Extract important dates',
+          ]
+        : [
+            'Summarize recent invoices',
+            'What tax documents do I have?',
+            'Find contracts expiring soon',
+          ];
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.chat_outlined, size: 64,
+            Icon(icon, size: 64,
                 color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
-            Text(
-              'Ask about your documents',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
-              'Chat with AI to search, summarize, and understand your documents.',
+              subtitle,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -168,20 +221,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               spacing: 8,
               runSpacing: 8,
               alignment: WrapAlignment.center,
-              children: [
-                _SuggestionChip(
-                  label: 'Summarize recent invoices',
-                  onTap: (text) => _sendMessage(text),
-                ),
-                _SuggestionChip(
-                  label: 'What tax documents do I have?',
-                  onTap: (text) => _sendMessage(text),
-                ),
-                _SuggestionChip(
-                  label: 'Find contracts expiring soon',
-                  onTap: (text) => _sendMessage(text),
-                ),
-              ],
+              children: suggestions
+                  .map((s) => _SuggestionChip(
+                        label: s,
+                        onTap: (text) => _sendMessage(text),
+                      ))
+                  .toList(),
             ),
           ],
         ),
@@ -224,6 +269,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildInputBar(BuildContext context, bool isLoading) {
+    final hintText = _isDocumentMode
+        ? 'Ask about this document...'
+        : 'Ask about your documents...';
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         12,
@@ -247,7 +296,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               focusNode: _focusNode,
               enabled: !isLoading,
               decoration: InputDecoration(
-                hintText: 'Ask about your documents...',
+                hintText: hintText,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),

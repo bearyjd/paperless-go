@@ -106,6 +106,15 @@ GoRouter router(Ref ref) {
               return DocumentPreviewScreen(documentId: id);
             },
           ),
+          GoRoute(
+            path: 'chat',
+            builder: (_, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              if (id == null) return const Scaffold(body: Center(child: Text('Invalid document ID')));
+              final title = state.uri.queryParameters['title'] ?? 'Document $id';
+              return ChatScreen(documentId: id, documentTitle: title);
+            },
+          ),
         ],
       ),
       ShellRoute(

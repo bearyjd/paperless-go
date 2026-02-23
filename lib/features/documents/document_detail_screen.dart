@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/thumbnail_cache.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/api/api_providers.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/custom_field.dart';
 import '../../core/models/document_type.dart';
+import '../../core/models/storage_path.dart';
 import '../../core/models/tag.dart';
 import '../../shared/widgets/tag_chip.dart';
 import 'document_detail_notifier.dart';
@@ -23,6 +26,7 @@ class DocumentDetailScreen extends ConsumerWidget {
     final tagsAsync = ref.watch(tagsProvider);
     final correspondentsAsync = ref.watch(correspondentsProvider);
     final docTypesAsync = ref.watch(documentTypesProvider);
+    final storagePathsAsync = ref.watch(storagePathsProvider);
 
     return docAsync.when(
       loading: () => Scaffold(
@@ -52,11 +56,15 @@ class DocumentDetailScreen extends ConsumerWidget {
         final tags = tagsAsync.valueOrNull ?? {};
         final correspondents = correspondentsAsync.valueOrNull ?? {};
         final docTypes = docTypesAsync.valueOrNull ?? {};
+        final storagePaths = storagePathsAsync.valueOrNull ?? {};
         final correspondent = doc.correspondent != null
             ? correspondents[doc.correspondent]
             : null;
         final docType = doc.documentType != null
             ? docTypes[doc.documentType]
+            : null;
+        final storagePath = doc.storagePath != null
+            ? storagePaths[doc.storagePath]
             : null;
         final docTags = doc.tags
             .map((id) => tags[id])
@@ -72,6 +80,14 @@ class DocumentDetailScreen extends ConsumerWidget {
                 tooltip: 'Preview PDF',
                 onPressed: () => context.push('/documents/$documentId/preview'),
               ),
+              if (ref.watch(aiChatUrlProvider) != null && ref.watch(aiChatUrlProvider)!.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.smart_toy),
+                  tooltip: 'Chat about document',
+                  onPressed: () => context.push(
+                    '/documents/$documentId/chat?title=${Uri.encodeComponent(doc.title)}',
+                  ),
+                ),
               PopupMenuButton<String>(
                 onSelected: (action) => _handleAction(context, ref, action, doc.title),
                 itemBuilder: (_) => [
@@ -117,6 +133,7 @@ class DocumentDetailScreen extends ConsumerWidget {
                   child: CachedNetworkImage(
                     imageUrl: ref.read(paperlessApiProvider).thumbnailUrl(documentId),
                     httpHeaders: {'Authorization': ref.read(paperlessApiProvider).authToken},
+                    cacheManager: ThumbnailCacheManager.instance,
                     fit: BoxFit.contain,
                     placeholder: (_, __) => Center(
                       child: Icon(Icons.description_outlined,
@@ -164,6 +181,17 @@ class DocumentDetailScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
 
+              // Storage Path
+              _MetadataDropdown<StoragePath>(
+                label: 'Storage Path',
+                value: storagePath,
+                items: storagePaths.values.toList(),
+                displayName: (sp) => sp.name,
+                onChanged: (sp) => ref.read(documentDetailProvider(documentId).notifier)
+                    .updateField({'storage_path': sp?.id}),
+              ),
+              const SizedBox(height: 12),
+
               // Date
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -184,14 +212,62 @@ class DocumentDetailScreen extends ConsumerWidget {
                 },
               ),
 
-              // ASN
-              if (doc.archiveSerialNumber != null)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.tag),
-                  title: const Text('Archive Serial Number'),
-                  subtitle: Text('${doc.archiveSerialNumber}'),
+              // ASN (editable)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.tag),
+                title: Text('Archive Serial Number',
+                    style: Theme.of(context).textTheme.labelSmall),
+                subtitle: Text(
+                  doc.archiveSerialNumber?.toString() ?? 'Not set',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
+                onTap: () async {
+                  final controller = TextEditingController(
+                    text: doc.archiveSerialNumber?.toString() ?? '',
+                  );
+                  try {
+                    final result = await showDialog<String>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Edit ASN'),
+                        content: TextField(
+                          controller: controller,
+                          autofocus: true,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            hintText: 'Archive serial number',
+                            helperText: 'Leave empty to clear',
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(ctx, controller.text),
+                            child: const Text('Save'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (result != null && context.mounted) {
+                      final asn = result.isEmpty ? null : int.tryParse(result);
+                      if (result.isNotEmpty && asn == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Invalid number')),
+                        );
+                        return;
+                      }
+                      ref.read(documentDetailProvider(documentId).notifier)
+                          .updateField({'archive_serial_number': asn});
+                    }
+                  } finally {
+                    controller.dispose();
+                  }
+                },
+              ),
 
               const Divider(height: 32),
 
