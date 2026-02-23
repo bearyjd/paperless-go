@@ -83,8 +83,10 @@ class ChatNotifier extends _$ChatNotifier {
   Future<void> _ensureLoggedIn() async {
     if (_loggedIn) return;
 
-    final username = ref.read(aiChatUsernameProvider);
-    final password = ref.read(aiChatPasswordProvider);
+    // Read directly from secure storage to avoid async provider race condition
+    final storage = ref.read(secureStorageProvider);
+    final username = await storage.getAiChatUsername();
+    final password = await storage.getAiChatPassword();
     if (username == null || username.isEmpty ||
         password == null || password.isEmpty) {
       // No credentials configured — proceed without auth (may work on internal networks)

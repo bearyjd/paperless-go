@@ -44,7 +44,7 @@ class BulkActionBar extends ConsumerWidget {
                 color: colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             _ActionButton(
               icon: Icons.label_outline,
               tooltip: 'Add tags',
@@ -61,26 +61,51 @@ class BulkActionBar extends ConsumerWidget {
               onPressed: () => _showBulkDocTypeDialog(context, ref),
             ),
             _ActionButton(
-              icon: Icons.folder_outlined,
-              tooltip: 'Set storage path',
-              onPressed: () => _showBulkStoragePathDialog(context, ref),
-            ),
-            if (selectedIds.length >= 2)
-              _ActionButton(
-                icon: Icons.merge,
-                tooltip: 'Merge',
-                onPressed: () => _showBulkMergeDialog(context, ref),
-              ),
-            _ActionButton(
-              icon: Icons.rotate_right,
-              tooltip: 'Rotate',
-              onPressed: () => _showBulkRotateDialog(context, ref),
-            ),
-            _ActionButton(
               icon: Icons.delete_outline,
               tooltip: 'Delete',
               onPressed: () => _showBulkDeleteDialog(context, ref),
               color: colorScheme.error,
+            ),
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert, color: colorScheme.onPrimaryContainer),
+              tooltip: 'More actions',
+              onSelected: (action) {
+                switch (action) {
+                  case 'storage_path':
+                    _showBulkStoragePathDialog(context, ref);
+                  case 'merge':
+                    _showBulkMergeDialog(context, ref);
+                  case 'rotate':
+                    _showBulkRotateDialog(context, ref);
+                }
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'storage_path',
+                  child: ListTile(
+                    leading: Icon(Icons.folder_outlined),
+                    title: Text('Set storage path'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                if (selectedIds.length >= 2)
+                  const PopupMenuItem(
+                    value: 'merge',
+                    child: ListTile(
+                      leading: Icon(Icons.merge),
+                      title: Text('Merge'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                const PopupMenuItem(
+                  value: 'rotate',
+                  child: ListTile(
+                    leading: Icon(Icons.rotate_right),
+                    title: Text('Rotate'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
