@@ -10,6 +10,8 @@ class DocumentsFilter {
   final List<int>? tagIds;
   final int? correspondentId;
   final int? documentTypeId;
+  final DateTime? createdDateFrom;
+  final DateTime? createdDateTo;
 
   const DocumentsFilter({
     this.query,
@@ -17,6 +19,8 @@ class DocumentsFilter {
     this.tagIds,
     this.correspondentId,
     this.documentTypeId,
+    this.createdDateFrom,
+    this.createdDateTo,
   });
 
   DocumentsFilter copyWith({
@@ -25,10 +29,13 @@ class DocumentsFilter {
     List<int>? tagIds,
     int? correspondentId,
     int? documentTypeId,
+    DateTime? createdDateFrom,
+    DateTime? createdDateTo,
     bool clearQuery = false,
     bool clearCorrespondent = false,
     bool clearDocumentType = false,
     bool clearTags = false,
+    bool clearDateRange = false,
   }) {
     return DocumentsFilter(
       query: clearQuery ? null : (query ?? this.query),
@@ -36,6 +43,8 @@ class DocumentsFilter {
       tagIds: clearTags ? null : (tagIds ?? this.tagIds),
       correspondentId: clearCorrespondent ? null : (correspondentId ?? this.correspondentId),
       documentTypeId: clearDocumentType ? null : (documentTypeId ?? this.documentTypeId),
+      createdDateFrom: clearDateRange ? null : (createdDateFrom ?? this.createdDateFrom),
+      createdDateTo: clearDateRange ? null : (createdDateTo ?? this.createdDateTo),
     );
   }
 }
@@ -95,6 +104,8 @@ class DocumentsNotifier extends _$DocumentsNotifier {
       tagIds: filter.tagIds,
       correspondentId: filter.correspondentId,
       documentTypeId: filter.documentTypeId,
+      createdDateFrom: filter.createdDateFrom,
+      createdDateTo: filter.createdDateTo,
     );
     return DocumentsState(
       documents: response.results,
@@ -127,6 +138,8 @@ class DocumentsNotifier extends _$DocumentsNotifier {
         tagIds: current.filter.tagIds,
         correspondentId: current.filter.correspondentId,
         documentTypeId: current.filter.documentTypeId,
+        createdDateFrom: current.filter.createdDateFrom,
+        createdDateTo: current.filter.createdDateTo,
       );
 
       state = AsyncData(current.copyWith(

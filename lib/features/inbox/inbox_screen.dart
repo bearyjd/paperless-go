@@ -107,7 +107,7 @@ class InboxScreen extends ConsumerWidget {
                       final doc = inbox.documents[index];
                       return Dismissible(
                         key: ValueKey(doc.id),
-                        direction: DismissDirection.startToEnd,
+                        direction: DismissDirection.horizontal,
                         background: Container(
                           alignment: Alignment.centerLeft,
                           padding: const EdgeInsets.only(left: 24),
@@ -115,7 +115,22 @@ class InboxScreen extends ConsumerWidget {
                           child: Icon(Icons.done,
                               color: Theme.of(context).colorScheme.onPrimaryContainer),
                         ),
-                        confirmDismiss: (_) async {
+                        secondaryBackground: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 24),
+                          color: Theme.of(context).colorScheme.tertiaryContainer,
+                          child: Icon(Icons.edit,
+                              color: Theme.of(context).colorScheme.onTertiaryContainer),
+                        ),
+                        confirmDismiss: (direction) async {
+                          if (direction == DismissDirection.endToStart) {
+                            // Quick-assign: show bottom sheet, don't actually dismiss
+                            if (context.mounted) {
+                              _showQuickAssign(context, ref, doc.id);
+                            }
+                            return false;
+                          }
+                          // Swipe right: remove from inbox
                           try {
                             await ref.read(inboxNotifierProvider.notifier).removeFromInbox(doc);
                             if (context.mounted) {
@@ -152,5 +167,149 @@ class InboxScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  void _showQuickAssign(BuildContext context, WidgetRef ref, int documentId) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => _QuickAssignSheet(
+        documentId: documentId,
+        onDone: () {
+          ref.invalidate(inboxNotifierProvider);
+        },
+      ),
+    );
+  }
+}
+
+class _QuickAssignSheet extends ConsumerStatefulWidget {
+  final int documentId;
+  final VoidCallback onDone;
+
+  const _QuickAssignSheet({required this.documentId, required this.onDone});
+
+  @override
+  ConsumerState<_QuickAssignSheet> createState() => _QuickAssignSheetState();
+}
+
+class _QuickAssignSheetState extends ConsumerState<_QuickAssignSheet> {
+  int? _correspondentId;
+  int? _documentTypeId;
+  bool _saving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final correspondentsAsync = ref.watch(correspondentsProvider);
+    final docTypesAsync = ref.watch(documentTypesProvider);
+
+    final correspondents = correspondentsAsync.valueOrNull ?? {};
+    final docTypes = docTypesAsync.valueOrNull ?? {};
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Quick Assign', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 16),
+
+          // Correspondent
+          InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Correspondent',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int?>(
+                value: _correspondentId,
+                isExpanded: true,
+                isDense: true,
+                hint: const Text('None'),
+                items: [
+                  const DropdownMenuItem<int?>(value: null, child: Text('None')),
+                  ...correspondents.values.map((c) => DropdownMenuItem<int?>(
+                    value: c.id,
+                    child: Text(c.name, overflow: TextOverflow.ellipsis),
+                  )),
+                ],
+                onChanged: (v) => setState(() => _correspondentId = v),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Document Type
+          InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Document Type',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int?>(
+                value: _documentTypeId,
+                isExpanded: true,
+                isDense: true,
+                hint: const Text('None'),
+                items: [
+                  const DropdownMenuItem<int?>(value: null, child: Text('None')),
+                  ...docTypes.values.map((dt) => DropdownMenuItem<int?>(
+                    value: dt.id,
+                    child: Text(dt.name, overflow: TextOverflow.ellipsis),
+                  )),
+                ],
+                onChanged: (v) => setState(() => _documentTypeId = v),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      height: 20, width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Assign'),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    if (_correspondentId == null && _documentTypeId == null) {
+      Navigator.pop(context);
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      final api = ref.read(paperlessApiProvider);
+      final data = <String, dynamic>{};
+      if (_correspondentId != null) data['correspondent'] = _correspondentId;
+      if (_documentTypeId != null) data['document_type'] = _documentTypeId;
+      await api.updateDocument(widget.documentId, data);
+      widget.onDone();
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Document updated')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update: $e')),
+        );
+        setState(() => _saving = false);
+      }
+    }
   }
 }
