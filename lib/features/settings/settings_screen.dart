@@ -131,6 +131,22 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.edit, size: 18),
             onTap: () => _editAiUrl(context, ref, aiUrl),
           ),
+          ListTile(
+            leading: const Icon(Icons.key),
+            title: const Text('Paperless-AI Credentials'),
+            subtitle: Text(
+              ref.watch(aiChatUsernameProvider)?.isNotEmpty == true
+                  ? 'Logged in as ${ref.watch(aiChatUsernameProvider)}'
+                  : 'Not configured (required for document chat)',
+              style: TextStyle(
+                color: ref.watch(aiChatUsernameProvider)?.isNotEmpty == true
+                    ? null
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            trailing: const Icon(Icons.edit, size: 18),
+            onTap: () => _editAiCredentials(context, ref),
+          ),
 
           const Divider(),
 
@@ -251,6 +267,66 @@ class SettingsScreen extends ConsumerWidget {
       if (!authenticated || !context.mounted) return;
     }
     ref.read(biometricLockProvider.notifier).setEnabled(enabled);
+  }
+
+  void _editAiCredentials(BuildContext context, WidgetRef ref) {
+    final usernameController = TextEditingController(
+      text: ref.read(aiChatUsernameProvider) ?? '',
+    );
+    final passwordController = TextEditingController(
+      text: ref.read(aiChatPasswordProvider) ?? '',
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Paperless-AI Credentials'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter your Paperless-AI login credentials. Required for document chat.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: usernameController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Username',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              ref.read(aiChatUsernameProvider.notifier).set(usernameController.text.trim());
+              ref.read(aiChatPasswordProvider.notifier).set(passwordController.text);
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ).then((_) {
+      usernameController.dispose();
+      passwordController.dispose();
+    });
   }
 
   void _editAiUrl(BuildContext context, WidgetRef ref, String? currentUrl) {

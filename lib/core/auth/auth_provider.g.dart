@@ -93,6 +93,38 @@ final aiChatUrlProvider =
     );
 
 typedef _$AiChatUrl = AutoDisposeNotifier<String?>;
+String _$aiChatUsernameHash() => r'88379c2ab3a199eee5ec786b8485ceb68456da63';
+
+/// See also [AiChatUsername].
+@ProviderFor(AiChatUsername)
+final aiChatUsernameProvider =
+    AutoDisposeNotifierProvider<AiChatUsername, String?>.internal(
+      AiChatUsername.new,
+      name: r'aiChatUsernameProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$aiChatUsernameHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$AiChatUsername = AutoDisposeNotifier<String?>;
+String _$aiChatPasswordHash() => r'c6d42bfff4af92fe41ed0568ec5cc911b90089ed';
+
+/// See also [AiChatPassword].
+@ProviderFor(AiChatPassword)
+final aiChatPasswordProvider =
+    AutoDisposeNotifierProvider<AiChatPassword, String?>.internal(
+      AiChatPassword.new,
+      name: r'aiChatPasswordProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$aiChatPasswordHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$AiChatPassword = AutoDisposeNotifier<String?>;
 String _$themeModeNotifierHash() => r'3c2093caf09a2166a1fcf0dc1acf9decaba14e4b';
 
 /// See also [ThemeModeNotifier].
