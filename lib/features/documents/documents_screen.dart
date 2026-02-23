@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/models/saved_view.dart';
 import '../../shared/widgets/document_card.dart';
@@ -96,7 +97,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     final currentFilter = docsState.valueOrNull?.filter ?? const DocumentsFilter();
     final hasActiveFilters = currentFilter.correspondentId != null ||
         currentFilter.documentTypeId != null ||
-        (currentFilter.tagIds != null && currentFilter.tagIds!.isNotEmpty);
+        (currentFilter.tagIds != null && currentFilter.tagIds!.isNotEmpty) ||
+        currentFilter.createdDateFrom != null ||
+        currentFilter.createdDateTo != null;
 
     return Scaffold(
       appBar: _isSelecting
@@ -404,6 +407,18 @@ class _ActiveFiltersBar extends StatelessWidget {
           visualDensity: VisualDensity.compact,
         ));
       }
+    }
+    if (filter.createdDateFrom != null || filter.createdDateTo != null) {
+      final from = filter.createdDateFrom != null
+          ? DateFormat.yMd().format(filter.createdDateFrom!)
+          : '...';
+      final to = filter.createdDateTo != null
+          ? DateFormat.yMd().format(filter.createdDateTo!)
+          : '...';
+      chips.add(Chip(
+        label: Text('Date: $from – $to', style: const TextStyle(fontSize: 12)),
+        visualDensity: VisualDensity.compact,
+      ));
     }
 
     return Container(

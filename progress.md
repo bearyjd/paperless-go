@@ -15,6 +15,7 @@
 | 9 | *(not in original plan)* | — |
 | 10 | *(not in original plan)* | — |
 | 11 | Offline Cache + UX Polish | Done |
+| 12 | Detail Enhancements + Filters | Done |
 
 ## What's Built
 
@@ -39,20 +40,27 @@
 - Inbox-first design — home screen shows inbox documents
 - Pull-to-refresh, infinite scroll
 - Clean document cards (title hero, max 3 tags + "+N")
+- Swipe right to remove from inbox
+- Swipe left to quick-assign (correspondent, document type) via bottom sheet
 
 **Documents Browser**
 - Browse all documents with pagination
 - Filter bottom sheet (tags, correspondent, document type, date range)
-- Sort options (created, added, modified, title)
+- Sort options (created, added, modified, title, ASN)
 - Multi-select with bulk action bar
+- Saved views as horizontal FilterChip bar
+- Active filter chips with clear button (including date range display)
 
 **Document Detail**
-- View/edit title, correspondent, document type, tags, custom fields
+- View/edit title, correspondent, document type, storage path, tags, custom fields
+- Editable ASN (archive serial number) — set, change, or clear
 - PDF preview (pdfx)
 - Notes CRUD
 - Share links management
 - Download + share actions
 - "More like this" (similar documents)
+- Created date picker
+- Custom field editing by data type (boolean, date, integer, float, monetary, url, string)
 
 **Scanner**
 - Camera-based document scanning (cunning_document_scanner with ML Kit)
@@ -106,6 +114,7 @@
 - Offline banner when disconnected
 - Loading skeletons (shimmer)
 - Dark/light theme support
+- Thumbnail LRU cache with custom CacheManager (2000 objects, 30-day stale period)
 
 ### Offline Cache
 - 7 SQLite cache tables: Documents, Tags, Correspondents, DocumentTypes, StoragePaths, SavedViews, CustomFields
@@ -114,7 +123,8 @@
 - Upload queue service drains on connectivity restore
 
 ## File Count
-- 123 source files
+- 96 source files (including generated code)
+- ~50 hand-written source files
 - 7 Freezed models with generated code
 - 17 Riverpod providers with generated code
 - 8 Drift database tables with generated code
@@ -127,10 +137,7 @@
   - `app-x86_64-release.apk` (24.9MB)
 
 ## What's Not Yet Implemented
-- Thumbnail disk cache with LRU eviction (200MB) — `cached_network_image` handles basic caching but no explicit LRU management
-- Saved views as tabs/dropdown in documents browser (API exists, UI not wired)
-- Custom field editing in document detail (display exists)
 - Document split operation
-- Swipe gestures on inbox cards (swipe to remove inbox tag, swipe to quick-assign)
 - mDNS/Tailscale server discovery
-- ASN (archive serial number) display/edit
+- Saved views CRUD (create/edit/delete from within the app — currently read-only)
+- `documentlink` custom field type document picker UI (falls through to text edit)

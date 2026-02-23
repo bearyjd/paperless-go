@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../shared/widgets/tag_chip.dart';
@@ -23,6 +24,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late int? _correspondentId;
   late int? _documentTypeId;
   late List<int> _tagIds;
+  late DateTime? _dateFrom;
+  late DateTime? _dateTo;
 
   @override
   void initState() {
@@ -30,12 +33,16 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     _correspondentId = widget.currentFilter.correspondentId;
     _documentTypeId = widget.currentFilter.documentTypeId;
     _tagIds = List.from(widget.currentFilter.tagIds ?? []);
+    _dateFrom = widget.currentFilter.createdDateFrom;
+    _dateTo = widget.currentFilter.createdDateTo;
   }
 
   bool get _hasFilters =>
       _correspondentId != null ||
       _documentTypeId != null ||
-      _tagIds.isNotEmpty;
+      _tagIds.isNotEmpty ||
+      _dateFrom != null ||
+      _dateTo != null;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +80,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       _correspondentId = null;
                       _documentTypeId = null;
                       _tagIds.clear();
+                      _dateFrom = null;
+                      _dateTo = null;
                     }),
                     child: const Text('Clear all'),
                   ),
@@ -168,6 +177,33 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                     }).toList(),
                   ),
                 ),
+
+                const SizedBox(height: 20),
+
+                // Date range
+                Text('Created Date', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DatePickerField(
+                        label: 'From',
+                        value: _dateFrom,
+                        onPicked: (d) => setState(() => _dateFrom = d),
+                        onClear: () => setState(() => _dateFrom = null),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _DatePickerField(
+                        label: 'To',
+                        value: _dateTo,
+                        onPicked: (d) => setState(() => _dateTo = d),
+                        onClear: () => setState(() => _dateTo = null),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -182,9 +218,12 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                     correspondentId: _correspondentId,
                     documentTypeId: _documentTypeId,
                     tagIds: _tagIds.isEmpty ? null : _tagIds,
+                    createdDateFrom: _dateFrom,
+                    createdDateTo: _dateTo,
                     clearCorrespondent: _correspondentId == null,
                     clearDocumentType: _documentTypeId == null,
                     clearTags: _tagIds.isEmpty,
+                    clearDateRange: _dateFrom == null && _dateTo == null,
                   ));
                   Navigator.pop(context);
                 },
@@ -193,6 +232,52 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DatePickerField extends StatelessWidget {
+  final String label;
+  final DateTime? value;
+  final ValueChanged<DateTime> onPicked;
+  final VoidCallback onClear;
+
+  const _DatePickerField({
+    required this.label,
+    required this.value,
+    required this.onPicked,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        suffixIcon: value != null
+            ? IconButton(
+                icon: const Icon(Icons.clear, size: 18),
+                onPressed: onClear,
+              )
+            : null,
+      ),
+      child: GestureDetector(
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: value ?? DateTime.now(),
+            firstDate: DateTime(2000),
+            lastDate: DateTime.now().add(const Duration(days: 365)),
+          );
+          if (picked != null) onPicked(picked);
+        },
+        child: Text(
+          value != null ? DateFormat.yMd().format(value!) : 'Any',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
       ),
     );
   }

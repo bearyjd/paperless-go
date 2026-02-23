@@ -28,6 +28,8 @@ class PaperlessApi {
     int? documentTypeId,
     int? moreLikeId,
     bool truncateContent = true,
+    DateTime? createdDateFrom,
+    DateTime? createdDateTo,
   }) async {
     final params = <String, dynamic>{
       'page': page,
@@ -43,6 +45,14 @@ class PaperlessApi {
     }
     if (correspondentId != null) params['correspondent__id'] = correspondentId;
     if (documentTypeId != null) params['document_type__id'] = documentTypeId;
+    if (createdDateFrom != null) {
+      params['created__date__gt'] =
+          createdDateFrom.toIso8601String().split('T').first;
+    }
+    if (createdDateTo != null) {
+      params['created__date__lt'] =
+          createdDateTo.toIso8601String().split('T').first;
+    }
 
     final response = await _dio.get('api/documents/', queryParameters: params);
     return PaginatedResponse.fromJson(

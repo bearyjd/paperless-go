@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../core/thumbnail_cache.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document.dart';
 import '../../core/models/document_type.dart';
@@ -68,6 +69,7 @@ class DocumentCard extends StatelessWidget {
                     child: CachedNetworkImage(
                       imageUrl: thumbnailUrl!,
                       httpHeaders: {'Authorization': authToken!},
+                      cacheManager: ThumbnailCacheManager.instance,
                       width: 48,
                       height: 64,
                       fit: BoxFit.cover,
