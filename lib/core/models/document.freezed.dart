@@ -44,7 +44,7 @@ mixin _$Document {
   @JsonKey(name: 'custom_fields')
   List<CustomFieldInstance> get customFields =>
       throw _privateConstructorUsedError;
-  List<dynamic> get notes => throw _privateConstructorUsedError;
+  List<Note> get notes => throw _privateConstructorUsedError;
 
   /// Serializes this Document to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -77,7 +77,7 @@ abstract class $DocumentCopyWith<$Res> {
     @JsonKey(name: 'archived_file_name') String? archivedFileName,
     String? content,
     @JsonKey(name: 'custom_fields') List<CustomFieldInstance> customFields,
-    List<dynamic> notes,
+    List<Note> notes,
   });
 }
 
@@ -178,7 +178,7 @@ class _$DocumentCopyWithImpl<$Res, $Val extends Document>
             notes: null == notes
                 ? _value.notes
                 : notes // ignore: cast_nullable_to_non_nullable
-                      as List<dynamic>,
+                      as List<Note>,
           )
           as $Val,
     );
@@ -210,7 +210,7 @@ abstract class _$$DocumentImplCopyWith<$Res>
     @JsonKey(name: 'archived_file_name') String? archivedFileName,
     String? content,
     @JsonKey(name: 'custom_fields') List<CustomFieldInstance> customFields,
-    List<dynamic> notes,
+    List<Note> notes,
   });
 }
 
@@ -310,7 +310,7 @@ class __$$DocumentImplCopyWithImpl<$Res>
         notes: null == notes
             ? _value._notes
             : notes // ignore: cast_nullable_to_non_nullable
-                  as List<dynamic>,
+                  as List<Note>,
       ),
     );
   }
@@ -336,7 +336,7 @@ class _$DocumentImpl implements _Document {
     this.content,
     @JsonKey(name: 'custom_fields')
     final List<CustomFieldInstance> customFields = const [],
-    final List<dynamic> notes = const [],
+    final List<Note> notes = const [],
   }) : _tags = tags,
        _customFields = customFields,
        _notes = notes;
@@ -394,10 +394,10 @@ class _$DocumentImpl implements _Document {
     return EqualUnmodifiableListView(_customFields);
   }
 
-  final List<dynamic> _notes;
+  final List<Note> _notes;
   @override
   @JsonKey()
-  List<dynamic> get notes {
+  List<Note> get notes {
     if (_notes is EqualUnmodifiableListView) return _notes;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_notes);
@@ -496,7 +496,7 @@ abstract class _Document implements Document {
     final String? content,
     @JsonKey(name: 'custom_fields')
     final List<CustomFieldInstance> customFields,
-    final List<dynamic> notes,
+    final List<Note> notes,
   }) = _$DocumentImpl;
 
   factory _Document.fromJson(Map<String, dynamic> json) =
@@ -540,7 +540,7 @@ abstract class _Document implements Document {
   @JsonKey(name: 'custom_fields')
   List<CustomFieldInstance> get customFields;
   @override
-  List<dynamic> get notes;
+  List<Note> get notes;
 
   /// Create a copy of Document
   /// with the given fields replaced by the non-null parameter values.

@@ -56,6 +56,7 @@ class DocumentsState {
   final bool hasMore;
   final int currentPage;
   final DocumentsFilter filter;
+  final String? loadMoreError;
 
   const DocumentsState({
     this.documents = const [],
@@ -64,6 +65,7 @@ class DocumentsState {
     this.hasMore = true,
     this.currentPage = 1,
     this.filter = const DocumentsFilter(),
+    this.loadMoreError,
   });
 
   DocumentsState copyWith({
@@ -73,6 +75,8 @@ class DocumentsState {
     bool? hasMore,
     int? currentPage,
     DocumentsFilter? filter,
+    String? loadMoreError,
+    bool clearLoadMoreError = false,
   }) {
     return DocumentsState(
       documents: documents ?? this.documents,
@@ -81,6 +85,7 @@ class DocumentsState {
       hasMore: hasMore ?? this.hasMore,
       currentPage: currentPage ?? this.currentPage,
       filter: filter ?? this.filter,
+      loadMoreError: clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
     );
   }
 }
@@ -148,8 +153,11 @@ class DocumentsNotifier extends _$DocumentsNotifier {
         hasMore: response.next != null,
         currentPage: nextPage,
       ));
-    } catch (_) {
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+    } catch (e) {
+      state = AsyncData(current.copyWith(
+        isLoadingMore: false,
+        loadMoreError: 'Failed to load more: $e',
+      ));
     }
   }
 

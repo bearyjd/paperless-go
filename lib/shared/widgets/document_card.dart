@@ -130,11 +130,13 @@ class DocumentCard extends StatelessWidget {
                     // Tags
                     if (docTags.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Row(
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
                         children: [
                           ...docTags.take(_maxVisibleTags).map(
-                            (tag) => Padding(
-                              padding: const EdgeInsets.only(right: 4),
+                            (tag) => ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 120),
                               child: TagChip(tag: tag),
                             ),
                           ),

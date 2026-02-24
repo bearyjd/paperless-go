@@ -131,8 +131,8 @@ class DocumentDetailScreen extends ConsumerWidget {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: CachedNetworkImage(
-                    imageUrl: ref.read(paperlessApiProvider).thumbnailUrl(documentId),
-                    httpHeaders: {'Authorization': ref.read(paperlessApiProvider).authToken},
+                    imageUrl: ref.watch(paperlessApiProvider).thumbnailUrl(documentId),
+                    httpHeaders: {'Authorization': ref.watch(paperlessApiProvider).authToken},
                     cacheManager: ThumbnailCacheManager.instance,
                     fit: BoxFit.contain,
                     placeholder: (_, __) => Center(
@@ -153,8 +153,18 @@ class DocumentDetailScreen extends ConsumerWidget {
               _EditableTile(
                 label: 'Title',
                 value: doc.title,
-                onSave: (v) => ref.read(documentDetailProvider(documentId).notifier)
-                    .updateField({'title': v}),
+                onSave: (v) async {
+                  try {
+                    await ref.read(documentDetailProvider(documentId).notifier)
+                        .updateField({'title': v});
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to update title: $e')),
+                      );
+                    }
+                  }
+                },
               ),
 
               const Divider(height: 32),
@@ -165,8 +175,18 @@ class DocumentDetailScreen extends ConsumerWidget {
                 value: correspondent,
                 items: correspondents.values.toList(),
                 displayName: (c) => c.name,
-                onChanged: (c) => ref.read(documentDetailProvider(documentId).notifier)
-                    .updateField({'correspondent': c?.id}),
+                onChanged: (c) async {
+                  try {
+                    await ref.read(documentDetailProvider(documentId).notifier)
+                        .updateField({'correspondent': c?.id});
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to update: $e')),
+                      );
+                    }
+                  }
+                },
               ),
               const SizedBox(height: 12),
 
@@ -176,8 +196,18 @@ class DocumentDetailScreen extends ConsumerWidget {
                 value: docType,
                 items: docTypes.values.toList(),
                 displayName: (dt) => dt.name,
-                onChanged: (dt) => ref.read(documentDetailProvider(documentId).notifier)
-                    .updateField({'document_type': dt?.id}),
+                onChanged: (dt) async {
+                  try {
+                    await ref.read(documentDetailProvider(documentId).notifier)
+                        .updateField({'document_type': dt?.id});
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to update: $e')),
+                      );
+                    }
+                  }
+                },
               ),
               const SizedBox(height: 12),
 
@@ -187,8 +217,18 @@ class DocumentDetailScreen extends ConsumerWidget {
                 value: storagePath,
                 items: storagePaths.values.toList(),
                 displayName: (sp) => sp.name,
-                onChanged: (sp) => ref.read(documentDetailProvider(documentId).notifier)
-                    .updateField({'storage_path': sp?.id}),
+                onChanged: (sp) async {
+                  try {
+                    await ref.read(documentDetailProvider(documentId).notifier)
+                        .updateField({'storage_path': sp?.id});
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to update: $e')),
+                      );
+                    }
+                  }
+                },
               ),
               const SizedBox(height: 12),
 
@@ -206,8 +246,16 @@ class DocumentDetailScreen extends ConsumerWidget {
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
                   if (picked != null && context.mounted) {
-                    ref.read(documentDetailProvider(documentId).notifier)
-                        .updateField({'created': picked.toIso8601String()});
+                    try {
+                      await ref.read(documentDetailProvider(documentId).notifier)
+                          .updateField({'created': picked.toIso8601String()});
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to update date: $e')),
+                        );
+                      }
+                    }
                   }
                 },
               ),
@@ -260,8 +308,16 @@ class DocumentDetailScreen extends ConsumerWidget {
                         );
                         return;
                       }
-                      ref.read(documentDetailProvider(documentId).notifier)
-                          .updateField({'archive_serial_number': asn});
+                      try {
+                        await ref.read(documentDetailProvider(documentId).notifier)
+                            .updateField({'archive_serial_number': asn});
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to update ASN: $e')),
+                          );
+                        }
+                      }
                     }
                   } finally {
                     controller.dispose();
@@ -528,11 +584,13 @@ class _TagsSection extends ConsumerWidget {
           spacing: 6,
           runSpacing: 6,
           children: docTags.map((tag) {
+            final bgColor = TagChip.parseColor(tag.colour);
+            final fgColor = bgColor != null ? TagChip.contrastColor(bgColor) : null;
             return InputChip(
               label: Text(tag.name, style: const TextStyle(fontSize: 12)),
-              backgroundColor: TagChip.parseColor(tag.colour),
-              labelStyle: TextStyle(color: TagChip.parseColor(tag.textColor)),
-              deleteIconColor: TagChip.parseColor(tag.textColor),
+              backgroundColor: bgColor,
+              labelStyle: TextStyle(color: fgColor),
+              deleteIconColor: fgColor,
               onDeleted: () => ref.read(documentDetailProvider(documentId).notifier)
                   .removeTag(tag.id),
             );
@@ -649,15 +707,23 @@ class _CustomFieldsSection extends ConsumerWidget {
               dataType: dataType,
               fieldId: instance.field,
               value: instance.value,
-              onSave: (newValue) {
+              onSave: (newValue) async {
                 final updatedFields = fieldInstances.map((fi) {
                   if (fi.field == instance.field) {
                     return {'field': fi.field, 'value': newValue};
                   }
                   return {'field': fi.field, 'value': fi.value};
                 }).toList();
-                ref.read(documentDetailProvider(documentId).notifier)
-                    .updateField({'custom_fields': updatedFields});
+                try {
+                  await ref.read(documentDetailProvider(documentId).notifier)
+                      .updateField({'custom_fields': updatedFields});
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to update field: $e')),
+                    );
+                  }
+                }
               },
             ),
           );
@@ -835,8 +901,18 @@ class _NotesSection extends ConsumerWidget {
                   subtitle: Text(DateFormat.yMMMd().add_Hm().format(note.created)),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline, size: 18),
-                    onPressed: () => ref.read(documentNotesProvider(documentId).notifier)
-                        .deleteNote(note.id),
+                    onPressed: () async {
+                      try {
+                        await ref.read(documentNotesProvider(documentId).notifier)
+                            .deleteNote(note.id);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to delete note: $e')),
+                          );
+                        }
+                      }
+                    },
                   ),
                 ),
               )).toList(),
@@ -862,12 +938,22 @@ class _NotesSection extends ConsumerWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
-                ref.read(documentNotesProvider(documentId).notifier)
-                    .addNote(controller.text.trim());
+                Navigator.pop(ctx);
+                try {
+                  await ref.read(documentNotesProvider(documentId).notifier)
+                      .addNote(controller.text.trim());
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to add note: $e')),
+                    );
+                  }
+                }
+              } else {
+                Navigator.pop(ctx);
               }
-              Navigator.pop(ctx);
             },
             child: const Text('Add'),
           ),
@@ -971,7 +1057,7 @@ class _ShareLinksSectionState extends ConsumerState<_ShareLinksSection> {
         else
           ...(_links!.map((link) {
             final slug = link['slug'] as String? ?? '';
-            final api = ref.read(paperlessApiProvider);
+            final api = ref.watch(paperlessApiProvider);
             final linkUrl = '${api.baseUrl}share/$slug';
             final expiration = link['expiration'] as String?;
             final linkId = link['id'] as int;

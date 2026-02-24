@@ -160,12 +160,14 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         backgroundColor: TagChip.parseColor(tag.colour),
                         selectedColor: TagChip.parseColor(tag.colour)?.withValues(alpha: 0.8),
                         labelStyle: TextStyle(
-                          color: selected
-                              ? TagChip.parseColor(tag.textColor)
+                          color: selected && TagChip.parseColor(tag.colour) != null
+                              ? TagChip.contrastColor(TagChip.parseColor(tag.colour)!)
                               : null,
                           fontSize: 13,
                         ),
-                        checkmarkColor: TagChip.parseColor(tag.textColor),
+                        checkmarkColor: TagChip.parseColor(tag.colour) != null
+                            ? TagChip.contrastColor(TagChip.parseColor(tag.colour)!)
+                            : null,
                         onSelected: (v) => setState(() {
                           if (v) {
                             _tagIds.add(tag.id);

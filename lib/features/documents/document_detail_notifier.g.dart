@@ -160,7 +160,7 @@ class _DocumentDownloadProviderElement
   String get title => (origin as DocumentDownloadProvider).title;
 }
 
-String _$documentDetailHash() => r'dc33af4904cb12d2ff94d7acd4aedf78fe5a14a2';
+String _$documentDetailHash() => r'd85c95b692234c742386e964bdf2f55746aa8c2f';
 
 abstract class _$DocumentDetail
     extends BuildlessAutoDisposeAsyncNotifier<Document> {
@@ -292,7 +292,7 @@ class _DocumentDetailProviderElement
   int get id => (origin as DocumentDetailProvider).id;
 }
 
-String _$documentNotesHash() => r'0f9b28be7f14fd833574672efa1cf19c54c00306';
+String _$documentNotesHash() => r'da7229186b7b970e965f04c3ddf34dfd5b4d8804';
 
 abstract class _$DocumentNotes
     extends BuildlessAutoDisposeAsyncNotifier<List<Note>> {

@@ -340,7 +340,7 @@ class SettingsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Enter the URL of your Paperless-AI instance (e.g., http://192.168.1.21:8083)',
+              'Enter the URL of your Paperless-AI instance (e.g., http://your-server:8083)',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
@@ -350,7 +350,7 @@ class SettingsScreen extends ConsumerWidget {
               keyboardType: TextInputType.url,
               decoration: const InputDecoration(
                 labelText: 'URL',
-                hintText: 'http://192.168.1.21:8083',
+                hintText: 'http://your-server:8083',
                 border: OutlineInputBorder(),
               ),
             ),

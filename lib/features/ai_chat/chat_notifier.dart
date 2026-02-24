@@ -69,13 +69,16 @@ class ChatState {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ChatNotifier extends _$ChatNotifier {
   bool _loggedIn = false;
+  bool _disposed = false;
 
   @override
   ChatState build() {
     _loggedIn = false;
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
     return const ChatState();
   }
 
@@ -140,6 +143,7 @@ class ChatNotifier extends _$ChatNotifier {
         isLoading: false,
       );
     } catch (e) {
+      _loggedIn = false; // Allow re-authentication on next attempt
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -166,6 +170,7 @@ class ChatNotifier extends _$ChatNotifier {
       final stream = service.sendDocumentMessage(documentId, text);
 
       await for (final accumulated in stream) {
+        if (_disposed) break;
         final messages = List<ChatMessage>.from(state.messages);
         messages[messages.length - 1] = messages.last.copyWith(content: accumulated);
         state = state.copyWith(messages: messages);
@@ -178,6 +183,7 @@ class ChatNotifier extends _$ChatNotifier {
       if (messages.isNotEmpty && messages.last.role == 'assistant' && messages.last.content.isEmpty) {
         messages.removeLast();
       }
+      _loggedIn = false; // Allow re-authentication on next attempt
       state = state.copyWith(
         messages: messages,
         isLoading: false,

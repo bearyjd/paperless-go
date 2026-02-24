@@ -34,7 +34,11 @@ _$DocumentImpl _$$DocumentImplFromJson(
           ?.map((e) => CustomFieldInstance.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
-  notes: json['notes'] as List<dynamic>? ?? const [],
+  notes:
+      (json['notes'] as List<dynamic>?)
+          ?.map((e) => Note.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$$DocumentImplToJson(_$DocumentImpl instance) =>
