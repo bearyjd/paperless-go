@@ -6,11 +6,11 @@ part of 'chat_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$chatServiceHash() => r'ab301f4b38b71c162d24a5acab0c09c49bd2cbb8';
+String _$chatServiceHash() => r'dc884d2fd698ac1a08e97563a66c33edc23f60f8';
 
 /// See also [chatService].
 @ProviderFor(chatService)
-final chatServiceProvider = AutoDisposeProvider<ChatService>.internal(
+final chatServiceProvider = AutoDisposeProvider<ChatService?>.internal(
   chatService,
   name: r'chatServiceProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -22,8 +22,8 @@ final chatServiceProvider = AutoDisposeProvider<ChatService>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef ChatServiceRef = AutoDisposeProviderRef<ChatService>;
-String _$chatNotifierHash() => r'5951939cead279f39d4fc6f89053abfffea84802';
+typedef ChatServiceRef = AutoDisposeProviderRef<ChatService?>;
+String _$chatNotifierHash() => r'9b98f4510e687971b61bccdc0e0b0c869ca98e32';
 
 /// See also [ChatNotifier].
 @ProviderFor(ChatNotifier)

@@ -10,10 +10,10 @@ import 'chat_service.dart';
 part 'chat_notifier.g.dart';
 
 @riverpod
-ChatService chatService(Ref ref) {
+ChatService? chatService(Ref ref) {
   final aiUrl = ref.watch(aiChatUrlProvider);
   if (aiUrl == null || aiUrl.isEmpty) {
-    throw StateError('Paperless-AI URL not configured');
+    return null;
   }
   final normalizedUrl = aiUrl.endsWith('/') ? aiUrl : '$aiUrl/';
   final dio = Dio(BaseOptions(
@@ -82,6 +82,15 @@ class ChatNotifier extends _$ChatNotifier {
     return const ChatState();
   }
 
+  /// Get the ChatService, throwing a clear error if not configured.
+  ChatService _getService() {
+    final service = ref.read(chatServiceProvider);
+    if (service == null) {
+      throw Exception('Paperless-AI URL not configured. Go to Settings to set it up.');
+    }
+    return service;
+  }
+
   /// Ensure the ChatService is logged in with Paperless-AI credentials.
   Future<void> _ensureLoggedIn() async {
     if (_loggedIn) return;
@@ -96,12 +105,26 @@ class ChatNotifier extends _$ChatNotifier {
       return;
     }
 
-    final service = ref.read(chatServiceProvider);
+    final service = _getService();
     await service.login(username, password);
     _loggedIn = true;
   }
 
+  /// Reset to RAG mode (called when Chat tab opens without a documentId).
+  void resetToRagMode() {
+    if (state.mode == ChatMode.document) {
+      _loggedIn = false;
+      state = const ChatState();
+    }
+  }
+
   Future<void> initDocumentMode(int documentId, String title) async {
+    // If already initialized for this exact document, skip re-init
+    if (state.mode == ChatMode.document && state.documentId == documentId) {
+      return;
+    }
+
+    _loggedIn = false;
     state = ChatState(
       mode: ChatMode.document,
       documentId: documentId,
@@ -110,7 +133,7 @@ class ChatNotifier extends _$ChatNotifier {
 
     try {
       await _ensureLoggedIn();
-      final service = ref.read(chatServiceProvider);
+      final service = _getService();
       await service.initDocumentChat(documentId);
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -136,7 +159,7 @@ class ChatNotifier extends _$ChatNotifier {
 
     try {
       await _ensureLoggedIn();
-      final service = ref.read(chatServiceProvider);
+      final service = _getService();
       final response = await service.sendMessage(text, previousMessages);
       state = state.copyWith(
         messages: [...state.messages, response],
@@ -166,7 +189,7 @@ class ChatNotifier extends _$ChatNotifier {
 
     try {
       await _ensureLoggedIn();
-      final service = ref.read(chatServiceProvider);
+      final service = _getService();
       final stream = service.sendDocumentMessage(documentId, text);
 
       await for (final accumulated in stream) {
