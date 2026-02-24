@@ -43,9 +43,34 @@ GoRouter router(Ref ref) {
   return GoRouter(
     initialLocation: '/',
     refreshListenable: refreshNotifier,
+    errorBuilder: (context, state) => Scaffold(
+      appBar: AppBar(title: const Text('Page not found')),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 64,
+                color: Theme.of(context).colorScheme.error),
+            const SizedBox(height: 16),
+            Text('Page not found',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(state.uri.toString(),
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 24),
+            FilledButton.tonal(
+              onPressed: () => GoRouter.of(context).go('/'),
+              child: const Text('Go home'),
+            ),
+          ],
+        ),
+      ),
+    ),
     redirect: (context, state) {
-      final authStatus = ref.read(authStateProvider).valueOrNull;
-      final isAuthenticated = authStatus?.isAuthenticated ?? false;
+      final authState = ref.read(authStateProvider);
+      // Don't redirect while auth state is still loading from storage
+      if (authState.isLoading && !authState.hasError) return null;
+      final isAuthenticated = authState.valueOrNull?.isAuthenticated ?? false;
       final isLoginRoute = state.matchedLocation == '/login';
 
       if (!isAuthenticated && !isLoginRoute) return '/login';
@@ -80,15 +105,23 @@ GoRouter router(Ref ref) {
       ),
       GoRoute(
         path: '/scan/review',
-        builder: (_, state) => ScanReviewScreen(
-          imagePaths: (state.extra as List<dynamic>).cast<String>(),
-        ),
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is! List) {
+            return const Scaffold(body: Center(child: Text('No images provided')));
+          }
+          return ScanReviewScreen(imagePaths: extra.cast<String>());
+        },
       ),
       GoRoute(
         path: '/scan/upload',
-        builder: (_, state) => UploadScreen(
-          params: state.extra as Map<String, dynamic>,
-        ),
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is! Map<String, dynamic>) {
+            return const Scaffold(body: Center(child: Text('No upload data provided')));
+          }
+          return UploadScreen(params: extra);
+        },
       ),
       GoRoute(
         path: '/documents/:id',
@@ -173,20 +206,6 @@ class _PaperlessGoAppState extends ConsumerState<PaperlessGoApp>
     final themeMode = ref.watch(themeModeNotifierProvider);
     final biometricEnabled = ref.watch(biometricLockProvider);
 
-    // Show lock screen if biometric is enabled and app is locked
-    if (biometricEnabled && _isLocked) {
-      return MaterialApp(
-        title: 'Paperless Go',
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        themeMode: themeMode,
-        debugShowCheckedModeBanner: false,
-        home: LockScreen(
-          onUnlocked: () => setState(() => _isLocked = false),
-        ),
-      );
-    }
-
     return MaterialApp.router(
       title: 'Paperless Go',
       theme: AppTheme.light(),
@@ -204,7 +223,21 @@ class _PaperlessGoAppState extends ConsumerState<PaperlessGoApp>
             }
           });
         }
-        return child ?? const SizedBox.shrink();
+        final content = child ?? const SizedBox.shrink();
+        // Show lock screen as overlay to avoid destroying the widget tree
+        if (biometricEnabled && _isLocked) {
+          return Stack(
+            children: [
+              content,
+              Positioned.fill(
+                child: LockScreen(
+                  onUnlocked: () => setState(() => _isLocked = false),
+                ),
+              ),
+            ],
+          );
+        }
+        return content;
       },
     );
   }

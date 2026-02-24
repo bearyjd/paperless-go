@@ -16,9 +16,15 @@ class DocumentDetail extends _$DocumentDetail {
   }
 
   Future<void> updateField(Map<String, dynamic> data) async {
-    final api = ref.read(paperlessApiProvider);
-    final updated = await api.updateDocument(id, data);
-    state = AsyncData(updated);
+    final previous = state;
+    try {
+      final api = ref.read(paperlessApiProvider);
+      final updated = await api.updateDocument(id, data);
+      state = AsyncData(updated);
+    } catch (e) {
+      state = previous;
+      rethrow;
+    }
   }
 
   Future<void> setTags(List<int> tagIds) async {
@@ -48,15 +54,23 @@ class DocumentNotes extends _$DocumentNotes {
   }
 
   Future<void> addNote(String text) async {
-    final api = ref.read(paperlessApiProvider);
-    await api.addNote(documentId, text);
-    ref.invalidateSelf();
+    try {
+      final api = ref.read(paperlessApiProvider);
+      await api.addNote(documentId, text);
+      ref.invalidateSelf();
+    } catch (_) {
+      rethrow;
+    }
   }
 
   Future<void> deleteNote(int noteId) async {
-    final api = ref.read(paperlessApiProvider);
-    await api.deleteNote(documentId, noteId);
-    ref.invalidateSelf();
+    try {
+      final api = ref.read(paperlessApiProvider);
+      await api.deleteNote(documentId, noteId);
+      ref.invalidateSelf();
+    } catch (_) {
+      rethrow;
+    }
   }
 }
 

@@ -23,21 +23,20 @@ final chatServiceProvider = AutoDisposeProvider<ChatService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ChatServiceRef = AutoDisposeProviderRef<ChatService>;
-String _$chatNotifierHash() => r'0f79a04c8600364d28b08b3ea8f6c4e0e985fb24';
+String _$chatNotifierHash() => r'5951939cead279f39d4fc6f89053abfffea84802';
 
 /// See also [ChatNotifier].
 @ProviderFor(ChatNotifier)
-final chatNotifierProvider =
-    AutoDisposeNotifierProvider<ChatNotifier, ChatState>.internal(
-      ChatNotifier.new,
-      name: r'chatNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$chatNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final chatNotifierProvider = NotifierProvider<ChatNotifier, ChatState>.internal(
+  ChatNotifier.new,
+  name: r'chatNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$chatNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef _$ChatNotifier = AutoDisposeNotifier<ChatState>;
+typedef _$ChatNotifier = Notifier<ChatState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

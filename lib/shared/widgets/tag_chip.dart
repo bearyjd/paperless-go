@@ -9,8 +9,9 @@ class TagChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final bgColor = parseColor(tag.colour) ??
         Theme.of(context).colorScheme.secondaryContainer;
-    final fgColor = parseColor(tag.textColor) ??
-        Theme.of(context).colorScheme.onSecondaryContainer;
+    final fgColor = bgColor.computeLuminance() > 0.5
+        ? Colors.black87
+        : Colors.white;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -29,6 +30,11 @@ class TagChip extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
     );
+  }
+
+  /// Compute a contrasting text color for a given background color.
+  static Color contrastColor(Color bg) {
+    return bg.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
   }
 
   static Color? parseColor(String? hex) {

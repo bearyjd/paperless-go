@@ -46,11 +46,11 @@ class PaperlessApi {
     if (correspondentId != null) params['correspondent__id'] = correspondentId;
     if (documentTypeId != null) params['document_type__id'] = documentTypeId;
     if (createdDateFrom != null) {
-      params['created__date__gt'] =
+      params['created__date__gte'] =
           createdDateFrom.toIso8601String().split('T').first;
     }
     if (createdDateTo != null) {
-      params['created__date__lt'] =
+      params['created__date__lte'] =
           createdDateTo.toIso8601String().split('T').first;
     }
 
@@ -267,6 +267,7 @@ class PaperlessApi {
     int? documentType,
     List<int>? tags,
     DateTime? created,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     final formMap = <String, dynamic>{
       'document': await MultipartFile.fromFile(filePath, filename: filename),
@@ -286,6 +287,7 @@ class PaperlessApi {
     final response = await _dio.post(
       'api/documents/post_document/',
       data: formData,
+      onSendProgress: onSendProgress,
       options: Options(
         sendTimeout: const Duration(minutes: 5),
         receiveTimeout: const Duration(minutes: 5),

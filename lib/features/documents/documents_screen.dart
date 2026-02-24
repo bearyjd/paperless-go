@@ -94,6 +94,18 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     final docTypesAsync = ref.watch(documentTypesProvider);
     final savedViewsAsync = ref.watch(savedViewsProvider);
 
+    // Show loadMore errors as SnackBar
+    ref.listen(documentsNotifierProvider, (prev, next) {
+      final error = next.valueOrNull?.loadMoreError;
+      if (error != null && error != prev?.valueOrNull?.loadMoreError) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error)),
+          );
+        }
+      }
+    });
+
     final currentFilter = docsState.valueOrNull?.filter ?? const DocumentsFilter();
     final hasActiveFilters = currentFilter.correspondentId != null ||
         currentFilter.documentTypeId != null ||

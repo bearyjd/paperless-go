@@ -24,9 +24,8 @@ mixin _$Tag {
   int get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get slug => throw _privateConstructorUsedError;
+  @JsonKey(name: 'color')
   String? get colour => throw _privateConstructorUsedError;
-  @JsonKey(name: 'text_color')
-  String? get textColor => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_inbox_tag')
   bool get isInboxTag => throw _privateConstructorUsedError;
   @JsonKey(name: 'document_count')
@@ -56,8 +55,7 @@ abstract class $TagCopyWith<$Res> {
     int id,
     String name,
     String slug,
-    String? colour,
-    @JsonKey(name: 'text_color') String? textColor,
+    @JsonKey(name: 'color') String? colour,
     @JsonKey(name: 'is_inbox_tag') bool isInboxTag,
     @JsonKey(name: 'document_count') int documentCount,
     @JsonKey(name: 'matching_algorithm') int matchingAlgorithm,
@@ -84,7 +82,6 @@ class _$TagCopyWithImpl<$Res, $Val extends Tag> implements $TagCopyWith<$Res> {
     Object? name = null,
     Object? slug = null,
     Object? colour = freezed,
-    Object? textColor = freezed,
     Object? isInboxTag = null,
     Object? documentCount = null,
     Object? matchingAlgorithm = null,
@@ -108,10 +105,6 @@ class _$TagCopyWithImpl<$Res, $Val extends Tag> implements $TagCopyWith<$Res> {
             colour: freezed == colour
                 ? _value.colour
                 : colour // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            textColor: freezed == textColor
-                ? _value.textColor
-                : textColor // ignore: cast_nullable_to_non_nullable
                       as String?,
             isInboxTag: null == isInboxTag
                 ? _value.isInboxTag
@@ -149,8 +142,7 @@ abstract class _$$TagImplCopyWith<$Res> implements $TagCopyWith<$Res> {
     int id,
     String name,
     String slug,
-    String? colour,
-    @JsonKey(name: 'text_color') String? textColor,
+    @JsonKey(name: 'color') String? colour,
     @JsonKey(name: 'is_inbox_tag') bool isInboxTag,
     @JsonKey(name: 'document_count') int documentCount,
     @JsonKey(name: 'matching_algorithm') int matchingAlgorithm,
@@ -174,7 +166,6 @@ class __$$TagImplCopyWithImpl<$Res> extends _$TagCopyWithImpl<$Res, _$TagImpl>
     Object? name = null,
     Object? slug = null,
     Object? colour = freezed,
-    Object? textColor = freezed,
     Object? isInboxTag = null,
     Object? documentCount = null,
     Object? matchingAlgorithm = null,
@@ -198,10 +189,6 @@ class __$$TagImplCopyWithImpl<$Res> extends _$TagCopyWithImpl<$Res, _$TagImpl>
         colour: freezed == colour
             ? _value.colour
             : colour // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        textColor: freezed == textColor
-            ? _value.textColor
-            : textColor // ignore: cast_nullable_to_non_nullable
                   as String?,
         isInboxTag: null == isInboxTag
             ? _value.isInboxTag
@@ -235,8 +222,7 @@ class _$TagImpl implements _Tag {
     required this.id,
     required this.name,
     required this.slug,
-    this.colour,
-    @JsonKey(name: 'text_color') this.textColor,
+    @JsonKey(name: 'color') this.colour,
     @JsonKey(name: 'is_inbox_tag') this.isInboxTag = false,
     @JsonKey(name: 'document_count') this.documentCount = 0,
     @JsonKey(name: 'matching_algorithm') this.matchingAlgorithm = 0,
@@ -254,10 +240,8 @@ class _$TagImpl implements _Tag {
   @override
   final String slug;
   @override
+  @JsonKey(name: 'color')
   final String? colour;
-  @override
-  @JsonKey(name: 'text_color')
-  final String? textColor;
   @override
   @JsonKey(name: 'is_inbox_tag')
   final bool isInboxTag;
@@ -276,7 +260,7 @@ class _$TagImpl implements _Tag {
 
   @override
   String toString() {
-    return 'Tag(id: $id, name: $name, slug: $slug, colour: $colour, textColor: $textColor, isInboxTag: $isInboxTag, documentCount: $documentCount, matchingAlgorithm: $matchingAlgorithm, match: $match, isInsensitive: $isInsensitive)';
+    return 'Tag(id: $id, name: $name, slug: $slug, colour: $colour, isInboxTag: $isInboxTag, documentCount: $documentCount, matchingAlgorithm: $matchingAlgorithm, match: $match, isInsensitive: $isInsensitive)';
   }
 
   @override
@@ -288,8 +272,6 @@ class _$TagImpl implements _Tag {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.slug, slug) || other.slug == slug) &&
             (identical(other.colour, colour) || other.colour == colour) &&
-            (identical(other.textColor, textColor) ||
-                other.textColor == textColor) &&
             (identical(other.isInboxTag, isInboxTag) ||
                 other.isInboxTag == isInboxTag) &&
             (identical(other.documentCount, documentCount) ||
@@ -309,7 +291,6 @@ class _$TagImpl implements _Tag {
     name,
     slug,
     colour,
-    textColor,
     isInboxTag,
     documentCount,
     matchingAlgorithm,
@@ -336,8 +317,7 @@ abstract class _Tag implements Tag {
     required final int id,
     required final String name,
     required final String slug,
-    final String? colour,
-    @JsonKey(name: 'text_color') final String? textColor,
+    @JsonKey(name: 'color') final String? colour,
     @JsonKey(name: 'is_inbox_tag') final bool isInboxTag,
     @JsonKey(name: 'document_count') final int documentCount,
     @JsonKey(name: 'matching_algorithm') final int matchingAlgorithm,
@@ -354,10 +334,8 @@ abstract class _Tag implements Tag {
   @override
   String get slug;
   @override
+  @JsonKey(name: 'color')
   String? get colour;
-  @override
-  @JsonKey(name: 'text_color')
-  String? get textColor;
   @override
   @JsonKey(name: 'is_inbox_tag')
   bool get isInboxTag;

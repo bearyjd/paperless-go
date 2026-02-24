@@ -79,7 +79,15 @@ class UploadNotifier extends _$UploadNotifier {
         documentType: documentType,
         tags: tags,
         created: created,
+        onSendProgress: (sent, total) {
+          if (total > 0) {
+            state = state.copyWith(progress: sent / total);
+          }
+        },
       );
+
+      // Clean up temp PDF after successful upload
+      _deleteTempFile(pdfPath);
 
       state = UploadState(
         status: UploadStatus.processing,
@@ -88,6 +96,7 @@ class UploadNotifier extends _$UploadNotifier {
 
       _startPolling(taskId);
     } catch (e) {
+      // Clean up temp PDF on failure too (unless queuing for later)
       if (_isNetworkError(e) && pdfPath != null && safeFilename != null) {
         await _enqueueForLater(
           filePath: pdfPath,
@@ -100,6 +109,7 @@ class UploadNotifier extends _$UploadNotifier {
         );
         return;
       }
+      if (pdfPath != null) _deleteTempFile(pdfPath);
       state = UploadState(
         status: UploadStatus.failure,
         errorMessage: e.toString(),
@@ -129,6 +139,11 @@ class UploadNotifier extends _$UploadNotifier {
         documentType: documentType,
         tags: tags,
         created: created,
+        onSendProgress: (sent, total) {
+          if (total > 0) {
+            state = state.copyWith(progress: sent / total);
+          }
+        },
       );
 
       state = UploadState(
@@ -188,9 +203,22 @@ class UploadNotifier extends _$UploadNotifier {
     state = const UploadState(status: UploadStatus.queued);
   }
 
+  static const _maxPollAttempts = 150; // 150 * 2s = 5 minutes
+
   void _startPolling(String taskId) {
     _pollTimer?.cancel();
+    var attempts = 0;
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      attempts++;
+      if (attempts > _maxPollAttempts) {
+        timer.cancel();
+        state = UploadState(
+          status: UploadStatus.failure,
+          taskId: taskId,
+          errorMessage: 'Processing timed out after 5 minutes. The document may still be processing on the server.',
+        );
+        return;
+      }
       try {
         final api = ref.read(paperlessApiProvider);
         final result = await api.getTaskStatus(taskId);
@@ -235,16 +263,26 @@ class UploadNotifier extends _$UploadNotifier {
 
     // Use the image package to read images and create a simple PDF
     final images = <img.Image>[];
+    var failedCount = 0;
     for (final path in imagePaths) {
       final bytes = await File(path).readAsBytes();
       final decoded = img.decodeImage(bytes);
       if (decoded != null) {
         images.add(decoded);
+      } else {
+        failedCount++;
       }
     }
 
     if (images.isEmpty) {
       throw Exception('No valid images to convert');
+    }
+
+    if (failedCount > 0) {
+      throw Exception(
+        '$failedCount of ${imagePaths.length} pages failed to convert. '
+        'Please try scanning again.',
+      );
     }
 
     // Create a minimal PDF with embedded images
@@ -380,5 +418,14 @@ class UploadNotifier extends _$UploadNotifier {
     var safe = name.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
     if (safe.isEmpty) safe = 'document';
     return safe;
+  }
+
+  void _deleteTempFile(String path) {
+    try {
+      final file = File(path);
+      if (file.existsSync()) file.deleteSync();
+    } catch (_) {
+      // Best-effort cleanup
+    }
   }
 }

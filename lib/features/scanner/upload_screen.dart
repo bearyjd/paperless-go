@@ -253,11 +253,13 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                 spacing: 6,
                 runSpacing: 6,
                 children: selectedTagObjects.map((tag) {
+                  final bgColor = TagChip.parseColor(tag.colour);
+                  final fgColor = bgColor != null ? TagChip.contrastColor(bgColor) : null;
                   return InputChip(
                     label: Text(tag.name, style: const TextStyle(fontSize: 12)),
-                    backgroundColor: TagChip.parseColor(tag.colour),
-                    labelStyle: TextStyle(color: TagChip.parseColor(tag.textColor)),
-                    deleteIconColor: TagChip.parseColor(tag.textColor),
+                    backgroundColor: bgColor,
+                    labelStyle: TextStyle(color: fgColor),
+                    deleteIconColor: fgColor,
                     onDeleted: () => setState(() => _selectedTags.remove(tag.id)),
                   );
                 }).toList(),

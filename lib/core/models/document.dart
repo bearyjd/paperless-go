@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'custom_field.dart';
+import 'note.dart';
 
 part 'document.freezed.dart';
 part 'document.g.dart';
@@ -22,7 +23,7 @@ class Document with _$Document {
     @JsonKey(name: 'archived_file_name') String? archivedFileName,
     String? content,
     @JsonKey(name: 'custom_fields') @Default([]) List<CustomFieldInstance> customFields,
-    @Default([]) List<dynamic> notes,
+    @Default([]) List<Note> notes,
   }) = _Document;
 
   factory Document.fromJson(Map<String, dynamic> json) =>
