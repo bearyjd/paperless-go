@@ -9,7 +9,7 @@ import 'chat_service.dart';
 
 part 'chat_notifier.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 ChatService? chatService(Ref ref) {
   final aiUrl = ref.watch(aiChatUrlProvider);
   if (aiUrl == null || aiUrl.isEmpty) {

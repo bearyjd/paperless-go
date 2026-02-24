@@ -78,7 +78,15 @@ class ChatService {
         }
       }
 
-      throw Exception('Login succeeded but no JWT received');
+      // Server returns 200 with HTML login page for invalid credentials
+      if (response.statusCode == 200) {
+        final body = response.data?.toString() ?? '';
+        if (body.contains('Invalid credentials') || body.contains('<html')) {
+          throw Exception('Invalid Paperless-AI credentials. Check your username and password in Settings.');
+        }
+      }
+
+      throw Exception('Login failed: no JWT received from server');
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         throw Exception('Invalid Paperless-AI credentials');

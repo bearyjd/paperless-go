@@ -224,20 +224,20 @@ class _PaperlessGoAppState extends ConsumerState<PaperlessGoApp>
           });
         }
         final content = child ?? const SizedBox.shrink();
-        // Show lock screen as overlay to avoid destroying the widget tree
-        if (biometricEnabled && _isLocked) {
-          return Stack(
-            children: [
-              content,
+        // Always wrap in Stack to avoid widget tree restructuring
+        // that causes '_dependents.isEmpty' assertion failures when
+        // the biometric lock state changes asynchronously.
+        return Stack(
+          children: [
+            content,
+            if (biometricEnabled && _isLocked)
               Positioned.fill(
                 child: LockScreen(
                   onUnlocked: () => setState(() => _isLocked = false),
                 ),
               ),
-            ],
-          );
-        }
-        return content;
+          ],
+        );
       },
     );
   }

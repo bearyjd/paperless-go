@@ -112,7 +112,7 @@ class Unauthenticated extends AuthStatus {
   const Unauthenticated();
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class AiChatUrl extends _$AiChatUrl {
   bool _userChanged = false;
 
@@ -139,7 +139,7 @@ class AiChatUrl extends _$AiChatUrl {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class AiChatUsername extends _$AiChatUsername {
   bool _userChanged = false;
 
@@ -166,7 +166,7 @@ class AiChatUsername extends _$AiChatUsername {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class AiChatPassword extends _$AiChatPassword {
   bool _userChanged = false;
 
@@ -193,7 +193,7 @@ class AiChatPassword extends _$AiChatPassword {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ThemeModeNotifier extends _$ThemeModeNotifier {
   bool _userChanged = false;
 
@@ -223,7 +223,7 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class BiometricLock extends _$BiometricLock {
   bool _userChanged = false;
 

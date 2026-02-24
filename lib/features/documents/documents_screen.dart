@@ -138,6 +138,11 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   tooltip: 'Filter',
                   onPressed: () => _showFilterSheet(context, currentFilter),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  tooltip: 'Settings',
+                  onPressed: () => context.push('/settings'),
+                ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.sort),
                   tooltip: 'Sort',

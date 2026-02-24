@@ -77,28 +77,27 @@ final authStateProvider =
     );
 
 typedef _$AuthState = AutoDisposeAsyncNotifier<AuthStatus>;
-String _$aiChatUrlHash() => r'9799c319afb7644716c0d7a9bf08fc49890f1c2e';
+String _$aiChatUrlHash() => r'9a41f8f38762c345402ec782810376336a415819';
 
 /// See also [AiChatUrl].
 @ProviderFor(AiChatUrl)
-final aiChatUrlProvider =
-    AutoDisposeNotifierProvider<AiChatUrl, String?>.internal(
-      AiChatUrl.new,
-      name: r'aiChatUrlProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$aiChatUrlHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final aiChatUrlProvider = NotifierProvider<AiChatUrl, String?>.internal(
+  AiChatUrl.new,
+  name: r'aiChatUrlProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$aiChatUrlHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef _$AiChatUrl = AutoDisposeNotifier<String?>;
-String _$aiChatUsernameHash() => r'88379c2ab3a199eee5ec786b8485ceb68456da63';
+typedef _$AiChatUrl = Notifier<String?>;
+String _$aiChatUsernameHash() => r'22485de96294355999cc02584f0aa5e157885f87';
 
 /// See also [AiChatUsername].
 @ProviderFor(AiChatUsername)
 final aiChatUsernameProvider =
-    AutoDisposeNotifierProvider<AiChatUsername, String?>.internal(
+    NotifierProvider<AiChatUsername, String?>.internal(
       AiChatUsername.new,
       name: r'aiChatUsernameProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -108,13 +107,13 @@ final aiChatUsernameProvider =
       allTransitiveDependencies: null,
     );
 
-typedef _$AiChatUsername = AutoDisposeNotifier<String?>;
-String _$aiChatPasswordHash() => r'c6d42bfff4af92fe41ed0568ec5cc911b90089ed';
+typedef _$AiChatUsername = Notifier<String?>;
+String _$aiChatPasswordHash() => r'1e72473f52a1dd84b547332a646bdeb24f8fcafa';
 
 /// See also [AiChatPassword].
 @ProviderFor(AiChatPassword)
 final aiChatPasswordProvider =
-    AutoDisposeNotifierProvider<AiChatPassword, String?>.internal(
+    NotifierProvider<AiChatPassword, String?>.internal(
       AiChatPassword.new,
       name: r'aiChatPasswordProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -124,13 +123,13 @@ final aiChatPasswordProvider =
       allTransitiveDependencies: null,
     );
 
-typedef _$AiChatPassword = AutoDisposeNotifier<String?>;
-String _$themeModeNotifierHash() => r'3c2093caf09a2166a1fcf0dc1acf9decaba14e4b';
+typedef _$AiChatPassword = Notifier<String?>;
+String _$themeModeNotifierHash() => r'2040eed4203f04bbed927b42efa384aa7ebf6067';
 
 /// See also [ThemeModeNotifier].
 @ProviderFor(ThemeModeNotifier)
 final themeModeNotifierProvider =
-    AutoDisposeNotifierProvider<ThemeModeNotifier, ThemeMode>.internal(
+    NotifierProvider<ThemeModeNotifier, ThemeMode>.internal(
       ThemeModeNotifier.new,
       name: r'themeModeNotifierProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -140,22 +139,21 @@ final themeModeNotifierProvider =
       allTransitiveDependencies: null,
     );
 
-typedef _$ThemeModeNotifier = AutoDisposeNotifier<ThemeMode>;
-String _$biometricLockHash() => r'a9192c544c9a05260c7105288ebcadb8d4bc7499';
+typedef _$ThemeModeNotifier = Notifier<ThemeMode>;
+String _$biometricLockHash() => r'5823c17bba2547d1b4a3f13bbfffaf86b07495bb';
 
 /// See also [BiometricLock].
 @ProviderFor(BiometricLock)
-final biometricLockProvider =
-    AutoDisposeNotifierProvider<BiometricLock, bool>.internal(
-      BiometricLock.new,
-      name: r'biometricLockProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$biometricLockHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final biometricLockProvider = NotifierProvider<BiometricLock, bool>.internal(
+  BiometricLock.new,
+  name: r'biometricLockProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$biometricLockHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef _$BiometricLock = AutoDisposeNotifier<bool>;
+typedef _$BiometricLock = Notifier<bool>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
