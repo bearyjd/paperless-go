@@ -202,18 +202,20 @@ class SettingsScreen extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                ref.read(serverProfilesNotifierProvider.notifier)
-                    .addCurrentAsProfile(name);
-              }
-              Navigator.pop(ctx);
+              Navigator.pop(ctx, controller.text.trim());
             },
             child: const Text('Save'),
           ),
         ],
       ),
-    ).then((_) => controller.dispose());
+    ).then((name) {
+      if (name != null && name is String && name.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(serverProfilesNotifierProvider.notifier)
+              .addCurrentAsProfile(name);
+        });
+      }
+    });
   }
 
   String _themeModeLabel(ThemeMode mode) {
@@ -237,8 +239,10 @@ class SettingsScreen extends ConsumerWidget {
             ),
             title: Text(_themeModeLabel(mode)),
             onTap: () {
-              ref.read(themeModeNotifierProvider.notifier).setThemeMode(mode);
               Navigator.pop(ctx);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ref.read(themeModeNotifierProvider.notifier).setThemeMode(mode);
+              });
             },
           );
         }).toList(),
@@ -276,7 +280,7 @@ class SettingsScreen extends ConsumerWidget {
     final passwordController = TextEditingController(
       text: ref.read(aiChatPasswordProvider) ?? '',
     );
-    showDialog(
+    showDialog<(String, String)>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Paperless-AI Credentials'),
@@ -286,7 +290,7 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             Text(
               'Enter your Paperless-AI login credentials. Required for document chat.',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(ctx).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
             TextField(
@@ -315,17 +319,28 @@ class SettingsScreen extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () {
-              ref.read(aiChatUsernameProvider.notifier).set(usernameController.text.trim());
-              ref.read(aiChatPasswordProvider.notifier).set(passwordController.text);
-              Navigator.pop(ctx);
+              // Capture values before popping — controllers will be
+              // disposed after the dialog route animation completes.
+              Navigator.pop(ctx, (
+                usernameController.text.trim(),
+                passwordController.text,
+              ));
             },
             child: const Text('Save'),
           ),
         ],
       ),
-    ).then((_) {
-      usernameController.dispose();
-      passwordController.dispose();
+    ).then((result) {
+      if (result != null) {
+        // Defer provider updates until after the dialog exit animation
+        // completes to avoid rebuilding the widget tree mid-animation.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(aiChatUsernameProvider.notifier).set(result.$1);
+          ref.read(aiChatPasswordProvider.notifier).set(result.$2);
+        });
+      }
+      // Do NOT dispose controllers here — the dialog exit animation is
+      // still using them. They will be garbage collected.
     });
   }
 
@@ -341,7 +356,7 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             Text(
               'Enter the URL of your Paperless-AI instance (e.g., http://your-server:8083)',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(ctx).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
             TextField(
@@ -363,14 +378,19 @@ class SettingsScreen extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () {
-              ref.read(aiChatUrlProvider.notifier).setUrl(controller.text.trim());
-              Navigator.pop(ctx);
+              Navigator.pop(ctx, controller.text.trim());
             },
             child: const Text('Save'),
           ),
         ],
       ),
-    ).then((_) => controller.dispose());
+    ).then((url) {
+      if (url != null && url is String) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(aiChatUrlProvider.notifier).setUrl(url);
+        });
+      }
+    });
   }
 }
 
