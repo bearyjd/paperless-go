@@ -41,14 +41,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final aiUrl = ref.watch(aiChatUrlProvider);
     final isConfigured = aiUrl != null && aiUrl.isNotEmpty;
 
-    // Initialize document mode once
-    if (_isDocumentMode && !_initialized) {
+    // Mode initialization
+    if (!_initialized) {
       _initialized = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(chatNotifierProvider.notifier).initDocumentMode(
-              widget.documentId!,
-              widget.documentTitle ?? 'Document',
-            );
+        if (_isDocumentMode) {
+          ref.read(chatNotifierProvider.notifier).initDocumentMode(
+                widget.documentId!,
+                widget.documentTitle ?? 'Document',
+              );
+        } else {
+          // Reset to RAG mode in case notifier was left in document mode
+          ref.read(chatNotifierProvider.notifier).resetToRagMode();
+        }
       });
     }
 

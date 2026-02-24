@@ -234,7 +234,7 @@ class ChatService {
   /// Send a message for document-specific chat and return an SSE stream of content chunks.
   Stream<String> sendDocumentMessage(int documentId, String message) async* {
     final payload = {
-      'documentId': documentId,
+      'documentId': documentId.toString(),
       'message': message,
     };
 
@@ -295,7 +295,8 @@ class ChatService {
           }
         }
 
-        buffer += decoded;
+        // Normalize \r\n to \n for cross-platform SSE parsing
+        buffer += decoded.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
 
         // Process complete SSE lines
         while (buffer.contains('\n')) {
