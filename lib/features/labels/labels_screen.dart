@@ -141,7 +141,7 @@ class _TagsTab extends ConsumerWidget {
               if (name.isEmpty) return;
               final data = <String, dynamic>{'name': name};
               final colour = colourController.text.trim();
-              if (colour.isNotEmpty) data['colour'] = colour;
+              if (colour.isNotEmpty) data['color'] = colour;
 
               final notifier = ref.read(labelsNotifierProvider.notifier);
               final success = existing != null

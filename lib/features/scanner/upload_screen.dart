@@ -57,6 +57,11 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Upload failed: ${next.errorMessage ?? "Unknown error"}')),
         );
+      } else if (next.status == UploadStatus.queued) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No connection — upload queued for later')),
+        );
+        context.go('/scan');
       }
     });
 

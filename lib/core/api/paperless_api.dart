@@ -99,7 +99,11 @@ class PaperlessApi {
   // Download
 
   Future<File> downloadDocument(int id, String savePath) async {
-    await _dio.download('api/documents/$id/download/', savePath);
+    await _dio.download(
+      'api/documents/$id/download/',
+      savePath,
+      options: Options(receiveTimeout: const Duration(minutes: 5)),
+    );
     return File(savePath);
   }
 
@@ -411,7 +415,7 @@ class PaperlessApi {
   // Search Autocomplete
 
   Future<List<String>> searchAutocomplete(String term, {int limit = 10}) async {
-    final response = await _dio.get('api/search/autocomplete/', queryParameters: {
+    final response = await _dio.get('api/search/auto_complete/', queryParameters: {
       'term': term,
       'limit': limit,
     });
