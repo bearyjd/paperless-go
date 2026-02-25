@@ -62,7 +62,8 @@ class ChatService {
       if (cookies != null) {
         for (final cookie in cookies) {
           if (cookie.startsWith('jwt=')) {
-            _jwt = cookie.split('=')[1].split(';')[0];
+            final eq = cookie.indexOf('=');
+            _jwt = cookie.substring(eq + 1).split(';')[0];
             return;
           }
         }

@@ -46,7 +46,7 @@ class TrashNotifier extends _$TrashNotifier {
   }
 
   Future<TrashState> _fetchPage(int page) async {
-    final api = ref.read(paperlessApiProvider);
+    final api = ref.watch(paperlessApiProvider);
     final response = await api.getTrashedDocuments(
       page: page,
       pageSize: _pageSize,
@@ -73,8 +73,9 @@ class TrashNotifier extends _$TrashNotifier {
         pageSize: _pageSize,
       );
 
-      state = AsyncData(current.copyWith(
-        documents: [...current.documents, ...response.results],
+      final fresh = state.valueOrNull ?? current;
+      state = AsyncData(fresh.copyWith(
+        documents: [...fresh.documents, ...response.results],
         isLoadingMore: false,
         hasMore: response.next != null,
         currentPage: nextPage,

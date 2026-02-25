@@ -35,7 +35,7 @@ Map<String, dynamic> _$$SavedViewImplToJson(_$SavedViewImpl instance) =>
 _$FilterRuleImpl _$$FilterRuleImplFromJson(Map<String, dynamic> json) =>
     _$FilterRuleImpl(
       ruleType: (json['rule_type'] as num).toInt(),
-      value: json['value'] as String,
+      value: json['value'] as String?,
     );
 
 Map<String, dynamic> _$$FilterRuleImplToJson(_$FilterRuleImpl instance) =>

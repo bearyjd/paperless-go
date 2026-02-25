@@ -217,7 +217,7 @@ class _$StoragePathImpl implements _StoragePath {
     required this.id,
     required this.name,
     required this.slug,
-    required this.path,
+    this.path = '',
     @JsonKey(name: 'document_count') this.documentCount = 0,
     @JsonKey(name: 'matching_algorithm') this.matchingAlgorithm = 0,
     @JsonKey(name: 'match') this.match = '',
@@ -234,6 +234,7 @@ class _$StoragePathImpl implements _StoragePath {
   @override
   final String slug;
   @override
+  @JsonKey()
   final String path;
   @override
   @JsonKey(name: 'document_count')
@@ -304,7 +305,7 @@ abstract class _StoragePath implements StoragePath {
     required final int id,
     required final String name,
     required final String slug,
-    required final String path,
+    final String path,
     @JsonKey(name: 'document_count') final int documentCount,
     @JsonKey(name: 'matching_algorithm') final int matchingAlgorithm,
     @JsonKey(name: 'match') final String match,

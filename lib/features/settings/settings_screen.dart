@@ -293,21 +293,30 @@ class SettingsScreen extends ConsumerWidget {
               style: Theme.of(ctx).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: usernameController,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Username',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
+            AutofillGroup(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: usernameController,
+                    autofocus: true,
+                    autofillHints: const [AutofillHints.username],
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    autofillHints: const [AutofillHints.password],
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

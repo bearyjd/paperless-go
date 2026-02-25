@@ -163,6 +163,9 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
         _currentPage = _pages.length - 1;
       }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _pageController.jumpToPage(_currentPage);
+    });
   }
 
   void _movePage(int from, int to) {

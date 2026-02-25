@@ -11,7 +11,7 @@ _$StoragePathImpl _$$StoragePathImplFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       slug: json['slug'] as String,
-      path: json['path'] as String,
+      path: json['path'] as String? ?? '',
       documentCount: (json['document_count'] as num?)?.toInt() ?? 0,
       matchingAlgorithm: (json['matching_algorithm'] as num?)?.toInt() ?? 0,
       match: json['match'] as String? ?? '',

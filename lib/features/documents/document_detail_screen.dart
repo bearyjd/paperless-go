@@ -248,7 +248,7 @@ class DocumentDetailScreen extends ConsumerWidget {
                   if (picked != null && context.mounted) {
                     try {
                       await ref.read(documentDetailProvider(documentId).notifier)
-                          .updateField({'created': picked.toIso8601String()});
+                          .updateField({'created': picked.toIso8601String().split('T').first});
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(

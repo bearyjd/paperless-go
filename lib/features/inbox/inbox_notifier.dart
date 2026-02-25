@@ -72,8 +72,9 @@ class InboxNotifier extends _$InboxNotifier {
         ordering: '-created',
       );
 
-      state = AsyncData(current.copyWith(
-        documents: [...current.documents, ...response.results],
+      final fresh = state.valueOrNull ?? current;
+      state = AsyncData(fresh.copyWith(
+        documents: [...fresh.documents, ...response.results],
         isLoadingMore: false,
         hasMore: response.next != null,
         currentPage: nextPage,

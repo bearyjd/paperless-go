@@ -128,8 +128,8 @@ class BulkActionBar extends ConsumerWidget {
         final api = ref.read(paperlessApiProvider);
         await api.bulkEdit(
           documents: selectedIds.toList(),
-          method: 'set_tags',
-          parameters: {'tags': selected.toList(), 'mode': 'add'},
+          method: 'modify_tags',
+          parameters: {'add_tags': selected.toList(), 'remove_tags': []},
         );
         if (!context.mounted) return;
         onClearSelection();

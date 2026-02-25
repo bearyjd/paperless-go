@@ -341,7 +341,7 @@ FilterRule _$FilterRuleFromJson(Map<String, dynamic> json) {
 mixin _$FilterRule {
   @JsonKey(name: 'rule_type')
   int get ruleType => throw _privateConstructorUsedError;
-  String get value => throw _privateConstructorUsedError;
+  String? get value => throw _privateConstructorUsedError;
 
   /// Serializes this FilterRule to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -360,7 +360,7 @@ abstract class $FilterRuleCopyWith<$Res> {
     $Res Function(FilterRule) then,
   ) = _$FilterRuleCopyWithImpl<$Res, FilterRule>;
   @useResult
-  $Res call({@JsonKey(name: 'rule_type') int ruleType, String value});
+  $Res call({@JsonKey(name: 'rule_type') int ruleType, String? value});
 }
 
 /// @nodoc
@@ -377,17 +377,17 @@ class _$FilterRuleCopyWithImpl<$Res, $Val extends FilterRule>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? ruleType = null, Object? value = null}) {
+  $Res call({Object? ruleType = null, Object? value = freezed}) {
     return _then(
       _value.copyWith(
             ruleType: null == ruleType
                 ? _value.ruleType
                 : ruleType // ignore: cast_nullable_to_non_nullable
                       as int,
-            value: null == value
+            value: freezed == value
                 ? _value.value
                 : value // ignore: cast_nullable_to_non_nullable
-                      as String,
+                      as String?,
           )
           as $Val,
     );
@@ -403,7 +403,7 @@ abstract class _$$FilterRuleImplCopyWith<$Res>
   ) = __$$FilterRuleImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({@JsonKey(name: 'rule_type') int ruleType, String value});
+  $Res call({@JsonKey(name: 'rule_type') int ruleType, String? value});
 }
 
 /// @nodoc
@@ -419,17 +419,17 @@ class __$$FilterRuleImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? ruleType = null, Object? value = null}) {
+  $Res call({Object? ruleType = null, Object? value = freezed}) {
     return _then(
       _$FilterRuleImpl(
         ruleType: null == ruleType
             ? _value.ruleType
             : ruleType // ignore: cast_nullable_to_non_nullable
                   as int,
-        value: null == value
+        value: freezed == value
             ? _value.value
             : value // ignore: cast_nullable_to_non_nullable
-                  as String,
+                  as String?,
       ),
     );
   }
@@ -440,7 +440,7 @@ class __$$FilterRuleImplCopyWithImpl<$Res>
 class _$FilterRuleImpl implements _FilterRule {
   const _$FilterRuleImpl({
     @JsonKey(name: 'rule_type') required this.ruleType,
-    required this.value,
+    this.value,
   });
 
   factory _$FilterRuleImpl.fromJson(Map<String, dynamic> json) =>
@@ -450,7 +450,7 @@ class _$FilterRuleImpl implements _FilterRule {
   @JsonKey(name: 'rule_type')
   final int ruleType;
   @override
-  final String value;
+  final String? value;
 
   @override
   String toString() {
@@ -488,7 +488,7 @@ class _$FilterRuleImpl implements _FilterRule {
 abstract class _FilterRule implements FilterRule {
   const factory _FilterRule({
     @JsonKey(name: 'rule_type') required final int ruleType,
-    required final String value,
+    final String? value,
   }) = _$FilterRuleImpl;
 
   factory _FilterRule.fromJson(Map<String, dynamic> json) =
@@ -498,7 +498,7 @@ abstract class _FilterRule implements FilterRule {
   @JsonKey(name: 'rule_type')
   int get ruleType;
   @override
-  String get value;
+  String? get value;
 
   /// Create a copy of FilterRule
   /// with the given fields replaced by the non-null parameter values.

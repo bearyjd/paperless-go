@@ -23,7 +23,7 @@ class SavedView with _$SavedView {
 class FilterRule with _$FilterRule {
   const factory FilterRule({
     @JsonKey(name: 'rule_type') required int ruleType,
-    required String value,
+    String? value,
   }) = _FilterRule;
 
   factory FilterRule.fromJson(Map<String, dynamic> json) =>
