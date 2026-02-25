@@ -225,7 +225,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                     clearCorrespondent: _correspondentId == null,
                     clearDocumentType: _documentTypeId == null,
                     clearTags: _tagIds.isEmpty,
-                    clearDateRange: _dateFrom == null && _dateTo == null,
+                    clearDateFrom: _dateFrom == null,
+                    clearDateTo: _dateTo == null,
                   ));
                   Navigator.pop(context);
                 },

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../api/api_providers.dart';
+import '../api/paperless_api.dart';
 import '../database/cache_provider.dart';
 import 'connectivity_service.dart';
 
@@ -27,7 +28,13 @@ class UploadQueueService extends _$UploadQueueService {
 
     try {
       final cache = ref.read(cacheRepositoryProvider);
-      final api = ref.read(paperlessApiProvider);
+      final PaperlessApi api;
+      try {
+        api = ref.read(paperlessApiProvider);
+      } catch (_) {
+        // Not logged in — skip drain
+        return;
+      }
       final pending = await cache.getPendingUploads();
 
       for (final upload in pending) {
