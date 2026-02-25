@@ -36,6 +36,8 @@ class DocumentsFilter {
     bool clearDocumentType = false,
     bool clearTags = false,
     bool clearDateRange = false,
+    bool clearDateFrom = false,
+    bool clearDateTo = false,
   }) {
     return DocumentsFilter(
       query: clearQuery ? null : (query ?? this.query),
@@ -43,8 +45,8 @@ class DocumentsFilter {
       tagIds: clearTags ? null : (tagIds ?? this.tagIds),
       correspondentId: clearCorrespondent ? null : (correspondentId ?? this.correspondentId),
       documentTypeId: clearDocumentType ? null : (documentTypeId ?? this.documentTypeId),
-      createdDateFrom: clearDateRange ? null : (createdDateFrom ?? this.createdDateFrom),
-      createdDateTo: clearDateRange ? null : (createdDateTo ?? this.createdDateTo),
+      createdDateFrom: (clearDateRange || clearDateFrom) ? null : (createdDateFrom ?? this.createdDateFrom),
+      createdDateTo: (clearDateRange || clearDateTo) ? null : (createdDateTo ?? this.createdDateTo),
     );
   }
 }

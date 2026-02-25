@@ -424,14 +424,14 @@ class DocumentDetailScreen extends ConsumerWidget {
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Delete document?'),
-            content: const Text('This action cannot be undone.'),
+            title: const Text('Move to trash?'),
+            content: const Text('The document will be moved to the trash. You can restore it later.'),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
               FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('Delete'),
+                child: const Text('Move to Trash'),
               ),
             ],
           ),
@@ -439,7 +439,7 @@ class DocumentDetailScreen extends ConsumerWidget {
         if (confirmed == true) {
           try {
             final api = ref.read(paperlessApiProvider);
-            await api.deleteDocument(documentId);
+            await api.trashDocuments([documentId]);
             ref.invalidate(documentsNotifierProvider);
             ref.invalidate(inboxNotifierProvider);
             if (context.mounted) context.pop();
