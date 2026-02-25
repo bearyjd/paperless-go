@@ -353,7 +353,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
           // Floating bulk action bar
           if (_isSelecting)
             Positioned(
-              bottom: 16,
+              bottom: 80,
               left: 16,
               right: 16,
               child: Center(

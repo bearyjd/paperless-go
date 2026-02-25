@@ -158,10 +158,7 @@ class _TagsTab extends ConsumerWidget {
           ),
         ],
       ),
-    ).then((_) {
-      nameController.dispose();
-      colourController.dispose();
-    });
+    );
   }
 
   void _deleteTag(BuildContext context, WidgetRef ref, Tag tag) {
@@ -299,7 +296,7 @@ class _CorrespondentsTab extends ConsumerWidget {
           ),
         ],
       ),
-    ).then((_) => nameController.dispose());
+    );
   }
 
   void _deleteCorrespondent(
@@ -434,7 +431,7 @@ class _DocumentTypesTab extends ConsumerWidget {
           ),
         ],
       ),
-    ).then((_) => nameController.dispose());
+    );
   }
 
   void _deleteDocType(BuildContext context, WidgetRef ref, DocumentType dt) {
@@ -588,10 +585,7 @@ class _StoragePathsTab extends ConsumerWidget {
           ),
         ],
       ),
-    ).then((_) {
-      nameController.dispose();
-      pathController.dispose();
-    });
+    );
   }
 
   void _deleteStoragePath(

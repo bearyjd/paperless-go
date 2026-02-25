@@ -319,8 +319,8 @@ class DocumentDetailScreen extends ConsumerWidget {
                         }
                       }
                     }
-                  } finally {
-                    controller.dispose();
+                  } catch (_) {
+                    // Dialog cancelled — no action needed
                   }
                 },
               ),
@@ -493,8 +493,8 @@ class _EditableTile extends StatelessWidget {
           if (result != null && result != value) {
             onSave(result);
           }
-        } finally {
-          controller.dispose();
+        } catch (_) {
+          // Dialog cancelled
         }
       },
     );
@@ -854,8 +854,8 @@ class _CustomFieldTile extends StatelessWidget {
           onSave(result.isEmpty ? null : result);
         }
       }
-    } finally {
-      controller.dispose();
+    } catch (_) {
+      // Dialog cancelled
     }
   }
 }
@@ -925,7 +925,7 @@ class _NotesSection extends ConsumerWidget {
 
   void _addNote(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
-    showDialog(
+    showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Add Note'),
@@ -938,28 +938,27 @@ class _NotesSection extends ConsumerWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
-            onPressed: () async {
-              if (controller.text.trim().isNotEmpty) {
-                Navigator.pop(ctx);
-                try {
-                  await ref.read(documentNotesProvider(documentId).notifier)
-                      .addNote(controller.text.trim());
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to add note: $e')),
-                    );
-                  }
-                }
-              } else {
-                Navigator.pop(ctx);
-              }
+            onPressed: () {
+              final text = controller.text.trim();
+              Navigator.pop(ctx, text.isNotEmpty ? text : null);
             },
             child: const Text('Add'),
           ),
         ],
       ),
-    ).then((_) => controller.dispose());
+    ).then((noteText) {
+      if (noteText != null) {
+        ref.read(documentNotesProvider(documentId).notifier)
+            .addNote(noteText)
+            .catchError((e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to add note: $e')),
+            );
+          }
+        });
+      }
+    });
   }
 }
 
