@@ -15,6 +15,8 @@ import '../../core/models/storage_path.dart';
 import '../../core/models/tag.dart';
 import '../../shared/widgets/tag_chip.dart';
 import 'document_detail_notifier.dart';
+import 'documents_notifier.dart';
+import '../inbox/inbox_notifier.dart';
 
 class DocumentDetailScreen extends ConsumerWidget {
   final int documentId;
@@ -438,6 +440,8 @@ class DocumentDetailScreen extends ConsumerWidget {
           try {
             final api = ref.read(paperlessApiProvider);
             await api.deleteDocument(documentId);
+            ref.invalidate(documentsNotifierProvider);
+            ref.invalidate(inboxNotifierProvider);
             if (context.mounted) context.pop();
           } catch (e) {
             if (context.mounted) {
@@ -817,9 +821,17 @@ class _CustomFieldTile extends StatelessWidget {
             context, const TextInputType.numberWithOptions(decimal: true));
       case 'url':
         await _editTextValue(context, TextInputType.url);
+      case 'select':
+        await _editSelectValue(context);
       default:
         await _editTextValue(context, TextInputType.text);
     }
+  }
+
+  Future<void> _editSelectValue(BuildContext context) async {
+    // Select custom fields require the option ID (integer).
+    // Full option picker would need the field definition's extra_data.
+    await _editTextValue(context, TextInputType.number);
   }
 
   Future<void> _editTextValue(BuildContext context, TextInputType keyboardType) async {
