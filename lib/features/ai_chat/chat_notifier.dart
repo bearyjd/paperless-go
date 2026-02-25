@@ -73,11 +73,13 @@ class ChatState {
 class ChatNotifier extends _$ChatNotifier {
   bool _loggedIn = false;
   bool _disposed = false;
+  bool _sending = false;
 
   @override
   ChatState build() {
     _loggedIn = false;
     _disposed = false;
+    _sending = false;
     ref.onDispose(() => _disposed = true);
     return const ChatState();
   }
@@ -141,10 +143,16 @@ class ChatNotifier extends _$ChatNotifier {
   }
 
   Future<void> sendMessage(String text) async {
-    if (state.mode == ChatMode.document) {
-      await _sendDocumentMessage(text);
-    } else {
-      await _sendRagMessage(text);
+    if (_sending) return;
+    _sending = true;
+    try {
+      if (state.mode == ChatMode.document) {
+        await _sendDocumentMessage(text);
+      } else {
+        await _sendRagMessage(text);
+      }
+    } finally {
+      _sending = false;
     }
   }
 

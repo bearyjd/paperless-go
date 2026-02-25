@@ -9,7 +9,7 @@ class StoragePath with _$StoragePath {
     required int id,
     required String name,
     required String slug,
-    required String path,
+    @Default('') String path,
     @JsonKey(name: 'document_count') @Default(0) int documentCount,
     @JsonKey(name: 'matching_algorithm') @Default(0) int matchingAlgorithm,
     @JsonKey(name: 'match') @Default('') String match,

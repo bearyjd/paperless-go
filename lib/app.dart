@@ -192,7 +192,7 @@ class _PaperlessGoAppState extends ConsumerState<PaperlessGoApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Re-lock when app goes to background
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused) {
       final biometricEnabled = ref.read(biometricLockProvider);
       if (biometricEnabled) {
         setState(() => _isLocked = true);
@@ -357,7 +357,10 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
   Future<void> _onUploadFile() async {
     _toggle();
     try {
-      final result = await FilePicker.platform.pickFiles();
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'tiff', 'webp'],
+      );
       if (result != null && result.files.single.path != null && mounted) {
         final file = result.files.single;
         GoRouter.of(context).push('/scan/upload', extra: {

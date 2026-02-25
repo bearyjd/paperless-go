@@ -47,11 +47,11 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
 
     // Listen for upload completion
     ref.listen(uploadNotifierProvider, (prev, next) {
+      if (!context.mounted) return;
       if (next.status == UploadStatus.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Document uploaded successfully!')),
         );
-        // Pop back to scanner screen
         context.go('/scan');
       } else if (next.status == UploadStatus.failure) {
         ScaffoldMessenger.of(context).showSnackBar(

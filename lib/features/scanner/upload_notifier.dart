@@ -43,13 +43,18 @@ class UploadState {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class UploadNotifier extends _$UploadNotifier {
   Timer? _pollTimer;
+  bool _disposed = false;
 
   @override
   UploadState build() {
-    ref.onDispose(() => _pollTimer?.cancel());
+    _disposed = false;
+    ref.onDispose(() {
+      _pollTimer?.cancel();
+      _disposed = true;
+    });
     return const UploadState();
   }
 
@@ -209,6 +214,7 @@ class UploadNotifier extends _$UploadNotifier {
     _pollTimer?.cancel();
     var attempts = 0;
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      if (_disposed) { timer.cancel(); return; }
       attempts++;
       if (attempts > _maxPollAttempts) {
         timer.cancel();

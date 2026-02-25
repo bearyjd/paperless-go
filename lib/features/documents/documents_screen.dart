@@ -60,12 +60,12 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       switch (rule.ruleType) {
         case 6:
           tagIds ??= [];
-          final id = int.tryParse(rule.value);
+          final id = int.tryParse(rule.value ?? '');
           if (id != null) tagIds.add(id);
         case 3:
-          correspondentId = int.tryParse(rule.value);
+          correspondentId = int.tryParse(rule.value ?? '');
         case 4:
-          documentTypeId = int.tryParse(rule.value);
+          documentTypeId = int.tryParse(rule.value ?? '');
       }
     }
 
@@ -302,6 +302,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                           final doc = docsData.documents[index];
                           final isSelected = _selectedIds.contains(doc.id);
                           return Stack(
+                            key: ValueKey(doc.id),
                             children: [
                               DocumentCard(
                                 document: doc,

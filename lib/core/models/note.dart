@@ -9,8 +9,19 @@ class Note with _$Note {
     required int id,
     required String note,
     required DateTime created,
-    int? user,
+    Map<String, dynamic>? user,
   }) = _Note;
 
   factory Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);
+}
+
+@freezed
+class NoteUser with _$NoteUser {
+  const factory NoteUser({
+    required int id,
+    required String username,
+  }) = _NoteUser;
+
+  factory NoteUser.fromJson(Map<String, dynamic> json) =>
+      _$NoteUserFromJson(json);
 }

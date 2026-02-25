@@ -80,7 +80,7 @@ Future<String> documentDownload(Ref ref, int documentId, String title) async {
   final dir = await getTemporaryDirectory();
   var safeName = title.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
   if (safeName.isEmpty) safeName = 'document_$documentId';
-  final path = '${dir.path}/$safeName.pdf';
+  final path = '${dir.path}/${documentId}_$safeName.pdf';
   final file = await api.downloadDocument(documentId, path);
   return file.path;
 }

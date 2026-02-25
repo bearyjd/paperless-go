@@ -113,7 +113,7 @@ class PaperlessApi {
     required String method,
     Map<String, dynamic>? parameters,
   }) async {
-    await _dio.post('api/documents/bulk_edit/', data: {
+    await _dio.post('api/bulk_edit/', data: {
       'documents': documents,
       'method': method,
       if (parameters != null) 'parameters': parameters,
@@ -274,7 +274,7 @@ class PaperlessApi {
       if (title != null && title.isNotEmpty) 'title': title,
       if (correspondent != null) 'correspondent': correspondent,
       if (documentType != null) 'document_type': documentType,
-      if (created != null) 'created': created.toIso8601String(),
+      if (created != null) 'created': created.toIso8601String().split('T').first,
     };
     final formData = FormData.fromMap(formMap);
     // Add tags as separate entries so Dio sends repeated 'tags' fields

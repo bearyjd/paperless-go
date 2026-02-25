@@ -23,7 +23,7 @@ final chatServiceProvider = Provider<ChatService?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ChatServiceRef = ProviderRef<ChatService?>;
-String _$chatNotifierHash() => r'9b98f4510e687971b61bccdc0e0b0c869ca98e32';
+String _$chatNotifierHash() => r'51b5df9a686c5c7973b48863116852d40e56cbd8';
 
 /// See also [ChatNotifier].
 @ProviderFor(ChatNotifier)

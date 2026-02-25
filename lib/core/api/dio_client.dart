@@ -22,6 +22,7 @@ class DioClient {
       _RetryInterceptor(dio: dio),
       if (kDebugMode)
         LogInterceptor(
+          requestHeader: false,
           requestBody: true,
           responseBody: true,
           logPrint: (o) => debugPrint(o.toString()),
