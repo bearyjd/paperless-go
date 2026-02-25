@@ -83,12 +83,13 @@ class PaperlessApi {
     return list.map((e) => Note.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<Note> addNote(int documentId, String note) async {
+  Future<List<Note>> addNote(int documentId, String note) async {
     final response = await _dio.post(
       'api/documents/$documentId/notes/',
       data: {'note': note},
     );
-    return Note.fromJson(response.data as Map<String, dynamic>);
+    final list = response.data as List<dynamic>;
+    return list.map((e) => Note.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<void> deleteNote(int documentId, int noteId) async {
