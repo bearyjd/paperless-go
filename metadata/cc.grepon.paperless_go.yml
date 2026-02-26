@@ -1,0 +1,48 @@
+Categories:
+  - Office
+  - Utilities
+
+License: GPL-3.0-only
+AuthorName: bearyjd
+WebSite: https://github.com/bearyjd/paperless-go
+SourceCode: https://github.com/bearyjd/paperless-go
+IssueTracker: https://github.com/bearyjd/paperless-go/issues
+
+Name: Paperless Go
+Summary: A modern mobile client for Paperless-ngx
+
+Description: |
+  Paperless Go is a mobile client for Paperless-ngx, the popular self-hosted
+  document management system.
+
+  Manage your documents on the go with a clean, modern interface:
+  * Browse, search, and filter your document library
+  * View document details, thumbnails, and PDF previews
+  * Upload new documents via camera scan or file picker
+  * Receive shared files from other apps for quick upload
+  * Manage tags, correspondents, document types, and storage paths
+  * Edit document metadata and custom fields
+  * Bulk operations: tag, re-tag, delete, and more
+  * Biometric authentication for secure access
+  * Offline-capable with local caching
+  * Full-text search with autocomplete
+
+  Paperless Go connects to your self-hosted Paperless-ngx server using
+  token-based authentication. You need a running Paperless-ngx instance
+  to use this app.
+
+RepoType: git
+Repo: https://github.com/bearyjd/paperless-go.git
+
+Builds:
+  - versionName: '1.0.0'
+    versionCode: 1
+    commit: v1.0.0
+    subdir: .
+    gradle: yes
+    timeout: 14400
+
+AutoUpdateMode: Version %v
+UpdateCheckMode: Tags
+CurrentVersion: '1.0.0'
+CurrentVersionCode: 1
