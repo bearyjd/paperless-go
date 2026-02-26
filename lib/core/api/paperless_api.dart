@@ -41,7 +41,7 @@ class PaperlessApi {
     if (isInInbox != null) params['is_in_inbox'] = isInInbox;
     if (moreLikeId != null) params['more_like_id'] = moreLikeId;
     if (tagIds != null && tagIds.isNotEmpty) {
-      params['tags__id__in'] = tagIds.join(',');
+      params['tags__id__all'] = tagIds;
     }
     if (correspondentId != null) params['correspondent__id'] = correspondentId;
     if (documentTypeId != null) params['document_type__id'] = documentTypeId;

@@ -269,14 +269,11 @@ class UploadNotifier extends _$UploadNotifier {
 
     // Use the image package to read images and create a simple PDF
     final images = <img.Image>[];
-    var failedCount = 0;
     for (final path in imagePaths) {
       final bytes = await File(path).readAsBytes();
       final decoded = img.decodeImage(bytes);
       if (decoded != null) {
         images.add(decoded);
-      } else {
-        failedCount++;
       }
     }
 
@@ -284,12 +281,7 @@ class UploadNotifier extends _$UploadNotifier {
       throw Exception('No valid images to convert');
     }
 
-    if (failedCount > 0) {
-      throw Exception(
-        '$failedCount of ${imagePaths.length} pages failed to convert. '
-        'Please try scanning again.',
-      );
-    }
+    // Continue with successfully decoded images; don't abort the entire scan
 
     // Create a minimal PDF with embedded images
     final pdfBytes = _buildPdfFromImages(images);

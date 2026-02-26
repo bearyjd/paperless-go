@@ -40,20 +40,24 @@ class TagChip extends StatelessWidget {
   static Color? parseColor(String? hex) {
     if (hex == null || hex.isEmpty) return null;
     final cleaned = hex.replaceFirst('#', '');
-    int r, g, b, a = 0xFF;
-    if (cleaned.length == 6) {
-      r = int.parse(cleaned.substring(0, 2), radix: 16);
-      g = int.parse(cleaned.substring(2, 4), radix: 16);
-      b = int.parse(cleaned.substring(4, 6), radix: 16);
-    } else if (cleaned.length == 8) {
-      a = int.parse(cleaned.substring(0, 2), radix: 16);
-      r = int.parse(cleaned.substring(2, 4), radix: 16);
-      g = int.parse(cleaned.substring(4, 6), radix: 16);
-      b = int.parse(cleaned.substring(6, 8), radix: 16);
-    } else {
+    try {
+      int r, g, b, a = 0xFF;
+      if (cleaned.length == 6) {
+        r = int.parse(cleaned.substring(0, 2), radix: 16);
+        g = int.parse(cleaned.substring(2, 4), radix: 16);
+        b = int.parse(cleaned.substring(4, 6), radix: 16);
+      } else if (cleaned.length == 8) {
+        a = int.parse(cleaned.substring(0, 2), radix: 16);
+        r = int.parse(cleaned.substring(2, 4), radix: 16);
+        g = int.parse(cleaned.substring(4, 6), radix: 16);
+        b = int.parse(cleaned.substring(6, 8), radix: 16);
+      } else {
+        return null;
+      }
+      return Color.fromARGB(a, r, g, b);
+    } catch (_) {
       return null;
     }
-    return Color.fromARGB(a, r, g, b);
   }
 }
 

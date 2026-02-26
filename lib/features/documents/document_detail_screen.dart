@@ -959,7 +959,7 @@ class _NotesSection extends ConsumerWidget {
         ],
       ),
     ).then((noteText) {
-      if (noteText != null) {
+      if (noteText != null && context.mounted) {
         ref.read(documentNotesProvider(documentId).notifier)
             .addNote(noteText)
             .catchError((e) {

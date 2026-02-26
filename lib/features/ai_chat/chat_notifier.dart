@@ -53,7 +53,7 @@ class ChatState {
   ChatState copyWith({
     List<ChatMessage>? messages,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
     ChatMode? mode,
     int? documentId,
     String? documentTitle,
@@ -61,12 +61,14 @@ class ChatState {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _sentinel) ? this.error : error as String?,
       mode: mode ?? this.mode,
       documentId: documentId ?? this.documentId,
       documentTitle: documentTitle ?? this.documentTitle,
     );
   }
+
+  static const Object _sentinel = Object();
 }
 
 @Riverpod(keepAlive: true)

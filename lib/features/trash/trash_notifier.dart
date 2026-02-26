@@ -46,7 +46,7 @@ class TrashNotifier extends _$TrashNotifier {
   }
 
   Future<TrashState> _fetchPage(int page) async {
-    final api = ref.watch(paperlessApiProvider);
+    final api = ref.read(paperlessApiProvider);
     final response = await api.getTrashedDocuments(
       page: page,
       pageSize: _pageSize,
