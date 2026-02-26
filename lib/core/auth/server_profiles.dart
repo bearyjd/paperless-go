@@ -135,6 +135,7 @@ class ServerProfilesNotifier extends _$ServerProfilesNotifier {
   Future<void> removeProfile(int index) async {
     if (index < 0 || index >= state.profiles.length) return;
 
+    final wasActive = index == state.activeIndex;
     final profiles = [...state.profiles]..removeAt(index);
     var activeIdx = state.activeIndex;
     if (activeIdx >= profiles.length && profiles.isNotEmpty) {
@@ -146,6 +147,17 @@ class ServerProfilesNotifier extends _$ServerProfilesNotifier {
       activeIndex: activeIdx,
     );
     await _save();
+
+    // Re-auth with the new active profile, or logout if none remain
+    if (profiles.isEmpty) {
+      await ref.read(authStateProvider.notifier).logout();
+    } else if (wasActive) {
+      final profile = profiles[activeIdx];
+      await ref.read(authStateProvider.notifier).loginWithToken(
+            profile.serverUrl,
+            profile.token,
+          );
+    }
   }
 
   /// Update a profile name.

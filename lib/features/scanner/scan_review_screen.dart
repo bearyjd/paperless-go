@@ -164,7 +164,9 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _pageController.jumpToPage(_currentPage);
+      if (mounted && _currentPage < _pages.length) {
+        _pageController.jumpToPage(_currentPage);
+      }
     });
   }
 

@@ -172,7 +172,7 @@ class PaperlessGoApp extends ConsumerStatefulWidget {
 
 class _PaperlessGoAppState extends ConsumerState<PaperlessGoApp>
     with WidgetsBindingObserver {
-  bool _isLocked = true;
+  bool _isLocked = false;
   final _shareIntentHandler = ShareIntentHandler();
   bool _shareIntentInitialized = false;
 
