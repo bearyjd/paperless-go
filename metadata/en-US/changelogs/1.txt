@@ -1,0 +1,10 @@
+Initial release of Paperless Go.
+
+• Document browsing with pagination and full-text search
+• PDF preview and document download
+• Camera scanning and file upload
+• Tag, correspondent, and document type management
+• Bulk editing operations
+• Biometric authentication
+• Share intent receiver for quick uploads
+• Offline caching with local database
