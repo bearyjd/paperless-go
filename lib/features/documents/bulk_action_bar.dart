@@ -124,6 +124,7 @@ class BulkActionBar extends ConsumerWidget {
     );
 
     if (selected != null && selected.isNotEmpty && context.mounted) {
+      final count = selectedIds.length;
       try {
         final api = ref.read(paperlessApiProvider);
         await api.bulkEdit(
@@ -135,7 +136,7 @@ class BulkActionBar extends ConsumerWidget {
         onClearSelection();
         onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tags added to ${selectedIds.length} documents')),
+          SnackBar(content: Text('Tags added to $count documents')),
         );
       } catch (e) {
         if (context.mounted) {
@@ -163,6 +164,7 @@ class BulkActionBar extends ConsumerWidget {
     );
 
     if (selected != null && context.mounted) {
+      final count = selectedIds.length;
       try {
         final api = ref.read(paperlessApiProvider);
         await api.bulkEdit(
@@ -174,7 +176,7 @@ class BulkActionBar extends ConsumerWidget {
         onClearSelection();
         onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Correspondent set on ${selectedIds.length} documents')),
+          SnackBar(content: Text('Correspondent set on $count documents')),
         );
       } catch (e) {
         if (context.mounted) {
@@ -202,6 +204,7 @@ class BulkActionBar extends ConsumerWidget {
     );
 
     if (selected != null && context.mounted) {
+      final count = selectedIds.length;
       try {
         final api = ref.read(paperlessApiProvider);
         await api.bulkEdit(
@@ -213,7 +216,7 @@ class BulkActionBar extends ConsumerWidget {
         onClearSelection();
         onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Document type set on ${selectedIds.length} documents')),
+          SnackBar(content: Text('Document type set on $count documents')),
         );
       } catch (e) {
         if (context.mounted) {
@@ -241,6 +244,7 @@ class BulkActionBar extends ConsumerWidget {
     );
 
     if (selected != null && context.mounted) {
+      final count = selectedIds.length;
       try {
         final api = ref.read(paperlessApiProvider);
         await api.bulkEdit(
@@ -252,7 +256,7 @@ class BulkActionBar extends ConsumerWidget {
         onClearSelection();
         onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Storage path set on ${selectedIds.length} documents')),
+          SnackBar(content: Text('Storage path set on $count documents')),
         );
       } catch (e) {
         if (context.mounted) {
@@ -299,7 +303,7 @@ class BulkActionBar extends ConsumerWidget {
         onClearSelection();
         onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${selectedIds.length} documents merged')),
+          SnackBar(content: Text('${docIds.length} documents merged')),
         );
       } catch (e) {
         if (context.mounted) {
@@ -334,6 +338,7 @@ class BulkActionBar extends ConsumerWidget {
     );
 
     if (degrees != null && context.mounted) {
+      final count = selectedIds.length;
       try {
         final api = ref.read(paperlessApiProvider);
         await api.bulkEdit(
@@ -345,7 +350,7 @@ class BulkActionBar extends ConsumerWidget {
         onClearSelection();
         onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${selectedIds.length} documents rotated')),
+          SnackBar(content: Text('$count documents rotated')),
         );
       } catch (e) {
         if (context.mounted) {
@@ -382,14 +387,17 @@ class BulkActionBar extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
+      final count = selectedIds.length;
       try {
         final api = ref.read(paperlessApiProvider);
-        await api.trashDocuments(selectedIds.toList());
+        for (final id in selectedIds) {
+          await api.deleteDocument(id);
+        }
         if (!context.mounted) return;
         onClearSelection();
         onRefresh();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${selectedIds.length} documents moved to trash')),
+          SnackBar(content: Text('$count documents moved to trash')),
         );
       } catch (e) {
         if (context.mounted) {

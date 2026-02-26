@@ -439,7 +439,7 @@ class DocumentDetailScreen extends ConsumerWidget {
         if (confirmed == true) {
           try {
             final api = ref.read(paperlessApiProvider);
-            await api.trashDocuments([documentId]);
+            await api.deleteDocument(documentId);
             ref.invalidate(documentsNotifierProvider);
             ref.invalidate(inboxNotifierProvider);
             if (context.mounted) context.pop();
