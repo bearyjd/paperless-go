@@ -39,6 +39,9 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 36),
+              ),
               onPressed: _pages.isNotEmpty
                   ? () => context.push('/scan/enhance', extra: _pages)
                   : null,

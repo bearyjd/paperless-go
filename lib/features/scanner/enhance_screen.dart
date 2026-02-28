@@ -128,6 +128,9 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 36),
+              ),
               onPressed: allDone || _selectedPreset == ProcessingPreset.none
                   ? _onContinue
                   : null,
