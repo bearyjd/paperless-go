@@ -1,7 +1,7 @@
 # Paperless Go — Fresh Flutter Client for Paperless-ngx
 
 ## Project: `paperless_go`
-**Goal:** A clean, modern Flutter Android client for Paperless-ngx that connects to your self-hosted instance at `paperless.grepon.cc` (VM-201 @ `192.168.1.21:8082`) over Tailscale. Built from scratch against API v9 with zero legacy debt.
+**Goal:** A clean, modern Flutter Android client for Paperless-ngx that connects to your self-hosted instance. Built from scratch against API v9 with zero legacy debt.
 
 **Why "Go":** Short, memorable, implies action. `cc.grepon.paperless_go` as the package ID.
 
@@ -59,8 +59,8 @@
                          │ HTTPS
                          ▼
           ┌─────────────────────────────┐
-          │   Paperless-ngx (VM-201)    │
-          │   paperless.grepon.cc:8082  │
+          │   Paperless-ngx Server      │
+          │   your-server:8082         │
           │   API v9 + Django REST      │
           └─────────────┬───────────────┘
                         │
@@ -403,7 +403,7 @@ This is the most important screen. It replaces the useless statistics dashboard.
 - Chat interface connected to Paperless-AI at `:8083`
 - Send queries about your documents
 - Display document references inline (tap to open)
-- Connection: direct HTTP to `http://192.168.1.21:8083/api/chat`
+- Connection: direct HTTP to your Paperless-AI instance `/api/chat`
   (NOT through NPM proxy to avoid 302 redirects)
 
 ### 7. Labels Manager
@@ -638,14 +638,14 @@ adb install build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 
 ## Server-Side Prerequisites
 
-Your Paperless-ngx is already running at `paperless.grepon.cc`. Just ensure:
+Your Paperless-ngx instance should be accessible. Ensure:
 
 1. **API token exists:** Profile → Generate/copy API token
 2. **User permissions:** The API user needs `Users → View` and `UISettings → View` at minimum
 3. **CORS (optional):** Only needed if you ever do web — native apps don't need CORS
-4. **Paperless-AI for chat:** Running at `http://192.168.1.21:8083`
-   - Ensure `OPENAI_BASE_URL` points to LiteLLM at `http://192.168.1.20:4000/v1`
-   - Test the chat endpoint directly: `curl http://192.168.1.21:8083/api/chat`
+4. **Paperless-AI for chat (optional):** Running on your server
+   - Ensure `OPENAI_BASE_URL` points to your LLM provider
+   - Test the chat endpoint directly: `curl http://your-server:8083/api/chat`
 
 ---
 

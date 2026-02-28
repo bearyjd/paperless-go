@@ -4,12 +4,12 @@
 
 Paperless Go is a Flutter mobile client for Paperless-ngx, a self-hosted document management system. It replaces the abandoned community app with a modern architecture, proper API integration, and a clean UI.
 
-**Backend:** Paperless-ngx REST API at `paperless.grepon.cc` (192.168.1.21:8082 on VM-201)
-**AI Pipeline:** Paperless-AI → LiteLLM (192.168.1.20:4000) → Claude models
+**Backend:** Paperless-ngx REST API (user-configured server URL)
+**AI Pipeline:** Paperless-AI → LiteLLM → Claude models
 **State Management:** Riverpod
 **HTTP Client:** dio (or http)
 **Auth:** Token-based (`Authorization: Token <api_token>`)
-**API Docs:** Browse live at `https://paperless.grepon.cc/api/schema/view/`
+**API Docs:** See your Paperless-ngx instance at `/api/schema/view/`
 
 ---
 
@@ -361,7 +361,7 @@ headers: {
 // Response:
 {
   "count": 142,
-  "next": "https://paperless.grepon.cc/api/documents/?page=2&page_size=25",
+  "next": "https://your-server.example.com/api/documents/?page=2&page_size=25",
   "previous": null,
   "results": [ ... ]
 }
