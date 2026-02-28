@@ -36,11 +36,14 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
       appBar: AppBar(
         title: Text('Review (${_pages.length} ${_pages.length == 1 ? 'page' : 'pages'})'),
         actions: [
-          TextButton(
-            onPressed: _pages.isNotEmpty
-                ? () => context.push('/scan/enhance', extra: _pages)
-                : null,
-            child: const Text('Continue'),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton(
+              onPressed: _pages.isNotEmpty
+                  ? () => context.push('/scan/enhance', extra: _pages)
+                  : null,
+              child: const Text('Continue'),
+            ),
           ),
         ],
       ),

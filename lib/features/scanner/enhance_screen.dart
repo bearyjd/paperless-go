@@ -125,11 +125,14 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
       appBar: AppBar(
         title: Text('Enhance (${_currentPage + 1}/${_originalPaths.length})'),
         actions: [
-          TextButton(
-            onPressed: allDone || _selectedPreset == ProcessingPreset.none
-                ? _onContinue
-                : null,
-            child: const Text('Continue'),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton(
+              onPressed: allDone || _selectedPreset == ProcessingPreset.none
+                  ? _onContinue
+                  : null,
+              child: const Text('Continue'),
+            ),
           ),
         ],
       ),
