@@ -19,6 +19,8 @@ import 'features/documents/document_preview_screen.dart';
 import 'features/documents/documents_screen.dart';
 import 'features/inbox/inbox_screen.dart';
 import 'features/login/login_screen.dart';
+import 'features/scanner/enhance_screen.dart';
+import 'features/scanner/pdf_preview_screen.dart';
 import 'features/scanner/scan_review_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/scanner/scanner_screen.dart';
@@ -111,6 +113,27 @@ GoRouter router(Ref ref) {
             return const Scaffold(body: Center(child: Text('No images provided')));
           }
           return ScanReviewScreen(imagePaths: extra.cast<String>());
+        },
+      ),
+      GoRoute(
+        path: '/scan/enhance',
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is! List) {
+            return const Scaffold(body: Center(child: Text('No images provided')));
+          }
+          return EnhanceScreen(imagePaths: extra.cast<String>());
+        },
+      ),
+      GoRoute(
+        path: '/scan/pdf-preview',
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is! Map<String, dynamic>) {
+            return const Scaffold(body: Center(child: Text('No images provided')));
+          }
+          final paths = (extra['imagePaths'] as List<dynamic>).cast<String>();
+          return PdfPreviewScreen(imagePaths: paths);
         },
       ),
       GoRoute(
