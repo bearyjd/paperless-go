@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/auth/auth_service.dart';
@@ -94,7 +95,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
-              child: Form(
+              child: AutofillGroup(
+                child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -155,6 +157,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 tooltip: 'Test connection',
                               ),
                       ),
+                      autofillHints: const [AutofillHints.url],
                       keyboardType: TextInputType.url,
                       autocorrect: false,
                       validator: (v) {
@@ -195,6 +198,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           labelText: 'Username',
                           prefixIcon: Icon(Icons.person_outlined),
                         ),
+                        autofillHints: const [AutofillHints.username],
                         autocorrect: false,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return 'Enter your username';
@@ -215,6 +219,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 setState(() => _obscurePassword = !_obscurePassword),
                           ),
                         ),
+                        autofillHints: const [AutofillHints.password],
                         obscureText: _obscurePassword,
                         validator: (v) {
                           if (v == null || v.isEmpty) return 'Enter your password';
@@ -225,7 +230,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     const SizedBox(height: 24),
                     FilledButton(
-                      onPressed: isLoading ? null : _submit,
+                      onPressed: isLoading ? null : () {
+                        TextInput.finishAutofillContext();
+                        _submit();
+                      },
                       child: isLoading
                           ? const SizedBox(
                               width: 20, height: 20,
@@ -238,6 +246,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ],
                 ),
+              ),
               ),
             ),
           ),

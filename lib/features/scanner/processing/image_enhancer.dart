@@ -4,26 +4,35 @@ import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
+import 'filters/deskew.dart';
 import 'presets.dart';
 
 /// Coordinates image enhancement processing.
-/// Runs heavy image operations in an isolate to keep UI responsive.
+/// Deskew runs on main isolate (ML Kit needs platform channels).
+/// Filters run in a background isolate to keep UI responsive.
 class ImageEnhancer {
   /// Enhance an image file with the given preset.
   /// Returns the path to the enhanced image file.
-  /// Runs in a background isolate.
   static Future<String> enhanceImage({
     required String inputPath,
     required ProcessingPreset preset,
     int? maxDimension,
   }) async {
-    final inputBytes = await File(inputPath).readAsBytes();
+    var inputBytes = await File(inputPath).readAsBytes();
+
+    // Deskew on main isolate (ML Kit needs platform channels)
+    if (preset != ProcessingPreset.none && preset != ProcessingPreset.photo) {
+      inputBytes = await _deskewOnMain(inputBytes, inputPath);
+    }
+
+    // Filters on background isolate
     final outputBytes = await compute(
       _processInIsolate,
       _ProcessingParams(
         imageBytes: inputBytes,
         preset: preset,
         maxDimension: maxDimension,
+        skipDeskew: true, // Already done on main
       ),
     );
     final dir = await getTemporaryDirectory();
@@ -35,7 +44,6 @@ class ImageEnhancer {
 
   /// Enhance raw image bytes with the given preset.
   /// Returns enhanced image bytes (JPEG).
-  /// Runs in a background isolate.
   static Future<Uint8List> enhanceBytes({
     required Uint8List imageBytes,
     required ProcessingPreset preset,
@@ -66,17 +74,34 @@ class ImageEnhancer {
       ),
     );
   }
+
+  /// Run ML Kit deskew on the main isolate, return deskewed image bytes.
+  static Future<Uint8List> _deskewOnMain(
+      Uint8List imageBytes, String imagePath) async {
+    try {
+      var image = img.decodeImage(imageBytes);
+      if (image == null) return imageBytes;
+      image = img.bakeOrientation(image);
+      final deskewed = await applyDeskewAsync(image, imagePath);
+      if (identical(deskewed, image)) return imageBytes;
+      return Uint8List.fromList(img.encodeJpg(deskewed, quality: 95));
+    } catch (_) {
+      return imageBytes; // Fallback: return original
+    }
+  }
 }
 
 class _ProcessingParams {
   final Uint8List imageBytes;
   final ProcessingPreset preset;
   final int? maxDimension;
+  final bool skipDeskew;
 
   _ProcessingParams({
     required this.imageBytes,
     required this.preset,
     this.maxDimension,
+    this.skipDeskew = false,
   });
 }
 
@@ -102,6 +127,7 @@ Uint8List _processInIsolate(_ProcessingParams params) {
     }
   }
 
-  final enhanced = applyPreset(image, params.preset);
+  final enhanced =
+      applyPreset(image, params.preset, skipDeskew: params.skipDeskew);
   return Uint8List.fromList(img.encodeJpg(enhanced, quality: 92));
 }

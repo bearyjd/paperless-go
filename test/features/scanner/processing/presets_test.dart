@@ -35,8 +35,9 @@ void main() {
     for (final preset in ProcessingPreset.values) {
       test('${preset.name} preset produces valid output', () {
         final result = applyPreset(testImage, preset);
-        expect(result.width, equals(50));
-        expect(result.height, equals(50));
+        // Deskew may expand canvas, so output >= input
+        expect(result.width, greaterThanOrEqualTo(50));
+        expect(result.height, greaterThanOrEqualTo(50));
 
         // Verify all pixel values are in valid range
         for (var y = 0; y < result.height; y++) {

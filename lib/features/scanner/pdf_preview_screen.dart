@@ -101,6 +101,9 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 36),
+              ),
               onPressed: _pdfPath != null && !_isGenerating ? _onUpload : null,
               child: const Text('Upload'),
             ),
