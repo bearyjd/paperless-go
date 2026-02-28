@@ -98,9 +98,12 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
           '${widget.imagePaths.length} ${widget.imagePaths.length == 1 ? 'page' : 'pages'}',
         ),
         actions: [
-          TextButton(
-            onPressed: _pdfPath != null && !_isGenerating ? _onUpload : null,
-            child: const Text('Upload'),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton(
+              onPressed: _pdfPath != null && !_isGenerating ? _onUpload : null,
+              child: const Text('Upload'),
+            ),
           ),
         ],
       ),

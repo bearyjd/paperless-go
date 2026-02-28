@@ -66,8 +66,11 @@ Future<Uint8List> _buildPdf({
 
   for (final imageBytes in imageBytesList) {
     // Re-encode as JPEG at desired quality
-    final decoded = img.decodeImage(imageBytes);
+    var decoded = img.decodeImage(imageBytes);
     if (decoded == null) continue;
+
+    // Auto-orient based on EXIF data
+    decoded = img.bakeOrientation(decoded);
 
     final jpeg = img.encodeJpg(decoded, quality: jpegQuality);
     final pdfImage = pw.MemoryImage(Uint8List.fromList(jpeg));

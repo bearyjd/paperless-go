@@ -86,6 +86,9 @@ Uint8List _processInIsolate(_ProcessingParams params) {
     throw Exception('Failed to decode image');
   }
 
+  // Auto-orient based on EXIF data (handles photos taken at angles)
+  image = img.bakeOrientation(image);
+
   // Resize for preview if maxDimension is set
   if (params.maxDimension != null) {
     final maxDim = params.maxDimension!;
