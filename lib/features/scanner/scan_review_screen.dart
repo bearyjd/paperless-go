@@ -38,9 +38,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
         actions: [
           TextButton(
             onPressed: _pages.isNotEmpty
-                ? () => context.push('/scan/upload', extra: {
-                      'imagePaths': _pages,
-                    })
+                ? () => context.push('/scan/enhance', extra: _pages)
                 : null,
             child: const Text('Continue'),
           ),
