@@ -64,28 +64,46 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
 
   Future<void> _processAllPages() async {
     setState(() => _isProcessing = true);
+
+    // Process pages in parallel batches to speed up multi-page scans.
+    // Cap at 3 concurrent to avoid OOM from multiple full-res images in memory.
+    const maxConcurrent = 3;
+    final futures = <Future<void>>[];
+
     for (var i = 0; i < _originalPaths.length; i++) {
-      if (!mounted) return;
-      try {
-        if (_selectedPreset == ProcessingPreset.none) {
-          _enhancedPaths[i] = _originalPaths[i];
-        } else {
-          final enhanced = await ImageEnhancer.enhanceImage(
-            inputPath: _originalPaths[i],
-            preset: _selectedPreset,
-          );
-          if (mounted) {
-            setState(() => _enhancedPaths[i] = enhanced);
-          }
-        }
-      } catch (e) {
-        // If enhancement fails, use original
-        if (mounted) {
-          setState(() => _enhancedPaths[i] = _originalPaths[i]);
-        }
+      futures.add(_processPage(i));
+      if (futures.length >= maxConcurrent) {
+        await Future.wait(futures);
+        futures.clear();
       }
     }
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+
     if (mounted) setState(() => _isProcessing = false);
+  }
+
+  Future<void> _processPage(int i) async {
+    if (!mounted) return;
+    try {
+      if (_selectedPreset == ProcessingPreset.none) {
+        _enhancedPaths[i] = _originalPaths[i];
+      } else {
+        final enhanced = await ImageEnhancer.enhanceImage(
+          inputPath: _originalPaths[i],
+          preset: _selectedPreset,
+        );
+        if (mounted) {
+          setState(() => _enhancedPaths[i] = enhanced);
+        }
+      }
+    } catch (e) {
+      // If enhancement fails, use original
+      if (mounted) {
+        setState(() => _enhancedPaths[i] = _originalPaths[i]);
+      }
+    }
   }
 
   Future<void> _onPresetChanged(ProcessingPreset preset) async {
