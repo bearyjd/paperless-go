@@ -19,6 +19,7 @@ class DioClient {
     ));
 
     dio.interceptors.addAll([
+      _CsrfInterceptor(dio: dio, baseUrl: normalizedUrl),
       _RetryInterceptor(dio: dio),
       if (kDebugMode)
         LogInterceptor(
@@ -46,6 +47,76 @@ class DioClient {
         'Accept': ApiConstants.acceptHeader,
       },
     ));
+  }
+}
+
+/// Fetches and caches a CSRF token from the server, then attaches it
+/// as X-CSRFToken header on all mutating requests (POST, PUT, PATCH, DELETE).
+/// Required because some Paperless-ngx endpoints enforce Django CSRF checks
+/// even for token-authenticated API requests.
+class _CsrfInterceptor extends Interceptor {
+  final Dio dio;
+  final String baseUrl;
+  String? _csrfToken;
+
+  _CsrfInterceptor({required this.dio, required this.baseUrl});
+
+  static const _mutatingMethods = {'POST', 'PUT', 'PATCH', 'DELETE'};
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    if (!_mutatingMethods.contains(options.method.toUpperCase())) {
+      return handler.next(options);
+    }
+
+    // Fetch CSRF token if we don't have one yet
+    if (_csrfToken == null) {
+      await _fetchCsrfToken();
+    }
+
+    if (_csrfToken != null) {
+      options.headers['X-CSRFToken'] = _csrfToken;
+      // Also set Referer — Django checks this for HTTPS CSRF validation
+      options.headers['Referer'] = baseUrl;
+    }
+
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    // Update CSRF token from any Set-Cookie header
+    _extractCsrfFromCookies(response.headers);
+    handler.next(response);
+  }
+
+  Future<void> _fetchCsrfToken() async {
+    try {
+      // Make a lightweight GET to get the csrftoken cookie
+      final tempDio = Dio(BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        validateStatus: (_) => true, // Accept any status
+        headers: dio.options.headers,
+      ));
+      final response = await tempDio.get('api/');
+      _extractCsrfFromCookies(response.headers);
+    } catch (_) {
+      // Failed to fetch CSRF token — requests will proceed without it
+    }
+  }
+
+  void _extractCsrfFromCookies(Headers headers) {
+    final cookies = headers['set-cookie'];
+    if (cookies == null) return;
+    for (final cookie in cookies) {
+      final match = RegExp(r'csrftoken=([^;]+)').firstMatch(cookie);
+      if (match != null) {
+        _csrfToken = match.group(1);
+        return;
+      }
+    }
   }
 }
 
