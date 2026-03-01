@@ -17,12 +17,23 @@ A modern, open-source mobile client for [Paperless-ngx](https://github.com/paper
 - **Document browsing** — Search, filter, and sort your entire library with full-text search and autocomplete
 - **PDF viewer** — View document previews and thumbnails inline
 - **Scan & upload** — Capture documents with the camera scanner or pick files, with share-intent support from other apps
+- **Image enhancement** — Six processing presets (Auto, Receipt, B&W Text, Color Doc, Photo) with deskew, adaptive contrast, shadow removal, and denoising
 - **Label management** — Create and edit tags, correspondents, document types, and storage paths
 - **Metadata editing** — Update document fields including custom fields
+- **Document notes** — Add, view, and delete notes on any document
+- **Share links** — Generate public share links with optional expiration
 - **Bulk operations** — Tag, re-tag, delete, and more across multiple documents
+- **Saved views** — Save and reuse custom filter and sort combinations
+- **Similar documents** — Find related documents using content similarity
+- **Advanced filtering** — Filter by tags, correspondent, document type, and date range
+- **Flexible sorting** — Sort by date created, recently added, title, or archive serial number
+- **Inbox quick-assign** — Swipe gestures to rapidly triage new documents
+- **Download & share** — Save documents to your device or share via the native share sheet
 - **AI chat** — Ask questions about your documents via Paperless-AI integration
+- **Multi-server support** — Switch between multiple Paperless-ngx instances
+- **Dark mode** — System-aware dark theme with manual override
 - **Biometric auth** — Secure access with fingerprint or face unlock
-- **Offline caching** — Browse previously loaded documents without a connection
+- **Offline caching** — Browse previously loaded data without a connection
 - **Trash management** — View and restore deleted documents
 
 ## Requirements
