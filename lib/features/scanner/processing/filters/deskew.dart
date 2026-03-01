@@ -121,6 +121,7 @@ Future<double?> _detectAngleWithMlKit(String imagePath) async {
 
 /// Pure Dart fallback: edge-weighted projection profiles.
 img.Image applyDeskew(img.Image source, {double maxAngle = 15.0}) {
+  if (source.width < 3 || source.height < 3) return source;
   final maxDim = math.max(source.width, source.height);
   final scale = math.min(1.0, 1200.0 / maxDim);
   final small = scale < 1.0

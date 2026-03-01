@@ -2,6 +2,7 @@ import 'package:image/image.dart' as img;
 
 /// Applies unsharp mask sharpening to crisp text edges for OCR.
 img.Image applySharpen(img.Image source, {double amount = 1.5, int radius = 1}) {
+  if (source.width < 3 || source.height < 3) return source;
   // Create blurred version
   final blurred = img.gaussianBlur(source, radius: radius);
 

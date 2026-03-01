@@ -6,7 +6,7 @@ part of 'trash_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$trashNotifierHash() => r'773083e862dd83df55aa041167eadd4bd959e95d';
+String _$trashNotifierHash() => r'c8927f1d48195255fc4023ff67e9e9a2ec83add9';
 
 /// See also [TrashNotifier].
 @ProviderFor(TrashNotifier)

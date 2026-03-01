@@ -4,6 +4,7 @@ import 'package:image/image.dart' as img;
 /// Estimates the background illumination with a large blur, then
 /// normalizes the image to remove uneven lighting / finger shadows.
 img.Image applyShadowRemoval(img.Image source, {int blurRadius = 25}) {
+  if (source.width < 3 || source.height < 3) return source;
   // Large blur to estimate background illumination
   final background = img.gaussianBlur(source, radius: blurRadius);
 

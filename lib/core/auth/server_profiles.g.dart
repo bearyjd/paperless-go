@@ -7,7 +7,7 @@ part of 'server_profiles.dart';
 // **************************************************************************
 
 String _$serverProfilesNotifierHash() =>
-    r'a8d4f6af49e3b85842c909252b2d5f7dd6de2831';
+    r'accad3c8e975be53c395a01905f7398f65bd6f7b';
 
 /// See also [ServerProfilesNotifier].
 @ProviderFor(ServerProfilesNotifier)
