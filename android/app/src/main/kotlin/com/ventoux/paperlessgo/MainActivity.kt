@@ -1,4 +1,4 @@
-package cc.grepon.paperless_go
+package com.ventoux.paperlessgo
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
