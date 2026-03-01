@@ -283,6 +283,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (ctx) => _TagPickerSheet(
         tags: available,
         onSelected: (tag) {
@@ -353,39 +354,45 @@ class _TagPickerSheetState extends State<_TagPickerSheet> {
         .where((t) => t.name.toLowerCase().contains(_filter.toLowerCase()))
         .toList();
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            autofocus: true,
-            decoration: const InputDecoration(
-              hintText: 'Search tags...',
-              prefixIcon: Icon(Icons.search),
-            ),
-            onChanged: (v) => setState(() => _filter = v),
-          ),
-        ),
-        Flexible(
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: filtered.length,
-            itemBuilder: (_, i) {
-              final tag = filtered[i];
-              return ListTile(
-                leading: CircleAvatar(
-                  radius: 12,
-                  backgroundColor: TagChip.parseColor(tag.colour) ??
-                      Theme.of(context).colorScheme.secondaryContainer,
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.5,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search tags...',
+                  prefixIcon: Icon(Icons.search),
                 ),
-                title: Text(tag.name),
-                onTap: () => widget.onSelected(tag),
-              );
-            },
-          ),
+                onChanged: (v) => setState(() => _filter = v),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: filtered.length,
+                itemBuilder: (_, i) {
+                  final tag = filtered[i];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      radius: 12,
+                      backgroundColor: TagChip.parseColor(tag.colour) ??
+                          Theme.of(context).colorScheme.secondaryContainer,
+                    ),
+                    title: Text(tag.name),
+                    onTap: () => widget.onSelected(tag),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
