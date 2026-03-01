@@ -9,7 +9,12 @@ import 'pdf/pdf_generator.dart';
 /// Shows page count, file size estimate, and quality slider.
 class PdfPreviewScreen extends StatefulWidget {
   final List<String> imagePaths;
-  const PdfPreviewScreen({super.key, required this.imagePaths});
+  final bool preProcessed;
+  const PdfPreviewScreen({
+    super.key,
+    required this.imagePaths,
+    this.preProcessed = false,
+  });
 
   @override
   State<PdfPreviewScreen> createState() => _PdfPreviewScreenState();
@@ -54,6 +59,7 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
       final path = await PdfGenerator.generatePdf(
         imagePaths: widget.imagePaths,
         jpegQuality: _quality.round(),
+        preProcessed: widget.preProcessed,
       );
       if (!mounted) return;
       final file = File(path);

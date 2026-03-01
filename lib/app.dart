@@ -137,7 +137,8 @@ GoRouter router(Ref ref) {
             return const Scaffold(body: Center(child: Text('No images provided')));
           }
           final paths = (extra['imagePaths'] as List<dynamic>).cast<String>();
-          return PdfPreviewScreen(imagePaths: paths);
+          final preProcessed = extra['preProcessed'] as bool? ?? false;
+          return PdfPreviewScreen(imagePaths: paths, preProcessed: preProcessed);
         },
       ),
       GoRoute(

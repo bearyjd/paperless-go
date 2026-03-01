@@ -131,6 +131,7 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
     });
     context.push('/scan/pdf-preview', extra: {
       'imagePaths': paths,
+      'preProcessed': _selectedPreset != ProcessingPreset.none,
     });
   }
 
