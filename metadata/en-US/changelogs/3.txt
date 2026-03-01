@@ -1,0 +1,5 @@
+Bug fixes and improvements.
+
+• Fix documents disappearing from list after re-login
+• Exclude trashed documents from main document list
+• Fresh data is now fetched on every login
