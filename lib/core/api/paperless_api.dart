@@ -37,6 +37,8 @@ class PaperlessApi {
       'ordering': ordering,
       'truncate_content': truncateContent,
     };
+    // Exclude trashed documents by default so they only appear in the Trash screen
+    params['is_in_trash'] = false;
     if (query != null && query.isNotEmpty) params['query'] = query;
     if (isInInbox != null) params['is_in_inbox'] = isInInbox;
     if (moreLikeId != null) params['more_like_id'] = moreLikeId;

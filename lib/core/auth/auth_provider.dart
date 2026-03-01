@@ -2,8 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../api/api_providers.dart';
 import '../api/dio_client.dart';
 import '../database/cache_provider.dart';
+import '../../features/documents/documents_notifier.dart';
 import 'auth_service.dart';
 import 'secure_storage.dart';
 
@@ -37,6 +39,7 @@ class AuthState extends _$AuthState {
       final authService = ref.read(authServiceProvider);
       final token = await authService.loginWithCredentials(serverUrl, username, password);
       state = AsyncData(AuthStatus.authenticated(serverUrl: serverUrl, token: token));
+      _invalidateDataProviders();
     } catch (e) {
       state = const AsyncData(AuthStatus.unauthenticated());
       rethrow;
@@ -49,10 +52,22 @@ class AuthState extends _$AuthState {
       final authService = ref.read(authServiceProvider);
       await authService.loginWithToken(serverUrl, token);
       state = AsyncData(AuthStatus.authenticated(serverUrl: serverUrl, token: token));
+      _invalidateDataProviders();
     } catch (e) {
       state = const AsyncData(AuthStatus.unauthenticated());
       rethrow;
     }
+  }
+
+  /// Force all data providers to refetch fresh data after login.
+  void _invalidateDataProviders() {
+    ref.invalidate(documentsNotifierProvider);
+    ref.invalidate(tagsProvider);
+    ref.invalidate(correspondentsProvider);
+    ref.invalidate(documentTypesProvider);
+    ref.invalidate(storagePathsProvider);
+    ref.invalidate(savedViewsProvider);
+    ref.invalidate(customFieldsProvider);
   }
 
   Future<void> logout() async {
