@@ -1,0 +1,5 @@
+Performance and quality improvements.
+
+• Parallel image enhancement for faster PDF scanning
+• Fixed adaptive contrast artifacts on low-contrast documents
+• Fixed tag picker keyboard dismissing unexpectedly
