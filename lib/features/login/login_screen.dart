@@ -164,9 +164,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         if (v == null || v.trim().isEmpty || v.trim() == 'https://') {
                           return 'Enter your server URL';
                         }
+                        final url = v.trim().toLowerCase();
+                        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                          return 'URL must start with https:// or http://';
+                        }
                         return null;
                       },
+                      onChanged: (_) => setState(() {}), // Refresh for HTTP warning
                     ),
+
+                    // HTTP warning
+                    if (_serverUrlController.text.trim().toLowerCase().startsWith('http://'))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.warning_amber, size: 16, color: Colors.orange[700]),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Insecure connection — credentials sent in plaintext',
+                                style: TextStyle(fontSize: 12, color: Colors.orange[700]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     const SizedBox(height: 16),
 
                     // Token/credentials toggle

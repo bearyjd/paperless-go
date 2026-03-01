@@ -6,6 +6,7 @@ import 'package:image/image.dart' as img;
 /// Handles uneven lighting across the document by equalizing histogram
 /// in local regions.
 img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
+  if (source.width < 3 || source.height < 3) return source;
   final result = source.clone();
   final width = result.width;
   final height = result.height;

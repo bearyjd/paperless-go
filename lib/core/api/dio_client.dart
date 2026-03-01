@@ -23,8 +23,8 @@ class DioClient {
       if (kDebugMode)
         LogInterceptor(
           requestHeader: false,
-          requestBody: true,
-          responseBody: true,
+          requestBody: false, // Don't log bodies — may contain PII/credentials
+          responseBody: false,
           logPrint: (o) => debugPrint(o.toString()),
         ),
     ]);

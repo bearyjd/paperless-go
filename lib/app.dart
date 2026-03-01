@@ -38,11 +38,15 @@ class _AuthChangeNotifier extends ChangeNotifier {
 }
 
 @Riverpod(keepAlive: true)
+final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+
+@Riverpod(keepAlive: true)
 GoRouter router(Ref ref) {
   final refreshNotifier = _AuthChangeNotifier(ref);
   ref.onDispose(() => refreshNotifier.dispose());
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: refreshNotifier,
     errorBuilder: (context, state) => Scaffold(
@@ -196,7 +200,7 @@ class PaperlessGoApp extends ConsumerStatefulWidget {
 class _PaperlessGoAppState extends ConsumerState<PaperlessGoApp>
     with WidgetsBindingObserver {
   bool _isLocked = false;
-  final _shareIntentHandler = ShareIntentHandler();
+  late final _shareIntentHandler = ShareIntentHandler(rootNavigatorKey);
   bool _shareIntentInitialized = false;
 
   @override
@@ -241,9 +245,7 @@ class _PaperlessGoAppState extends ConsumerState<PaperlessGoApp>
         if (!_shareIntentInitialized) {
           _shareIntentInitialized = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) {
-              _shareIntentHandler.initialize(context);
-            }
+            _shareIntentHandler.initialize();
           });
         }
         final content = child ?? const SizedBox.shrink();

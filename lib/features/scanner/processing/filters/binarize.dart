@@ -5,6 +5,7 @@ import 'package:image/image.dart' as img;
 /// Applies adaptive binarization (Sauvola-inspired) for converting
 /// documents to pure black & white. Works well with uneven lighting.
 img.Image applyBinarize(img.Image source, {int windowSize = 15, double k = 0.2}) {
+  if (source.width < 3 || source.height < 3) return source;
   final gray = img.grayscale(source.clone());
   final width = gray.width;
   final height = gray.height;
