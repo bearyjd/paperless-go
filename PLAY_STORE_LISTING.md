@@ -12,16 +12,24 @@ Paperless Go is a mobile client for Paperless-ngx, the popular self-hosted docum
 
 Manage your documents on the go with a clean, modern interface:
 
-• Browse, search, and filter your document library
+• Browse, search, and filter your document library with full-text search and autocomplete
 • View document details, thumbnails, and PDF previews
-• Upload new documents via camera scan or file picker
-• Receive shared files from other apps for quick upload
+• Scan documents with the camera and enhance with smart image processing — deskew, contrast, shadow removal, and denoising across six presets
+• Upload via camera scan, file picker, or share intent from other apps
 • Manage tags, correspondents, document types, and storage paths
-• Edit document metadata and custom fields
+• Edit document metadata, custom fields, and notes
+• Generate share links with optional expiration
 • Bulk operations: tag, re-tag, delete, and more
+• Save and reuse custom filter and sort combinations with saved views
+• Find related documents with content similarity search
+• Swipe-to-assign inbox for fast document triage
+• Download documents or share them via the native share sheet
+• AI chat — ask questions about your documents via Paperless-AI
+• Switch between multiple Paperless-ngx servers
+• Dark mode with system-aware theme
 • Biometric authentication for secure access
 • Offline-capable with local caching
-• Full-text search with autocomplete
+• Trash management — view and restore deleted documents
 
 Your data stays yours. Paperless Go connects directly to your self-hosted Paperless-ngx server using token-based authentication. No cloud services, no tracking, no ads. All communication happens between your device and your own server.
 
