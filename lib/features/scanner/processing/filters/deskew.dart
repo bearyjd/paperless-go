@@ -12,7 +12,7 @@ import 'package:image/image.dart' as img;
 /// so this must be called from the main isolate, not from compute().
 Future<img.Image> applyDeskewAsync(img.Image source, String imagePath) async {
   try {
-    final angle = await _detectAngleWithMlKit(imagePath);
+    final angle = await detectAngleWithMlKit(imagePath);
     if (angle != null && angle.abs() > 0.3 && angle.abs() < 30) {
       final rotated = img.copyRotate(source,
           angle: -angle, interpolation: img.Interpolation.linear);
@@ -22,6 +22,14 @@ Future<img.Image> applyDeskewAsync(img.Image source, String imagePath) async {
     // ML Kit not available, fall through to edge-based method
   }
   return applyDeskew(source);
+}
+
+/// Apply a known deskew angle (from ML Kit) to an image.
+/// Can be called from any isolate — no platform channel dependency.
+img.Image applyDeskewWithAngle(img.Image source, double angleDeg) {
+  final rotated = img.copyRotate(source,
+      angle: -angleDeg, interpolation: img.Interpolation.linear);
+  return _cropRotationBorders(rotated, source.width, source.height, angleDeg);
 }
 
 /// After rotation, the canvas expands and has black fill in the corners.
@@ -79,7 +87,8 @@ void _fillCorner(
 
 /// Use ML Kit to detect the average text line angle.
 /// Returns the skew angle in degrees (positive = CW tilt).
-Future<double?> _detectAngleWithMlKit(String imagePath) async {
+/// Must be called from the main isolate (ML Kit uses platform channels).
+Future<double?> detectAngleWithMlKit(String imagePath) async {
   final inputImage = InputImage.fromFilePath(imagePath);
   final recognizer = TextRecognizer();
   try {

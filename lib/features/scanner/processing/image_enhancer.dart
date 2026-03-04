@@ -8,9 +8,14 @@ import 'filters/deskew.dart';
 import 'presets.dart';
 
 /// Coordinates image enhancement processing.
-/// Deskew runs on main isolate (ML Kit needs platform channels).
-/// Filters run in a background isolate to keep UI responsive.
+/// ML Kit deskew angle detection runs on the main isolate (platform channels).
+/// All pixel processing runs in a background isolate.
 class ImageEnhancer {
+  /// Max dimension for processing. Full-res scans (4000x3000) are downscaled
+  /// to this before filters run. 1600px is plenty for document OCR/viewing
+  /// and keeps per-pixel filter work under ~2.5MP for reasonable speed.
+  static const _processingMaxDimension = 1600;
+
   /// Enhance an image file with the given preset.
   /// Returns the path to the enhanced image file.
   static Future<String> enhanceImage({
@@ -18,21 +23,22 @@ class ImageEnhancer {
     required ProcessingPreset preset,
     int? maxDimension,
   }) async {
-    var inputBytes = await File(inputPath).readAsBytes();
+    final inputBytes = await File(inputPath).readAsBytes();
 
-    // Deskew on main isolate (ML Kit needs platform channels)
+    // Only ML Kit angle detection runs on main isolate (needs platform channels).
+    // All pixel work moves to the compute isolate.
+    double? deskewAngle;
     if (preset != ProcessingPreset.none && preset != ProcessingPreset.photo) {
-      inputBytes = await _deskewOnMain(inputBytes, inputPath);
+      deskewAngle = await _detectDeskewAngle(inputPath);
     }
 
-    // Filters on background isolate
     final outputBytes = await compute(
       _processInIsolate,
       _ProcessingParams(
         imageBytes: inputBytes,
         preset: preset,
-        maxDimension: maxDimension,
-        skipDeskew: true, // Already done on main
+        maxDimension: maxDimension ?? _processingMaxDimension,
+        deskewAngle: deskewAngle,
       ),
     );
     final dir = await getTemporaryDirectory();
@@ -54,7 +60,7 @@ class ImageEnhancer {
       _ProcessingParams(
         imageBytes: imageBytes,
         preset: preset,
-        maxDimension: maxDimension,
+        maxDimension: maxDimension ?? _processingMaxDimension,
       ),
     );
   }
@@ -75,18 +81,14 @@ class ImageEnhancer {
     );
   }
 
-  /// Run ML Kit deskew on the main isolate, return deskewed image bytes.
-  static Future<Uint8List> _deskewOnMain(
-      Uint8List imageBytes, String imagePath) async {
+  /// Run ML Kit angle detection on main isolate.
+  /// Returns just the angle (degrees), or null if no skew detected.
+  /// No pixel processing happens here — that all moves to the isolate.
+  static Future<double?> _detectDeskewAngle(String imagePath) async {
     try {
-      var image = img.decodeImage(imageBytes);
-      if (image == null) return imageBytes;
-      image = img.bakeOrientation(image);
-      final deskewed = await applyDeskewAsync(image, imagePath);
-      if (identical(deskewed, image)) return imageBytes;
-      return Uint8List.fromList(img.encodeJpg(deskewed, quality: 95));
+      return await detectAngleWithMlKit(imagePath);
     } catch (_) {
-      return imageBytes; // Fallback: return original
+      return null; // ML Kit unavailable; isolate will use fallback
     }
   }
 }
@@ -95,13 +97,13 @@ class _ProcessingParams {
   final Uint8List imageBytes;
   final ProcessingPreset preset;
   final int? maxDimension;
-  final bool skipDeskew;
+  final double? deskewAngle;
 
   _ProcessingParams({
     required this.imageBytes,
     required this.preset,
     this.maxDimension,
-    this.skipDeskew = false,
+    this.deskewAngle,
   });
 }
 
@@ -111,10 +113,10 @@ Uint8List _processInIsolate(_ProcessingParams params) {
     throw Exception('Failed to decode image');
   }
 
-  // Auto-orient based on EXIF data (handles photos taken at angles)
+  // Bake EXIF orientation once
   image = img.bakeOrientation(image);
 
-  // Resize for preview if maxDimension is set
+  // Resize to processing cap before any filters run
   if (params.maxDimension != null) {
     final maxDim = params.maxDimension!;
     if (image.width > maxDim || image.height > maxDim) {
@@ -127,7 +129,22 @@ Uint8List _processInIsolate(_ProcessingParams params) {
     }
   }
 
-  final enhanced =
-      applyPreset(image, params.preset, skipDeskew: params.skipDeskew);
+  // Apply deskew in the isolate (no redundant decode/encode)
+  final needsDeskew = params.preset != ProcessingPreset.none &&
+      params.preset != ProcessingPreset.photo;
+  if (needsDeskew) {
+    if (params.deskewAngle != null &&
+        params.deskewAngle!.abs() > 0.3 &&
+        params.deskewAngle!.abs() < 30) {
+      // Apply the ML Kit-detected angle
+      image = applyDeskewWithAngle(image, params.deskewAngle!);
+    } else if (params.deskewAngle == null) {
+      // No ML Kit result — use pure Dart fallback
+      image = applyDeskew(image);
+    }
+    // If angle was detected but too small (<=0.3), skip deskew
+  }
+
+  final enhanced = applyPreset(image, params.preset, skipDeskew: true);
   return Uint8List.fromList(img.encodeJpg(enhanced, quality: 92));
 }

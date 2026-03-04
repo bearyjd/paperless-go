@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/models/tag.dart';
 import '../../shared/widgets/tag_chip.dart';
+import 'providers/metadata_suggestion_provider.dart';
+import 'processing/metadata_matcher.dart';
 import 'upload_notifier.dart';
 
 /// Metadata entry and upload screen.
@@ -26,16 +28,48 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
   final List<int> _selectedTags = [];
   DateTime? _created;
 
+  // Track which fields were auto-filled by OCR suggestions
+  bool _suggestedCorrespondent = false;
+  bool _suggestedDocType = false;
+  bool _suggestedTags = false;
+  bool _suggestedDate = false;
+  bool _suggestionsApplied = false;
+
   bool get _isScannedImages => widget.params.containsKey('imagePaths');
   List<String> get _imagePaths =>
       (widget.params['imagePaths'] as List<dynamic>?)?.cast<String>() ?? [];
   String get _filePath => widget.params['filePath'] as String? ?? '';
   String get _filename => widget.params['filename'] as String? ?? '';
+  String? get _ocrImagePath => widget.params['ocrImagePath'] as String?;
 
   @override
   void dispose() {
     _titleController.dispose();
     super.dispose();
+  }
+
+  void _applySuggestions(MetadataSuggestions suggestions) {
+    if (_suggestionsApplied) return;
+    _suggestionsApplied = true;
+
+    setState(() {
+      if (suggestions.correspondentId != null && _correspondent == null) {
+        _correspondent = suggestions.correspondentId;
+        _suggestedCorrespondent = true;
+      }
+      if (suggestions.documentTypeId != null && _documentType == null) {
+        _documentType = suggestions.documentTypeId;
+        _suggestedDocType = true;
+      }
+      if (suggestions.tagIds.isNotEmpty && _selectedTags.isEmpty) {
+        _selectedTags.addAll(suggestions.tagIds);
+        _suggestedTags = true;
+      }
+      if (suggestions.detectedDate != null && _created == null) {
+        _created = suggestions.detectedDate;
+        _suggestedDate = true;
+      }
+    });
   }
 
   @override
@@ -44,6 +78,18 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
     final correspondentsAsync = ref.watch(correspondentsProvider);
     final docTypesAsync = ref.watch(documentTypesProvider);
     final tagsAsync = ref.watch(tagsProvider);
+
+    // Listen for OCR metadata suggestions
+    if (_ocrImagePath != null) {
+      ref.listen(
+        metadataSuggestionsProvider(_ocrImagePath!),
+        (prev, next) {
+          if (next.hasValue) {
+            _applySuggestions(next.value!);
+          }
+        },
+      );
+    }
 
     // Listen for upload completion
     ref.listen(uploadNotifierProvider, (prev, next) {
@@ -116,10 +162,11 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
             loading: () => const LinearProgressIndicator(),
             error: (_, __) => const SizedBox.shrink(),
             data: (correspondents) => InputDecorator(
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Correspondent',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                suffix: _suggestedCorrespondent ? _suggestedBadge() : null,
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<int?>(
@@ -134,7 +181,12 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                           child: Text(c.name, overflow: TextOverflow.ellipsis),
                         )),
                   ],
-                  onChanged: isUploading ? null : (v) => setState(() => _correspondent = v),
+                  onChanged: isUploading
+                      ? null
+                      : (v) => setState(() {
+                            _correspondent = v;
+                            _suggestedCorrespondent = false;
+                          }),
                 ),
               ),
             ),
@@ -146,10 +198,11 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
             loading: () => const LinearProgressIndicator(),
             error: (_, __) => const SizedBox.shrink(),
             data: (docTypes) => InputDecorator(
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Document Type',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                suffix: _suggestedDocType ? _suggestedBadge() : null,
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<int?>(
@@ -164,7 +217,12 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                           child: Text(dt.name, overflow: TextOverflow.ellipsis),
                         )),
                   ],
-                  onChanged: isUploading ? null : (v) => setState(() => _documentType = v),
+                  onChanged: isUploading
+                      ? null
+                      : (v) => setState(() {
+                            _documentType = v;
+                            _suggestedDocType = false;
+                          }),
                 ),
               ),
             ),
@@ -175,15 +233,31 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.calendar_today),
-            title: const Text('Date'),
+            title: Row(
+              children: [
+                const Text('Date'),
+                if (_suggestedDate) ...[
+                  const SizedBox(width: 8),
+                  _suggestedBadge(),
+                ],
+              ],
+            ),
             subtitle: Text(_created != null
                 ? DateFormat.yMMMd().format(_created!)
                 : 'Auto-detect'),
-            onTap: isUploading ? null : () => _pickDate(context),
+            onTap: isUploading
+                ? null
+                : () async {
+                    await _pickDate(context);
+                    _suggestedDate = false;
+                  },
             trailing: _created != null
                 ? IconButton(
                     icon: const Icon(Icons.clear, size: 18),
-                    onPressed: () => setState(() => _created = null),
+                    onPressed: () => setState(() {
+                      _created = null;
+                      _suggestedDate = false;
+                    }),
                   )
                 : null,
           ),
@@ -222,6 +296,22 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
     );
   }
 
+  Widget _suggestedBadge() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.auto_awesome, size: 14, color: Theme.of(context).colorScheme.tertiary),
+        const SizedBox(width: 2),
+        Text(
+          'Suggested',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.tertiary,
+              ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTagsSection(AsyncValue<Map<int, Tag>> tagsAsync) {
     return tagsAsync.when(
       loading: () => const LinearProgressIndicator(),
@@ -238,6 +328,10 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
             Row(
               children: [
                 Text('Tags', style: Theme.of(context).textTheme.titleSmall),
+                if (_suggestedTags) ...[
+                  const SizedBox(width: 8),
+                  _suggestedBadge(),
+                ],
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.add, size: 20),
@@ -265,7 +359,10 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                     backgroundColor: bgColor,
                     labelStyle: TextStyle(color: fgColor),
                     deleteIconColor: fgColor,
-                    onDeleted: () => setState(() => _selectedTags.remove(tag.id)),
+                    onDeleted: () => setState(() {
+                      _selectedTags.remove(tag.id);
+                      _suggestedTags = false;
+                    }),
                   );
                 }).toList(),
               ),
@@ -287,7 +384,10 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
       builder: (ctx) => _TagPickerSheet(
         tags: available,
         onSelected: (tag) {
-          setState(() => _selectedTags.add(tag.id));
+          setState(() {
+            _selectedTags.add(tag.id);
+            _suggestedTags = false;
+          });
           Navigator.pop(ctx);
         },
       ),

@@ -61,7 +61,7 @@ final dioProvider = Provider<Dio>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DioRef = ProviderRef<Dio>;
-String _$authStateHash() => r'd155cad7e13cb4eb541f84127a8bcde358ea1502';
+String _$authStateHash() => r'6c95ca42383d1eed55f473d068f58fe57090fbd0';
 
 /// See also [AuthState].
 @ProviderFor(AuthState)

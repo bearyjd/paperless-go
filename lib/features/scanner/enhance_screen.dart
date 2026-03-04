@@ -34,15 +34,20 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
     super.initState();
     _originalPaths = List.from(widget.imagePaths);
     _enhancedPaths = List.filled(_originalPaths.length, null);
-    _loadPreview();
+    _loadOriginalPreview();
     _processAllPages();
   }
 
-  Future<void> _loadPreview() async {
+  Future<void> _loadOriginalPreview() async {
     final bytes = await File(_originalPaths[_currentPage]).readAsBytes();
     if (!mounted) return;
     setState(() => _previewOriginal = bytes);
-    _updatePreviewEnhanced(bytes);
+    // Only generate a separate fast preview for multi-page scans.
+    // For single-page, the full processing result will arrive quickly
+    // and running both concurrently just doubles the CPU work.
+    if (_originalPaths.length > 1) {
+      _updatePreviewEnhanced(bytes);
+    }
   }
 
   Future<void> _updatePreviewEnhanced(Uint8List originalBytes) async {
@@ -98,6 +103,11 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
           setState(() => _enhancedPaths[i] = enhanced);
         }
       }
+      // Update the preview from the processed file when it's the current page
+      if (mounted && i == _currentPage && _enhancedPaths[i] != null) {
+        final bytes = await File(_enhancedPaths[i]!).readAsBytes();
+        if (mounted) setState(() => _previewEnhanced = bytes);
+      }
     } catch (e) {
       // If enhancement fails, use original
       if (mounted) {
@@ -113,7 +123,8 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
       _enhancedPaths = List.filled(_originalPaths.length, null);
       _previewEnhanced = null;
     });
-    if (_previewOriginal != null) {
+    // Only generate a separate fast preview for multi-page scans
+    if (_originalPaths.length > 1 && _previewOriginal != null) {
       _updatePreviewEnhanced(_previewOriginal!);
     }
     _processAllPages();
@@ -121,7 +132,7 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
 
   void _onPageChanged(int index) {
     setState(() => _currentPage = index);
-    _loadPreview();
+    _loadOriginalPreview();
   }
 
   void _onContinue() {
@@ -132,6 +143,8 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
     context.push('/scan/pdf-preview', extra: {
       'imagePaths': paths,
       'preProcessed': _selectedPreset != ProcessingPreset.none,
+      // Pass first enhanced image for OCR metadata suggestions
+      'ocrImagePath': paths.first,
     });
   }
 

@@ -52,14 +52,21 @@ void main() {
     }
 
     test('auto preset modifies the image', () {
+      // Save original pixel values before applying (filters modify in-place)
+      final originalPixels = <int>[];
+      for (var y = 0; y < 50; y++) {
+        for (var x = 0; x < 50; x++) {
+          originalPixels.add(testImage.getPixel(x, y).r.toInt());
+        }
+      }
       final result = applyPreset(testImage, ProcessingPreset.auto);
       // At least some pixels should differ from original
       var diffCount = 0;
+      var i = 0;
       for (var y = 0; y < 50; y++) {
         for (var x = 0; x < 50; x++) {
-          final orig = testImage.getPixel(x, y);
-          final res = result.getPixel(x, y);
-          if (orig.r.toInt() != res.r.toInt()) diffCount++;
+          if (originalPixels[i] != result.getPixel(x, y).r.toInt()) diffCount++;
+          i++;
         }
       }
       expect(diffCount, greaterThan(0));

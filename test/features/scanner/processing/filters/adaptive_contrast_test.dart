@@ -28,19 +28,27 @@ void main() {
       expect(() => applyAdaptiveContrast(source), returnsNormally);
     });
 
-    test('increases contrast range in low-contrast tile', () {
+    test('increases contrast range in moderate-contrast tile', () {
       final source = img.Image(width: 32, height: 32);
-      // Fill with narrow range (120-136)
+      // Fill with range of 60 (100-160) — above the skip threshold of 40
       for (var y = 0; y < 32; y++) {
         for (var x = 0; x < 32; x++) {
-          final val = 120 + (x % 17);
+          final val = 100 + (x * 60 ~/ 31);
           source.setPixelRgb(x, y, val, val, val);
+        }
+      }
+
+      // Save original values before in-place modification
+      final origValues = <int>[];
+      for (var y = 0; y < 32; y++) {
+        for (var x = 0; x < 32; x++) {
+          origValues.add(source.getPixel(x, y).r.toInt());
         }
       }
 
       final result = applyAdaptiveContrast(source, strength: 1.0);
 
-      // Check that range is expanded
+      // Check that range is expanded beyond the original 60
       var minVal = 255;
       var maxVal = 0;
       for (var y = 0; y < 32; y++) {
@@ -51,7 +59,33 @@ void main() {
           if (v > maxVal) maxVal = v;
         }
       }
-      expect(maxVal - minVal, greaterThan(16));
+      expect(maxVal - minVal, greaterThan(60));
+    });
+
+    test('preserves near-uniform regions (no grey splotches)', () {
+      final source = img.Image(width: 32, height: 32);
+      // Fill with very narrow range (250-255) simulating white paper
+      for (var y = 0; y < 32; y++) {
+        for (var x = 0; x < 32; x++) {
+          final val = 250 + (x % 6);
+          source.setPixelRgb(x, y, val, val, val);
+        }
+      }
+
+      final result = applyAdaptiveContrast(source, strength: 1.0);
+
+      // Near-uniform tiles (range < 40) should be untouched
+      var minVal = 255;
+      var maxVal = 0;
+      for (var y = 0; y < 32; y++) {
+        for (var x = 0; x < 32; x++) {
+          final v = result.getPixel(x, y).r.toInt();
+          if (v < minVal) minVal = v;
+          if (v > maxVal) maxVal = v;
+        }
+      }
+      // Range should NOT be expanded — still approximately 5
+      expect(maxVal - minVal, lessThan(20));
     });
 
     test('strength=0 returns near-original image', () {
@@ -62,12 +96,15 @@ void main() {
         }
       }
 
+      // Save original values before in-place modification
+      final origR = source.getPixel(5, 5).r.toInt();
+      final origG = source.getPixel(5, 5).g.toInt();
+
       final result = applyAdaptiveContrast(source, strength: 0.0);
       // Pixels should be unchanged
-      final origPixel = source.getPixel(5, 5);
       final resultPixel = result.getPixel(5, 5);
-      expect(resultPixel.r.toInt(), equals(origPixel.r.toInt()));
-      expect(resultPixel.g.toInt(), equals(origPixel.g.toInt()));
+      expect(resultPixel.r.toInt(), equals(origR));
+      expect(resultPixel.g.toInt(), equals(origG));
     });
   });
 }
