@@ -79,8 +79,10 @@ class InboxNotifier extends _$InboxNotifier {
         hasMore: response.next != null,
         currentPage: nextPage,
       ));
-    } catch (_) {
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+    } catch (e) {
+      state = AsyncData(current.copyWith(
+        isLoadingMore: false,
+      ));
     }
   }
 

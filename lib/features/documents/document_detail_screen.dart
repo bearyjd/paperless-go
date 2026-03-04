@@ -239,11 +239,11 @@ class DocumentDetailScreen extends ConsumerWidget {
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.calendar_today),
                 title: const Text('Created'),
-                subtitle: Text(DateFormat.yMMMd().format(doc.created)),
+                subtitle: Text(doc.created != null ? DateFormat.yMMMd().format(doc.created!) : 'Unknown'),
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: doc.created,
+                    initialDate: doc.created ?? DateTime.now(),
                     firstDate: DateTime(1900),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
@@ -439,7 +439,7 @@ class DocumentDetailScreen extends ConsumerWidget {
         if (confirmed == true) {
           try {
             final api = ref.read(paperlessApiProvider);
-            await api.deleteDocument(documentId);
+            await api.trashDocuments([documentId]);
             ref.invalidate(documentsNotifierProvider);
             ref.invalidate(inboxNotifierProvider);
             if (context.mounted) context.pop();

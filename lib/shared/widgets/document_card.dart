@@ -121,7 +121,7 @@ class DocumentCard extends StatelessWidget {
 
                     const SizedBox(height: 4),
                     Text(
-                      _formatDate(document.created),
+                      document.created != null ? _formatDate(document.created!) : '',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),

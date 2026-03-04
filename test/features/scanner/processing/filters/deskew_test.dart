@@ -5,7 +5,7 @@ import 'package:paperless_go/features/scanner/processing/filters/deskew.dart';
 void main() {
   group('Deskew filter', () {
     /// Create a test image with horizontal black lines (simulating text rows).
-    img.Image _createTextImage(int width, int height) {
+    img.Image createTextImage(int width, int height) {
       final image = img.Image(width: width, height: height);
       img.fill(image, color: img.ColorRgb8(255, 255, 255));
       // Draw horizontal "text lines" every 20 pixels
@@ -22,7 +22,7 @@ void main() {
     }
 
     test('returns image unchanged or minimally rotated when straight', () {
-      final straight = _createTextImage(200, 200);
+      final straight = createTextImage(200, 200);
       final result = applyDeskew(straight);
       // Straight text should either return unchanged or a very similar size
       // (edge detection may find a tiny angle near the threshold)
@@ -32,7 +32,7 @@ void main() {
 
     test('corrects a rotated image', () {
       // Create straight text lines, then rotate 10 degrees to simulate skew
-      final straight = _createTextImage(300, 300);
+      final straight = createTextImage(300, 300);
       final skewed = img.copyRotate(straight, angle: 10);
 
       final corrected = applyDeskew(skewed);
@@ -54,7 +54,7 @@ void main() {
     });
 
     test('respects maxAngle parameter', () {
-      final straight = _createTextImage(200, 200);
+      final straight = createTextImage(200, 200);
       final heavilySkewed = img.copyRotate(straight, angle: 35);
       // With maxAngle=10, can't detect the full 35-degree skew
       // but should still produce a valid result

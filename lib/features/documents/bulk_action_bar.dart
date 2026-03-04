@@ -390,9 +390,7 @@ class BulkActionBar extends ConsumerWidget {
       final count = selectedIds.length;
       try {
         final api = ref.read(paperlessApiProvider);
-        for (final id in selectedIds) {
-          await api.deleteDocument(id);
-        }
+        await api.trashDocuments(selectedIds.toList());
         if (!context.mounted) return;
         onClearSelection();
         onRefresh();

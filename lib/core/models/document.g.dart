@@ -19,7 +19,9 @@ _$DocumentImpl _$$DocumentImplFromJson(
           ?.map((e) => (e as num).toInt())
           .toList() ??
       const [],
-  created: DateTime.parse(json['created'] as String),
+  created: json['created'] == null
+      ? null
+      : DateTime.parse(json['created'] as String),
   createdDate: json['created_date'] as String?,
   modified: json['modified'] == null
       ? null
@@ -49,7 +51,7 @@ Map<String, dynamic> _$$DocumentImplToJson(_$DocumentImpl instance) =>
       'document_type': instance.documentType,
       'storage_path': instance.storagePath,
       'tags': instance.tags,
-      'created': instance.created.toIso8601String(),
+      'created': instance.created?.toIso8601String(),
       'created_date': instance.createdDate,
       'modified': instance.modified?.toIso8601String(),
       'added': instance.added?.toIso8601String(),

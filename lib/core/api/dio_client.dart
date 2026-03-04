@@ -102,8 +102,9 @@ class _CsrfInterceptor extends Interceptor {
       ));
       final response = await tempDio.get('api/');
       _extractCsrfFromCookies(response.headers);
-    } catch (_) {
+    } catch (e) {
       // Failed to fetch CSRF token — requests will proceed without it
+      assert(() { print('CSRF token fetch failed: $e'); return true; }());
     }
   }
 

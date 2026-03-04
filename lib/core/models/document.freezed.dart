@@ -29,7 +29,7 @@ mixin _$Document {
   @JsonKey(name: 'storage_path')
   int? get storagePath => throw _privateConstructorUsedError;
   List<int> get tags => throw _privateConstructorUsedError;
-  DateTime get created => throw _privateConstructorUsedError;
+  DateTime? get created => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_date')
   String? get createdDate => throw _privateConstructorUsedError;
   DateTime? get modified => throw _privateConstructorUsedError;
@@ -68,7 +68,7 @@ abstract class $DocumentCopyWith<$Res> {
     @JsonKey(name: 'document_type') int? documentType,
     @JsonKey(name: 'storage_path') int? storagePath,
     List<int> tags,
-    DateTime created,
+    DateTime? created,
     @JsonKey(name: 'created_date') String? createdDate,
     DateTime? modified,
     DateTime? added,
@@ -102,7 +102,7 @@ class _$DocumentCopyWithImpl<$Res, $Val extends Document>
     Object? documentType = freezed,
     Object? storagePath = freezed,
     Object? tags = null,
-    Object? created = null,
+    Object? created = freezed,
     Object? createdDate = freezed,
     Object? modified = freezed,
     Object? added = freezed,
@@ -139,10 +139,10 @@ class _$DocumentCopyWithImpl<$Res, $Val extends Document>
                 ? _value.tags
                 : tags // ignore: cast_nullable_to_non_nullable
                       as List<int>,
-            created: null == created
+            created: freezed == created
                 ? _value.created
                 : created // ignore: cast_nullable_to_non_nullable
-                      as DateTime,
+                      as DateTime?,
             createdDate: freezed == createdDate
                 ? _value.createdDate
                 : createdDate // ignore: cast_nullable_to_non_nullable
@@ -201,7 +201,7 @@ abstract class _$$DocumentImplCopyWith<$Res>
     @JsonKey(name: 'document_type') int? documentType,
     @JsonKey(name: 'storage_path') int? storagePath,
     List<int> tags,
-    DateTime created,
+    DateTime? created,
     @JsonKey(name: 'created_date') String? createdDate,
     DateTime? modified,
     DateTime? added,
@@ -234,7 +234,7 @@ class __$$DocumentImplCopyWithImpl<$Res>
     Object? documentType = freezed,
     Object? storagePath = freezed,
     Object? tags = null,
-    Object? created = null,
+    Object? created = freezed,
     Object? createdDate = freezed,
     Object? modified = freezed,
     Object? added = freezed,
@@ -271,10 +271,10 @@ class __$$DocumentImplCopyWithImpl<$Res>
             ? _value._tags
             : tags // ignore: cast_nullable_to_non_nullable
                   as List<int>,
-        created: null == created
+        created: freezed == created
             ? _value.created
             : created // ignore: cast_nullable_to_non_nullable
-                  as DateTime,
+                  as DateTime?,
         createdDate: freezed == createdDate
             ? _value.createdDate
             : createdDate // ignore: cast_nullable_to_non_nullable
@@ -326,7 +326,7 @@ class _$DocumentImpl implements _Document {
     @JsonKey(name: 'document_type') this.documentType,
     @JsonKey(name: 'storage_path') this.storagePath,
     final List<int> tags = const [],
-    required this.created,
+    this.created,
     @JsonKey(name: 'created_date') this.createdDate,
     this.modified,
     this.added,
@@ -366,7 +366,7 @@ class _$DocumentImpl implements _Document {
   }
 
   @override
-  final DateTime created;
+  final DateTime? created;
   @override
   @JsonKey(name: 'created_date')
   final String? createdDate;
@@ -486,7 +486,7 @@ abstract class _Document implements Document {
     @JsonKey(name: 'document_type') final int? documentType,
     @JsonKey(name: 'storage_path') final int? storagePath,
     final List<int> tags,
-    required final DateTime created,
+    final DateTime? created,
     @JsonKey(name: 'created_date') final String? createdDate,
     final DateTime? modified,
     final DateTime? added,
@@ -517,7 +517,7 @@ abstract class _Document implements Document {
   @override
   List<int> get tags;
   @override
-  DateTime get created;
+  DateTime? get created;
   @override
   @JsonKey(name: 'created_date')
   String? get createdDate;
