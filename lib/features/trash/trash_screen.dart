@@ -126,7 +126,7 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
                     subtitle: Text(
                       doc.modified != null
                           ? 'Deleted ${DateFormat.yMMMd().format(doc.modified!)}'
-                          : 'Deleted ${DateFormat.yMMMd().format(doc.created)}',
+                          : doc.created != null ? 'Deleted ${DateFormat.yMMMd().format(doc.created!)}' : 'Deleted',
                     ),
                     selected: isSelected,
                     onTap: () => _toggleSelection(doc.id),

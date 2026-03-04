@@ -80,8 +80,10 @@ class TrashNotifier extends _$TrashNotifier {
         hasMore: response.next != null,
         currentPage: nextPage,
       ));
-    } catch (_) {
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+    } catch (e) {
+      state = AsyncData(current.copyWith(
+        isLoadingMore: false,
+      ));
     }
   }
 

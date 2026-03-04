@@ -14,7 +14,7 @@ class Document with _$Document {
     @JsonKey(name: 'document_type') int? documentType,
     @JsonKey(name: 'storage_path') int? storagePath,
     @Default([]) List<int> tags,
-    required DateTime created,
+    DateTime? created,
     @JsonKey(name: 'created_date') String? createdDate,
     DateTime? modified,
     DateTime? added,

@@ -41,6 +41,7 @@ class _CropScreenState extends State<CropScreen> {
       });
     }
     frame.image.dispose();
+    codec.dispose();
   }
 
   Future<void> _apply() async {

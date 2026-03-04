@@ -81,9 +81,8 @@ class MetadataMatcher {
 
       case 3: // exact match
         if (entity.matchStr.isEmpty) return false;
-        final needle = entity.isInsensitive ? entity.matchStr.toLowerCase() : entity.matchStr;
-        final haystack = entity.isInsensitive ? textLower : textLower; // textLower is already lower
-        return haystack.contains(needle);
+        final needle = entity.isInsensitive ? entity.matchStr.toLowerCase() : entity.matchStr.toLowerCase();
+        return textLower.contains(needle);
 
       case 4: // regex
         if (entity.matchStr.isEmpty) return false;

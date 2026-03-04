@@ -8,22 +8,6 @@ import 'package:image/image.dart' as img;
 /// Primary: uses ML Kit text recognition to detect text line angles.
 /// Fallback: edge-weighted projection profiles.
 ///
-/// Note: ML Kit requires the main isolate (uses platform channels),
-/// so this must be called from the main isolate, not from compute().
-Future<img.Image> applyDeskewAsync(img.Image source, String imagePath) async {
-  try {
-    final angle = await detectAngleWithMlKit(imagePath);
-    if (angle != null && angle.abs() > 0.3 && angle.abs() < 30) {
-      final rotated = img.copyRotate(source,
-          angle: -angle, interpolation: img.Interpolation.linear);
-      return _cropRotationBorders(rotated, source.width, source.height, angle);
-    }
-  } catch (_) {
-    // ML Kit not available, fall through to edge-based method
-  }
-  return applyDeskew(source);
-}
-
 /// Apply a known deskew angle (from ML Kit) to an image.
 /// Can be called from any isolate — no platform channel dependency.
 img.Image applyDeskewWithAngle(img.Image source, double angleDeg) {

@@ -168,6 +168,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         if (!url.startsWith('http://') && !url.startsWith('https://')) {
                           return 'URL must start with https:// or http://';
                         }
+                        final parsed = Uri.tryParse(v.trim());
+                        if (parsed == null || parsed.host.isEmpty) {
+                          return 'Enter a valid URL';
+                        }
                         return null;
                       },
                       onChanged: (_) => setState(() {}), // Refresh for HTTP warning

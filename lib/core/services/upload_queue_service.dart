@@ -37,7 +37,9 @@ class UploadQueueService extends _$UploadQueueService {
       }
       final pending = await cache.getPendingUploads();
 
+      const maxRetries = 5;
       for (final upload in pending) {
+        if (upload.retryCount >= maxRetries) continue;
         try {
           List<int>? tags;
           if (upload.tagsJson != null) {
