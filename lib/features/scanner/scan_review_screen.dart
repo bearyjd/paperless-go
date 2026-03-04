@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'crop_screen.dart';
+import 'processing/crop_rotate.dart';
+
 /// Review scanned pages before uploading.
 class ScanReviewScreen extends StatefulWidget {
   final List<String> imagePaths;
@@ -16,6 +19,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
   late List<String> _pages;
   int _currentPage = 0;
   late PageController _pageController;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -42,7 +46,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
               style: FilledButton.styleFrom(
                 minimumSize: const Size(0, 36),
               ),
-              onPressed: _pages.isNotEmpty
+              onPressed: _pages.isNotEmpty && !_isProcessing
                   ? () => context.push('/scan/enhance', extra: _pages)
                   : null,
               child: const Text('Continue'),
@@ -55,57 +59,77 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
           : Column(
               children: [
                 Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: _pages.length,
-                    onPageChanged: (i) => setState(() => _currentPage = i),
-                    itemBuilder: (_, i) => Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: InteractiveViewer(
-                        child: Image.file(
-                          File(_pages[i]),
-                          fit: BoxFit.contain,
+                  child: Stack(
+                    children: [
+                      PageView.builder(
+                        controller: _pageController,
+                        itemCount: _pages.length,
+                        onPageChanged: (i) => setState(() => _currentPage = i),
+                        itemBuilder: (_, i) => Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: InteractiveViewer(
+                            child: Image.file(
+                              File(_pages[i]),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      if (_isProcessing)
+                        const Center(child: CircularProgressIndicator()),
+                    ],
                   ),
                 ),
-                // Page indicator + controls
+                // Controls row
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Delete page
+                      // Delete
                       IconButton(
-                        onPressed: () => _removePage(_currentPage),
+                        onPressed: _isProcessing ? null : () => _removePage(_currentPage),
                         icon: const Icon(Icons.delete_outline),
                         tooltip: 'Remove page',
                       ),
+                      // Rotate CCW
+                      IconButton(
+                        onPressed: _isProcessing ? null : () => _rotatePage(clockwise: false),
+                        icon: const Icon(Icons.rotate_left),
+                        tooltip: 'Rotate left',
+                      ),
+                      // Rotate CW
+                      IconButton(
+                        onPressed: _isProcessing ? null : () => _rotatePage(clockwise: true),
+                        icon: const Icon(Icons.rotate_right),
+                        tooltip: 'Rotate right',
+                      ),
+                      // Crop
+                      IconButton(
+                        onPressed: _isProcessing ? null : _cropPage,
+                        icon: const Icon(Icons.crop),
+                        tooltip: 'Crop',
+                      ),
+                      const Spacer(),
                       // Page indicator
                       Text(
                         '${_currentPage + 1} / ${_pages.length}',
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
+                      const Spacer(),
                       // Reorder
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: _currentPage > 0
-                                ? () => _movePage(_currentPage, _currentPage - 1)
-                                : null,
-                            icon: const Icon(Icons.arrow_back),
-                            tooltip: 'Move left',
-                          ),
-                          IconButton(
-                            onPressed: _currentPage < _pages.length - 1
-                                ? () => _movePage(_currentPage, _currentPage + 1)
-                                : null,
-                            icon: const Icon(Icons.arrow_forward),
-                            tooltip: 'Move right',
-                          ),
-                        ],
+                      IconButton(
+                        onPressed: _isProcessing || _currentPage <= 0
+                            ? null
+                            : () => _movePage(_currentPage, _currentPage - 1),
+                        icon: const Icon(Icons.arrow_back),
+                        tooltip: 'Move left',
+                      ),
+                      IconButton(
+                        onPressed: _isProcessing || _currentPage >= _pages.length - 1
+                            ? null
+                            : () => _movePage(_currentPage, _currentPage + 1),
+                        icon: const Icon(Icons.arrow_forward),
+                        tooltip: 'Move right',
                       ),
                     ],
                   ),
@@ -152,6 +176,46 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
               ],
             ),
     );
+  }
+
+  Future<void> _rotatePage({required bool clockwise}) async {
+    setState(() => _isProcessing = true);
+    try {
+      final oldPath = _pages[_currentPage];
+      final newPath = await CropRotate.rotateImage90(
+        inputPath: oldPath,
+        clockwise: clockwise,
+      );
+      if (!mounted) return;
+      imageCache.clear();
+      imageCache.clearLiveImages();
+      setState(() {
+        _pages[_currentPage] = newPath;
+        _isProcessing = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Rotate failed: $e')),
+      );
+    }
+  }
+
+  Future<void> _cropPage() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CropScreen(imagePath: _pages[_currentPage]),
+      ),
+    );
+    if (result != null && mounted) {
+      imageCache.clear();
+      imageCache.clearLiveImages();
+      setState(() {
+        _pages[_currentPage] = result;
+      });
+    }
   }
 
   void _removePage(int index) {

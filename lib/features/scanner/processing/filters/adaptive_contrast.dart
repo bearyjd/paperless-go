@@ -5,17 +5,20 @@ import 'package:image/image.dart' as img;
 
 /// Applies adaptive contrast enhancement with bilinear interpolation
 /// between tile regions to avoid visible grid artifacts.
+/// Modifies and returns the source image in-place (no clone).
 img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
   if (source.width < 3 || source.height < 3) return source;
-  final result = source.clone();
-  final width = result.width;
-  final height = result.height;
+  final width = source.width;
+  final height = source.height;
 
-  const tileSize = 64;
+  // Larger tiles reduce sensitivity to local noise (dust, texture)
+  // and prevent grey splotches in near-uniform regions like white paper.
+  const tileSize = 128;
   final tilesX = (width / tileSize).ceil();
   final tilesY = (height / tileSize).ceil();
 
-  // Compute min/max luminance for each tile
+  // Compute min/max luminance for each tile using percentiles
+  // instead of absolute min/max to resist outliers (specs of dust, etc.)
   final tileMin = Float64List(tilesX * tilesY);
   final tileMax = Float64List(tilesX * tilesY);
   final tileRange = Float64List(tilesX * tilesY);
@@ -27,14 +30,30 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
       final x1 = min(x0 + tileSize, width);
       final y1 = min(y0 + tileSize, height);
 
-      var minL = 255.0;
-      var maxL = 0.0;
+      // Build a histogram for robust percentile estimation
+      final hist = Uint32List(256);
+      var count = 0;
       for (var y = y0; y < y1; y++) {
         for (var x = x0; x < x1; x++) {
-          final pixel = result.getPixel(x, y);
-          final lum = 0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b;
-          if (lum < minL) minL = lum;
-          if (lum > maxL) maxL = lum;
+          final pixel = source.getPixel(x, y);
+          final lum = (0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b).round().clamp(0, 255);
+          hist[lum]++;
+          count++;
+        }
+      }
+
+      // Use 2nd and 98th percentile to ignore outlier dust/specks
+      final p2 = (count * 0.02).round();
+      final p98 = (count * 0.98).round();
+      var cumulative = 0;
+      var minL = 0.0;
+      var maxL = 255.0;
+      for (var i = 0; i < 256; i++) {
+        cumulative += hist[i];
+        if (cumulative >= p2 && minL == 0.0 && i > 0) minL = i.toDouble();
+        if (cumulative >= p98) {
+          maxL = i.toDouble();
+          break;
         }
       }
 
@@ -46,8 +65,6 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
   }
 
   // Apply contrast with bilinear interpolation between tile centers.
-  // Each pixel blends the mapping from its 4 nearest tile centers,
-  // eliminating hard boundaries between tiles.
   final halfTile = tileSize / 2.0;
 
   for (var y = 0; y < height; y++) {
@@ -66,7 +83,7 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
       final fx = (gx - tx0).clamp(0.0, 1.0);
       final fy = (gy - ty0).clamp(0.0, 1.0);
 
-      final pixel = result.getPixel(x, y);
+      final pixel = source.getPixel(x, y);
       final r = pixel.r.toDouble();
       final g = pixel.g.toDouble();
       final b = pixel.b.toDouble();
@@ -74,7 +91,9 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
       // Stretch pixel through each of the 4 tile mappings, then blend
       double stretchChannel(double val, int tIdx) {
         final range = tileRange[tIdx];
-        if (range < 10) return val; // Near-uniform tile, no stretch
+        // Skip tiles with narrow range — these are uniform regions
+        // (white paper, solid backgrounds) where stretching creates artifacts.
+        if (range < 40) return val;
         return ((val - tileMin[tIdx]) / range * 255).clamp(0, 255);
       }
 
@@ -93,7 +112,7 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
         return (val + (stretched - val) * strength).clamp(0, 255);
       }
 
-      result.setPixelRgb(
+      source.setPixelRgb(
         x, y,
         blendChannel(r).round(),
         blendChannel(g).round(),
@@ -102,5 +121,5 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
     }
   }
 
-  return result;
+  return source;
 }

@@ -10,10 +10,12 @@ import 'pdf/pdf_generator.dart';
 class PdfPreviewScreen extends StatefulWidget {
   final List<String> imagePaths;
   final bool preProcessed;
+  final String? ocrImagePath;
   const PdfPreviewScreen({
     super.key,
     required this.imagePaths,
     this.preProcessed = false,
+    this.ocrImagePath,
   });
 
   @override
@@ -91,6 +93,7 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
       'filename': 'scan_${DateTime.now().millisecondsSinceEpoch}.pdf',
       // Signal that we own this temp file so upload_notifier won't delete the source
       '_isTempPdf': true,
+      if (widget.ocrImagePath != null) 'ocrImagePath': widget.ocrImagePath,
     });
   }
 

@@ -2,7 +2,6 @@ import 'package:image/image.dart' as img;
 
 import 'filters/adaptive_contrast.dart';
 import 'filters/binarize.dart';
-import 'filters/denoise.dart';
 import 'filters/deskew.dart';
 import 'filters/shadow_removal.dart';
 import 'filters/sharpen.dart';
@@ -10,11 +9,11 @@ import 'filters/sharpen.dart';
 /// Available enhancement presets for scanned documents.
 enum ProcessingPreset {
   none('None', 'No processing applied'),
-  auto('Auto', 'Deskew + contrast + sharpen + light denoise'),
+  auto('Auto', 'Deskew + contrast + sharpen'),
   receipt('Receipt', 'Deskew + high contrast + binarize for thermal paper'),
   bwText('B&W Text', 'Deskew + contrast + sharpen + binarize'),
-  colorDocument('Color Doc', 'Deskew + contrast + sharpen + denoise, preserves color'),
-  photo('Photo', 'Light sharpen + denoise, preserves everything');
+  colorDocument('Color Doc', 'Deskew + contrast + sharpen, preserves color'),
+  photo('Photo', 'Light sharpen, preserves everything');
 
   final String label;
   final String description;
@@ -22,7 +21,7 @@ enum ProcessingPreset {
 }
 
 /// Applies the filter pipeline for a given preset.
-/// If [skipDeskew] is true, deskew is skipped (already done on main isolate via ML Kit).
+/// If [skipDeskew] is true, deskew is skipped (already done by caller).
 img.Image applyPreset(img.Image source, ProcessingPreset preset,
     {bool skipDeskew = false}) {
   switch (preset) {
@@ -32,8 +31,9 @@ img.Image applyPreset(img.Image source, ProcessingPreset preset,
     case ProcessingPreset.auto:
       var result = skipDeskew ? source : applyDeskew(source);
       result = applyAdaptiveContrast(result, strength: 0.7);
+      // Sharpen already includes a blur step internally (unsharp mask),
+      // so a separate denoise pass is redundant and doubles processing time.
       result = applySharpen(result, amount: 1.2, radius: 1);
-      result = applyDenoise(result, radius: 1);
       return result;
 
     case ProcessingPreset.receipt:
@@ -54,12 +54,9 @@ img.Image applyPreset(img.Image source, ProcessingPreset preset,
       var result = skipDeskew ? source : applyDeskew(source);
       result = applyAdaptiveContrast(result, strength: 0.6);
       result = applySharpen(result, amount: 1.0, radius: 1);
-      result = applyDenoise(result, radius: 1);
       return result;
 
     case ProcessingPreset.photo:
-      var result = applySharpen(source, amount: 0.8, radius: 1);
-      result = applyDenoise(result, radius: 1);
-      return result;
+      return applySharpen(source, amount: 0.8, radius: 1);
   }
 }

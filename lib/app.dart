@@ -138,7 +138,8 @@ GoRouter router(Ref ref) {
           }
           final paths = (extra['imagePaths'] as List<dynamic>).cast<String>();
           final preProcessed = extra['preProcessed'] as bool? ?? false;
-          return PdfPreviewScreen(imagePaths: paths, preProcessed: preProcessed);
+          final ocrImagePath = extra['ocrImagePath'] as String?;
+          return PdfPreviewScreen(imagePaths: paths, preProcessed: preProcessed, ocrImagePath: ocrImagePath);
         },
       ),
       GoRoute(
@@ -380,6 +381,26 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
     }
   }
 
+  Future<void> _onBatchScan() async {
+    _toggle();
+    try {
+      final pictures = await CunningDocumentScanner.getPictures(
+        isGalleryImportAllowed: false,
+      );
+      if (pictures != null && pictures.isNotEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Scanned ${pictures.length} ${pictures.length == 1 ? 'page' : 'pages'}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        GoRouter.of(context).push('/scan/review', extra: pictures);
+      }
+    } catch (_) {
+      // User cancelled or error
+    }
+  }
+
   Future<void> _onUploadFile() async {
     _toggle();
     try {
@@ -434,6 +455,43 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
                                   fontSize: 12)),
                           const SizedBox(width: 8),
                           Icon(Icons.upload_file,
+                              size: 20,
+                              color: colorScheme.onSecondaryContainer),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        ScaleTransition(
+          scale: _animation,
+          alignment: Alignment.bottomRight,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Material(
+                  color: colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: _onBatchScan,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Batch scan',
+                              style: TextStyle(
+                                  color: colorScheme.onSecondaryContainer,
+                                  fontSize: 12)),
+                          const SizedBox(width: 8),
+                          Icon(Icons.burst_mode,
                               size: 20,
                               color: colorScheme.onSecondaryContainer),
                         ],
