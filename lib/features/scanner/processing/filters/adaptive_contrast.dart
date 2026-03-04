@@ -10,6 +10,8 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
   if (source.width < 3 || source.height < 3) return source;
   final width = source.width;
   final height = source.height;
+  final nc = source.numChannels;
+  final bytes = source.data!.toUint8List();
 
   // Larger tiles reduce sensitivity to local noise (dust, texture)
   // and prevent grey splotches in near-uniform regions like white paper.
@@ -34,9 +36,10 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
       final hist = Uint32List(256);
       var count = 0;
       for (var y = y0; y < y1; y++) {
+        final rowOffset = y * width * nc;
         for (var x = x0; x < x1; x++) {
-          final pixel = source.getPixel(x, y);
-          final lum = (0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b).round().clamp(0, 255);
+          final idx = rowOffset + x * nc;
+          final lum = (0.299 * bytes[idx] + 0.587 * bytes[idx + 1] + 0.114 * bytes[idx + 2]).round().clamp(0, 255);
           hist[lum]++;
           count++;
         }
@@ -68,6 +71,7 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
   final halfTile = tileSize / 2.0;
 
   for (var y = 0; y < height; y++) {
+    final rowOffset = y * width * nc;
     for (var x = 0; x < width; x++) {
       // Position relative to tile grid centers
       final gx = (x - halfTile) / tileSize;
@@ -83,10 +87,10 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
       final fx = (gx - tx0).clamp(0.0, 1.0);
       final fy = (gy - ty0).clamp(0.0, 1.0);
 
-      final pixel = source.getPixel(x, y);
-      final r = pixel.r.toDouble();
-      final g = pixel.g.toDouble();
-      final b = pixel.b.toDouble();
+      final idx = rowOffset + x * nc;
+      final r = bytes[idx].toDouble();
+      final g = bytes[idx + 1].toDouble();
+      final b = bytes[idx + 2].toDouble();
 
       // Stretch pixel through each of the 4 tile mappings, then blend
       double stretchChannel(double val, int tIdx) {
@@ -112,12 +116,9 @@ img.Image applyAdaptiveContrast(img.Image source, {double strength = 1.0}) {
         return (val + (stretched - val) * strength).clamp(0, 255);
       }
 
-      source.setPixelRgb(
-        x, y,
-        blendChannel(r).round(),
-        blendChannel(g).round(),
-        blendChannel(b).round(),
-      );
+      bytes[idx] = blendChannel(r).round();
+      bytes[idx + 1] = blendChannel(g).round();
+      bytes[idx + 2] = blendChannel(b).round();
     }
   }
 

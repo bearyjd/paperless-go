@@ -24,6 +24,11 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
   int _currentPage = 0;
   bool _isProcessing = false;
   bool _showOriginal = false;
+  int _processingGeneration = 0;
+
+  // Detailed progress tracking
+  String _processingStage = '';
+  double _processingPercent = 0.0;
 
   // Preview bytes for fast before/after
   Uint8List? _previewOriginal;
@@ -68,7 +73,12 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
   }
 
   Future<void> _processAllPages() async {
-    setState(() => _isProcessing = true);
+    final generation = ++_processingGeneration;
+    setState(() {
+      _isProcessing = true;
+      _processingStage = '';
+      _processingPercent = 0.0;
+    });
 
     // Process pages in parallel batches to speed up multi-page scans.
     // Cap at 3 concurrent to avoid OOM from multiple full-res images in memory.
@@ -76,7 +86,8 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
     final futures = <Future<void>>[];
 
     for (var i = 0; i < _originalPaths.length; i++) {
-      futures.add(_processPage(i));
+      if (generation != _processingGeneration) return;
+      futures.add(_processPage(i, generation));
       if (futures.length >= maxConcurrent) {
         await Future.wait(futures);
         futures.clear();
@@ -86,31 +97,59 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
       await Future.wait(futures);
     }
 
-    if (mounted) setState(() => _isProcessing = false);
+    if (mounted && generation == _processingGeneration) {
+      setState(() => _isProcessing = false);
+    }
   }
 
-  Future<void> _processPage(int i) async {
-    if (!mounted) return;
+  Future<void> _processPage(int i, int generation) async {
+    if (!mounted || generation != _processingGeneration) return;
     try {
       if (_selectedPreset == ProcessingPreset.none) {
         _enhancedPaths[i] = _originalPaths[i];
       } else {
-        final enhanced = await ImageEnhancer.enhanceImage(
-          inputPath: _originalPaths[i],
-          preset: _selectedPreset,
-        );
-        if (mounted) {
-          setState(() => _enhancedPaths[i] = enhanced);
+        // Use progress-reporting stream for the current page
+        if (i == _currentPage) {
+          String? enhancedPath;
+          await for (final message in ImageEnhancer.enhanceImageWithProgress(
+            inputPath: _originalPaths[i],
+            preset: _selectedPreset,
+          )) {
+            if (!mounted || generation != _processingGeneration) return;
+            switch (message) {
+              case ProcessingProgress():
+                setState(() {
+                  _processingStage = message.stage;
+                  _processingPercent = message.percent;
+                });
+              case ProcessingComplete():
+                enhancedPath = String.fromCharCodes(message.result);
+              case ProcessingError():
+                throw Exception(message.error);
+            }
+          }
+          if (mounted && generation == _processingGeneration && enhancedPath != null) {
+            setState(() => _enhancedPaths[i] = enhancedPath);
+          }
+        } else {
+          // Background pages use the simple compute() path
+          final enhanced = await ImageEnhancer.enhanceImage(
+            inputPath: _originalPaths[i],
+            preset: _selectedPreset,
+          );
+          if (mounted && generation == _processingGeneration) {
+            setState(() => _enhancedPaths[i] = enhanced);
+          }
         }
       }
       // Update the preview from the processed file when it's the current page
-      if (mounted && i == _currentPage && _enhancedPaths[i] != null) {
+      if (mounted && generation == _processingGeneration && i == _currentPage && _enhancedPaths[i] != null) {
         final bytes = await File(_enhancedPaths[i]!).readAsBytes();
-        if (mounted) setState(() => _previewEnhanced = bytes);
+        if (mounted && generation == _processingGeneration) setState(() => _previewEnhanced = bytes);
       }
     } catch (e) {
       // If enhancement fails, use original
-      if (mounted) {
+      if (mounted && generation == _processingGeneration) {
         setState(() => _enhancedPaths[i] = _originalPaths[i]);
       }
     }
@@ -188,10 +227,14 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  const LinearProgressIndicator(),
+                  LinearProgressIndicator(
+                    value: _processingPercent > 0 ? _processingPercent : null,
+                  ),
                   const SizedBox(height: 4),
                   Text(
-                    'Processing ${_enhancedPaths.where((p) => p != null).length}/${_originalPaths.length} pages...',
+                    _processingStage.isNotEmpty
+                        ? 'Page ${_currentPage + 1}: $_processingStage  ${(_processingPercent * 100).round()}%'
+                        : 'Processing ${_enhancedPaths.where((p) => p != null).length}/${_originalPaths.length} pages...',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
