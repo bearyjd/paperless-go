@@ -1,11 +1,36 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
+import 'filters/adaptive_contrast.dart';
+import 'filters/binarize.dart';
 import 'filters/deskew.dart';
+import 'filters/shadow_removal.dart';
+import 'filters/sharpen.dart';
 import 'presets.dart';
+
+/// Messages sent from the processing isolate to report progress.
+sealed class ProcessingMessage {}
+
+class ProcessingProgress extends ProcessingMessage {
+  final String stage;
+  final double percent;
+  ProcessingProgress(this.stage, this.percent);
+}
+
+class ProcessingComplete extends ProcessingMessage {
+  final Uint8List result;
+  ProcessingComplete(this.result);
+}
+
+class ProcessingError extends ProcessingMessage {
+  final String error;
+  ProcessingError(this.error);
+}
 
 /// Coordinates image enhancement processing.
 /// ML Kit deskew angle detection runs on the main isolate (platform channels).
@@ -46,6 +71,68 @@ class ImageEnhancer {
         '${dir.path}/enhanced_${DateTime.now().millisecondsSinceEpoch}.jpg';
     await File(outputPath).writeAsBytes(outputBytes);
     return outputPath;
+  }
+
+  /// Enhance an image file with progress reporting via a stream.
+  /// Yields [ProcessingProgress] messages during processing and
+  /// a final [ProcessingComplete] or [ProcessingError] message.
+  static Stream<ProcessingMessage> enhanceImageWithProgress({
+    required String inputPath,
+    required ProcessingPreset preset,
+    int? maxDimension,
+  }) async* {
+    yield ProcessingProgress('Reading file', 0.0);
+
+    final inputBytes = await File(inputPath).readAsBytes();
+
+    double? deskewAngle;
+    if (preset != ProcessingPreset.none && preset != ProcessingPreset.photo) {
+      yield ProcessingProgress('Detecting skew', 0.02);
+      deskewAngle = await _detectDeskewAngle(inputPath);
+    }
+
+    yield ProcessingProgress('Decoding', 0.05);
+
+    final receivePort = ReceivePort();
+    final params = _IsolateProgressParams(
+      sendPort: receivePort.sendPort,
+      imageBytes: inputBytes,
+      preset: preset,
+      maxDimension: maxDimension ?? _processingMaxDimension,
+      deskewAngle: deskewAngle,
+    );
+
+    late final Isolate isolate;
+    try {
+      isolate = await Isolate.spawn(_processInIsolateWithProgress, params);
+    } catch (e) {
+      yield ProcessingError('Failed to spawn isolate: $e');
+      return;
+    }
+
+    await for (final message in receivePort) {
+      if (message is ProcessingComplete) {
+        // Write to file and yield complete with the file path encoded as bytes
+        final dir = await getTemporaryDirectory();
+        final outputPath =
+            '${dir.path}/enhanced_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        await File(outputPath).writeAsBytes(message.result);
+        yield ProcessingProgress('Done', 1.0);
+        yield ProcessingComplete(Uint8List.fromList(outputPath.codeUnits));
+        receivePort.close();
+        isolate.kill();
+        return;
+      } else if (message is List) {
+        // Progress: [stage, percent]
+        yield ProcessingProgress(message[0] as String, message[1] as double);
+      } else if (message is String) {
+        // Error
+        yield ProcessingError(message);
+        receivePort.close();
+        isolate.kill();
+        return;
+      }
+    }
   }
 
   /// Enhance raw image bytes with the given preset.
@@ -107,6 +194,22 @@ class _ProcessingParams {
   });
 }
 
+class _IsolateProgressParams {
+  final SendPort sendPort;
+  final Uint8List imageBytes;
+  final ProcessingPreset preset;
+  final int? maxDimension;
+  final double? deskewAngle;
+
+  _IsolateProgressParams({
+    required this.sendPort,
+    required this.imageBytes,
+    required this.preset,
+    this.maxDimension,
+    this.deskewAngle,
+  });
+}
+
 Uint8List _processInIsolate(_ProcessingParams params) {
   var image = img.decodeImage(params.imageBytes);
   if (image == null) {
@@ -147,4 +250,109 @@ Uint8List _processInIsolate(_ProcessingParams params) {
 
   final enhanced = applyPreset(image, params.preset, skipDeskew: true);
   return Uint8List.fromList(img.encodeJpg(enhanced, quality: 92));
+}
+
+void _processInIsolateWithProgress(_IsolateProgressParams params) {
+  final sendPort = params.sendPort;
+
+  try {
+    sendPort.send(['Decoding', 0.05]);
+
+    var image = img.decodeImage(params.imageBytes);
+    if (image == null) {
+      sendPort.send('Failed to decode image');
+      return;
+    }
+
+    // Bake EXIF orientation once
+    image = img.bakeOrientation(image);
+
+    sendPort.send(['Resizing', 0.10]);
+
+    // Resize to processing cap before any filters run
+    if (params.maxDimension != null) {
+      final maxDim = params.maxDimension!;
+      if (image.width > maxDim || image.height > maxDim) {
+        image = img.copyResize(
+          image,
+          width: image.width > image.height ? maxDim : null,
+          height: image.height >= image.width ? maxDim : null,
+          interpolation: img.Interpolation.linear,
+        );
+      }
+    }
+
+    // Apply deskew in the isolate
+    final needsDeskew = params.preset != ProcessingPreset.none &&
+        params.preset != ProcessingPreset.photo;
+    if (needsDeskew) {
+      sendPort.send(['Deskewing', 0.15]);
+      if (params.deskewAngle != null &&
+          params.deskewAngle!.abs() > 0.3 &&
+          params.deskewAngle!.abs() < 30) {
+        image = applyDeskewWithAngle(image, params.deskewAngle!);
+      } else if (params.deskewAngle == null) {
+        image = applyDeskew(image);
+      }
+    }
+
+    // Apply preset filters with per-step progress
+    sendPort.send(['Applying filters', 0.35]);
+    final enhanced = _applyPresetWithProgress(image, params.preset, sendPort);
+
+    sendPort.send(['Encoding', 0.90]);
+    final bytes = Uint8List.fromList(img.encodeJpg(enhanced, quality: 92));
+
+    sendPort.send(ProcessingComplete(bytes));
+  } catch (e) {
+    sendPort.send('Processing error: $e');
+  }
+}
+
+/// Like [applyPreset] but sends progress updates via [sendPort].
+img.Image _applyPresetWithProgress(
+  img.Image source,
+  ProcessingPreset preset,
+  SendPort sendPort,
+) {
+  switch (preset) {
+    case ProcessingPreset.none:
+      return source.clone();
+
+    case ProcessingPreset.auto:
+      sendPort.send(['Adjusting contrast', 0.40]);
+      var result = applyAdaptiveContrast(source, strength: 0.7);
+      sendPort.send(['Sharpening', 0.65]);
+      result = applySharpen(result, amount: 1.2, radius: 1);
+      return result;
+
+    case ProcessingPreset.receipt:
+      sendPort.send(['Adjusting contrast', 0.40]);
+      var result = applyAdaptiveContrast(source, strength: 1.0);
+      sendPort.send(['Removing shadows', 0.55]);
+      result = applyShadowRemoval(result, blurRadius: 20);
+      sendPort.send(['Binarizing', 0.70]);
+      result = applyBinarize(result, windowSize: 15, k: 0.3);
+      return result;
+
+    case ProcessingPreset.bwText:
+      sendPort.send(['Adjusting contrast', 0.40]);
+      var result = applyAdaptiveContrast(source, strength: 0.8);
+      sendPort.send(['Sharpening', 0.55]);
+      result = applySharpen(result, amount: 1.5, radius: 1);
+      sendPort.send(['Binarizing', 0.70]);
+      result = applyBinarize(result, windowSize: 15, k: 0.2);
+      return result;
+
+    case ProcessingPreset.colorDocument:
+      sendPort.send(['Adjusting contrast', 0.40]);
+      var result = applyAdaptiveContrast(source, strength: 0.6);
+      sendPort.send(['Sharpening', 0.65]);
+      result = applySharpen(result, amount: 1.0, radius: 1);
+      return result;
+
+    case ProcessingPreset.photo:
+      sendPort.send(['Sharpening', 0.40]);
+      return applySharpen(source, amount: 0.8, radius: 1);
+  }
 }
