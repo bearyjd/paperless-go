@@ -32,18 +32,26 @@ class ShareIntentHandler {
   void _handleSharedFiles(List<SharedMediaFile> files) {
     if (files.isEmpty) return;
 
-    final file = files.first;
-    if (file.path.isEmpty) return;
+    // Filter to files with valid paths
+    final validFiles = files.where((f) => f.path.isNotEmpty).toList();
+    if (validFiles.isEmpty) return;
 
     final context = _navigatorKey.currentContext;
     if (context == null || !context.mounted) return;
 
-    // Navigate to upload screen with the shared file
-    final filename = file.path.split('/').last;
-    context.push('/scan/upload', extra: {
-      'filePath': file.path,
-      'filename': filename,
-    });
+    if (validFiles.length == 1) {
+      // Single file → upload directly
+      final file = validFiles.first;
+      final filename = file.path.split('/').last;
+      context.push(
+        '/scan/upload',
+        extra: {'filePath': file.path, 'filename': filename},
+      );
+    } else {
+      // Multiple files → treat as multi-page scan for review
+      final paths = validFiles.map((f) => f.path).toList();
+      context.push('/scan/review', extra: paths);
+    }
   }
 
   void dispose() {

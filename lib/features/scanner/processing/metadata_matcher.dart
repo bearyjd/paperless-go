@@ -31,19 +31,43 @@ class MetadataMatcher {
     final textLower = text.toLowerCase();
 
     final correspondentId = _matchEntity(
+      text,
       textLower,
-      params.correspondents.map((c) => _Entity(c.id, c.name, c.match, c.matchingAlgorithm, c.isInsensitive)),
+      params.correspondents.map(
+        (c) => _Entity(
+          c.id,
+          c.name,
+          c.match,
+          c.matchingAlgorithm,
+          c.isInsensitive,
+        ),
+      ),
     );
 
     final documentTypeId = _matchEntity(
+      text,
       textLower,
-      params.documentTypes.map((dt) => _Entity(dt.id, dt.name, dt.match, dt.matchingAlgorithm, dt.isInsensitive)),
+      params.documentTypes.map(
+        (dt) => _Entity(
+          dt.id,
+          dt.name,
+          dt.match,
+          dt.matchingAlgorithm,
+          dt.isInsensitive,
+        ),
+      ),
     );
 
     final tagIds = <int>[];
     for (final tag in params.tags) {
-      final entity = _Entity(tag.id, tag.name, tag.match, tag.matchingAlgorithm, tag.isInsensitive);
-      if (_entityMatches(textLower, entity)) {
+      final entity = _Entity(
+        tag.id,
+        tag.name,
+        tag.match,
+        tag.matchingAlgorithm,
+        tag.isInsensitive,
+      );
+      if (_entityMatches(text, textLower, entity)) {
         tagIds.add(tag.id);
       }
     }
@@ -58,43 +82,59 @@ class MetadataMatcher {
     );
   }
 
-  static int? _matchEntity(String textLower, Iterable<_Entity> entities) {
+  static int? _matchEntity(
+    String text,
+    String textLower,
+    Iterable<_Entity> entities,
+  ) {
     for (final entity in entities) {
-      if (_entityMatches(textLower, entity)) {
+      if (_entityMatches(text, textLower, entity)) {
         return entity.id;
       }
     }
     return null;
   }
 
-  static bool _entityMatches(String textLower, _Entity entity) {
+  static bool _entityMatches(String text, String textLower, _Entity entity) {
     switch (entity.matchingAlgorithm) {
       case 1: // any word
         if (entity.matchStr.isEmpty) return false;
         final words = entity.matchStr.split(RegExp(r'[\s,]+'));
-        return words.any((w) => w.isNotEmpty && textLower.contains(w.toLowerCase()));
+        return words.any(
+          (w) => w.isNotEmpty && textLower.contains(w.toLowerCase()),
+        );
 
       case 2: // all words
         if (entity.matchStr.isEmpty) return false;
         final words = entity.matchStr.split(RegExp(r'[\s,]+'));
-        return words.where((w) => w.isNotEmpty).every((w) => textLower.contains(w.toLowerCase()));
+        return words
+            .where((w) => w.isNotEmpty)
+            .every((w) => textLower.contains(w.toLowerCase()));
 
       case 3: // exact match
         if (entity.matchStr.isEmpty) return false;
-        final needle = entity.isInsensitive ? entity.matchStr.toLowerCase() : entity.matchStr.toLowerCase();
+        final needle = entity.isInsensitive
+            ? entity.matchStr.toLowerCase()
+            : entity.matchStr.toLowerCase();
         return textLower.contains(needle);
 
       case 4: // regex
         if (entity.matchStr.isEmpty) return false;
         try {
-          final regex = RegExp(entity.matchStr, caseSensitive: !entity.isInsensitive);
-          return regex.hasMatch(textLower);
+          final regex = RegExp(
+            entity.matchStr,
+            caseSensitive: !entity.isInsensitive,
+          );
+          // Use original-case text for case-sensitive regex, lowered for insensitive.
+          return regex.hasMatch(entity.isInsensitive ? textLower : text);
         } catch (_) {
           return false;
         }
 
       case 5: // fuzzy — case-insensitive substring of match or name
-        final matchNeedle = entity.matchStr.isNotEmpty ? entity.matchStr.toLowerCase() : entity.name.toLowerCase();
+        final matchNeedle = entity.matchStr.isNotEmpty
+            ? entity.matchStr.toLowerCase()
+            : entity.name.toLowerCase();
         return textLower.contains(matchNeedle);
 
       case 6: // auto — name as case-insensitive substring
@@ -114,34 +154,72 @@ class MetadataMatcher {
 
     // YYYY-MM-DD
     for (final m in RegExp(r'(\d{4})-(\d{1,2})-(\d{1,2})').allMatches(text)) {
-      final d = _tryParse(int.parse(m.group(1)!), int.parse(m.group(2)!), int.parse(m.group(3)!));
+      final d = _tryParse(
+        int.parse(m.group(1)!),
+        int.parse(m.group(2)!),
+        int.parse(m.group(3)!),
+      );
       if (d != null) dates.add(d);
     }
 
     // MM/DD/YYYY
     for (final m in RegExp(r'(\d{1,2})/(\d{1,2})/(\d{4})').allMatches(text)) {
-      final d = _tryParse(int.parse(m.group(3)!), int.parse(m.group(1)!), int.parse(m.group(2)!));
+      final d = _tryParse(
+        int.parse(m.group(3)!),
+        int.parse(m.group(1)!),
+        int.parse(m.group(2)!),
+      );
       if (d != null) dates.add(d);
     }
 
     // DD.MM.YYYY
     for (final m in RegExp(r'(\d{1,2})\.(\d{1,2})\.(\d{4})').allMatches(text)) {
-      final d = _tryParse(int.parse(m.group(3)!), int.parse(m.group(2)!), int.parse(m.group(1)!));
+      final d = _tryParse(
+        int.parse(m.group(3)!),
+        int.parse(m.group(2)!),
+        int.parse(m.group(1)!),
+      );
       if (d != null) dates.add(d);
     }
 
     // Month DD, YYYY
     final months = {
-      'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
-      'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12,
-      'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'jun': 6,
-      'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+      'january': 1,
+      'february': 2,
+      'march': 3,
+      'april': 4,
+      'may': 5,
+      'june': 6,
+      'july': 7,
+      'august': 8,
+      'september': 9,
+      'october': 10,
+      'november': 11,
+      'december': 12,
+      'jan': 1,
+      'feb': 2,
+      'mar': 3,
+      'apr': 4,
+      'jun': 6,
+      'jul': 7,
+      'aug': 8,
+      'sep': 9,
+      'oct': 10,
+      'nov': 11,
+      'dec': 12,
     };
     final monthPattern = months.keys.join('|');
-    for (final m in RegExp('($monthPattern)\\.?\\s+(\\d{1,2}),?\\s+(\\d{4})', caseSensitive: false).allMatches(text)) {
+    for (final m in RegExp(
+      '($monthPattern)\\.?\\s+(\\d{1,2}),?\\s+(\\d{4})',
+      caseSensitive: false,
+    ).allMatches(text)) {
       final month = months[m.group(1)!.toLowerCase()];
       if (month != null) {
-        final d = _tryParse(int.parse(m.group(3)!), month, int.parse(m.group(2)!));
+        final d = _tryParse(
+          int.parse(m.group(3)!),
+          month,
+          int.parse(m.group(2)!),
+        );
         if (d != null) dates.add(d);
       }
     }
@@ -190,5 +268,11 @@ class _Entity {
   final int matchingAlgorithm;
   final bool isInsensitive;
 
-  _Entity(this.id, this.name, this.matchStr, this.matchingAlgorithm, this.isInsensitive);
+  _Entity(
+    this.id,
+    this.name,
+    this.matchStr,
+    this.matchingAlgorithm,
+    this.isInsensitive,
+  );
 }
