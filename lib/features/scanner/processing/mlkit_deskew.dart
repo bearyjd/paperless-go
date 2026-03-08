@@ -6,8 +6,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 /// Returns the skew angle in degrees (positive = CW tilt).
 /// Must be called from the main isolate (ML Kit uses platform channels).
 ///
-/// This file is REPLACED by mlkit_deskew_stub.dart in F-Droid builds
-/// (which strips google_mlkit_text_recognition).
+/// F-Droid builds replace this file with mlkit_deskew_stub.dart (no-op).
 Future<double?> detectAngleWithMlKit(String imagePath) async {
   final inputImage = InputImage.fromFilePath(imagePath);
   final recognizer = TextRecognizer();
