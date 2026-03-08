@@ -7,6 +7,7 @@ import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
 import 'filters/deskew.dart';
+import 'mlkit_deskew.dart';
 import 'presets.dart';
 
 /// Messages sent from the processing isolate to report progress.
