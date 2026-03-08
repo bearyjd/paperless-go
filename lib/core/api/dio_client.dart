@@ -5,18 +5,21 @@ import '../constants.dart';
 class DioClient {
   static Dio create(String baseUrl, String token) {
     final normalizedUrl = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
-    final dio = Dio(BaseOptions(
-      baseUrl: normalizedUrl,
-      connectTimeout: ApiConstants.connectTimeout,
-      receiveTimeout: ApiConstants.receiveTimeout,
-      followRedirects: true,
-      maxRedirects: ApiConstants.maxRedirects,
-      validateStatus: (status) => status != null && status >= 200 && status < 300,
-      headers: {
-        'Accept': ApiConstants.acceptHeader,
-        'Authorization': 'Token $token',
-      },
-    ));
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: normalizedUrl,
+        connectTimeout: ApiConstants.connectTimeout,
+        receiveTimeout: ApiConstants.receiveTimeout,
+        followRedirects: true,
+        maxRedirects: ApiConstants.maxRedirects,
+        validateStatus: (status) =>
+            status != null && status >= 200 && status < 300,
+        headers: {
+          'Accept': ApiConstants.acceptHeader,
+          'Authorization': 'Token $token',
+        },
+      ),
+    );
 
     dio.interceptors.addAll([
       _CsrfInterceptor(dio: dio, baseUrl: normalizedUrl),
@@ -36,17 +39,18 @@ class DioClient {
   /// Create a Dio instance without auth for login requests.
   static Dio createUnauthenticated(String baseUrl) {
     final normalizedUrl = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
-    return Dio(BaseOptions(
-      baseUrl: normalizedUrl,
-      connectTimeout: ApiConstants.connectTimeout,
-      receiveTimeout: ApiConstants.receiveTimeout,
-      followRedirects: true,
-      maxRedirects: ApiConstants.maxRedirects,
-      validateStatus: (status) => status != null && status >= 200 && status < 300,
-      headers: {
-        'Accept': ApiConstants.acceptHeader,
-      },
-    ));
+    return Dio(
+      BaseOptions(
+        baseUrl: normalizedUrl,
+        connectTimeout: ApiConstants.connectTimeout,
+        receiveTimeout: ApiConstants.receiveTimeout,
+        followRedirects: true,
+        maxRedirects: ApiConstants.maxRedirects,
+        validateStatus: (status) =>
+            status != null && status >= 200 && status < 300,
+        headers: {'Accept': ApiConstants.acceptHeader},
+      ),
+    );
   }
 }
 
@@ -58,20 +62,28 @@ class _CsrfInterceptor extends Interceptor {
   final Dio dio;
   final String baseUrl;
   String? _csrfToken;
+  Future<void>? _fetchInFlight;
 
   _CsrfInterceptor({required this.dio, required this.baseUrl});
 
   static const _mutatingMethods = {'POST', 'PUT', 'PATCH', 'DELETE'};
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     if (!_mutatingMethods.contains(options.method.toUpperCase())) {
       return handler.next(options);
     }
 
-    // Fetch CSRF token if we don't have one yet
+    // Deduplicate concurrent fetches: if a fetch is already in flight,
+    // subsequent callers await the same future instead of firing duplicates.
     if (_csrfToken == null) {
-      await _fetchCsrfToken();
+      _fetchInFlight ??= _fetchCsrfToken().whenComplete(
+        () => _fetchInFlight = null,
+      );
+      await _fetchInFlight;
     }
 
     if (_csrfToken != null) {
@@ -93,18 +105,23 @@ class _CsrfInterceptor extends Interceptor {
   Future<void> _fetchCsrfToken() async {
     try {
       // Make a lightweight GET to get the csrftoken cookie
-      final tempDio = Dio(BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-        validateStatus: (_) => true, // Accept any status
-        headers: dio.options.headers,
-      ));
+      final tempDio = Dio(
+        BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+          validateStatus: (_) => true, // Accept any status
+          headers: dio.options.headers,
+        ),
+      );
       final response = await tempDio.get('api/');
       _extractCsrfFromCookies(response.headers);
     } catch (e) {
       // Failed to fetch CSRF token — requests will proceed without it
-      assert(() { print('CSRF token fetch failed: $e'); return true; }());
+      assert(() {
+        print('CSRF token fetch failed: $e');
+        return true;
+      }());
     }
   }
 
@@ -144,8 +161,19 @@ class _RetryInterceptor extends Interceptor {
       } catch (e) {
         if (e is DioException) {
           handler.next(e);
-          return;
+        } else {
+          // Wrap unexpected exceptions so the handler always resolves/rejects.
+          // Without this, the request hangs forever with no response or error.
+          handler.reject(
+            DioException(
+              requestOptions: err.requestOptions,
+              error: e,
+              type: DioExceptionType.unknown,
+              message: 'Retry failed with unexpected error: $e',
+            ),
+          );
         }
+        return;
       }
     }
     handler.next(err);
