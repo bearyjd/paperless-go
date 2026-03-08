@@ -1,18 +1,21 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img;
 
 /// Detect and correct skew angle in document images.
-/// Primary: uses ML Kit text recognition to detect text line angles.
-/// Fallback: edge-weighted projection profiles.
+/// Primary: uses ML Kit text recognition to detect text line angles
+///   (see mlkit_deskew.dart, called from image_enhancer.dart on main isolate).
+/// Fallback: edge-weighted projection profiles (below, runs in isolate).
 ///
 /// Apply a known deskew angle (from ML Kit) to an image.
 /// Can be called from any isolate — no platform channel dependency.
 img.Image applyDeskewWithAngle(img.Image source, double angleDeg) {
-  final rotated = img.copyRotate(source,
-      angle: -angleDeg, interpolation: img.Interpolation.linear);
+  final rotated = img.copyRotate(
+    source,
+    angle: -angleDeg,
+    interpolation: img.Interpolation.linear,
+  );
   return _cropRotationBorders(rotated, source.width, source.height, angleDeg);
 }
 
@@ -20,7 +23,11 @@ img.Image applyDeskewWithAngle(img.Image source, double angleDeg) {
 /// Crop back to original dimensions, then fill the black corner triangles
 /// with white so no artifacts remain.
 img.Image _cropRotationBorders(
-    img.Image rotated, int origW, int origH, double angleDeg) {
+  img.Image rotated,
+  int origW,
+  int origH,
+  double angleDeg,
+) {
   final cropW = math.min(origW, rotated.width);
   final cropH = math.min(origH, rotated.height);
 
@@ -29,7 +36,13 @@ img.Image _cropRotationBorders(
   final x = ((rotated.width - cropW) / 2).round();
   final y = ((rotated.height - cropH) / 2).round();
 
-  final cropped = img.copyCrop(rotated, x: x, y: y, width: cropW, height: cropH);
+  final cropped = img.copyCrop(
+    rotated,
+    x: x,
+    y: y,
+    width: cropW,
+    height: cropH,
+  );
 
   // Fill black corner triangles with white.
   // The rotation leaves black (0,0,0) fill pixels in the corners.
@@ -46,7 +59,13 @@ img.Image _cropRotationBorders(
 /// Scan from a corner, replacing near-black pixels with [fill].
 /// Scans row by row from the corner, stopping when no black pixels found.
 void _fillCorner(
-    img.Image image, int startX, int startY, int dx, int dy, img.Color fill) {
+  img.Image image,
+  int startX,
+  int startY,
+  int dx,
+  int dy,
+  img.Color fill,
+) {
   final w = image.width;
   final h = image.height;
 
@@ -58,7 +77,9 @@ void _fillCorner(
       final x = startX + col * dx;
       if (x < 0 || x >= w) break;
       final p = image.getPixel(x, y);
-      if (p.rNormalized < 0.05 && p.gNormalized < 0.05 && p.bNormalized < 0.05) {
+      if (p.rNormalized < 0.05 &&
+          p.gNormalized < 0.05 &&
+          p.bNormalized < 0.05) {
         image.setPixel(x, y, fill);
         foundBlack = true;
       } else {
@@ -69,58 +90,17 @@ void _fillCorner(
   }
 }
 
-/// Use ML Kit to detect the average text line angle.
-/// Returns the skew angle in degrees (positive = CW tilt).
-/// Must be called from the main isolate (ML Kit uses platform channels).
-Future<double?> detectAngleWithMlKit(String imagePath) async {
-  final inputImage = InputImage.fromFilePath(imagePath);
-  final recognizer = TextRecognizer();
-  try {
-    final result = await recognizer.processImage(inputImage);
-    if (result.blocks.isEmpty) return null;
-
-    // Collect angles from text lines with sufficient width
-    final angles = <double>[];
-    for (final block in result.blocks) {
-      for (final line in block.lines) {
-        final corners = line.cornerPoints;
-        if (corners.length < 2) continue;
-
-        // Corner points: top-left, top-right, bottom-right, bottom-left
-        final topLeft = corners[0];
-        final topRight = corners[1];
-
-        // Line width in pixels — skip very short lines
-        final dx = (topRight.x - topLeft.x).toDouble();
-        final dy = (topRight.y - topLeft.y).toDouble();
-        final width = math.sqrt(dx * dx + dy * dy);
-        if (width < 50) continue;
-
-        // Angle of the top edge of this text line
-        final angle = math.atan2(dy, dx) * 180 / math.pi;
-        angles.add(angle);
-      }
-    }
-
-    if (angles.isEmpty) return null;
-
-    // Use median angle (robust to outliers from headers, footers, etc.)
-    angles.sort();
-    return angles[angles.length ~/ 2];
-  } finally {
-    recognizer.close();
-  }
-}
-
 /// Pure Dart fallback: edge-weighted projection profiles.
 img.Image applyDeskew(img.Image source, {double maxAngle = 15.0}) {
   if (source.width < 3 || source.height < 3) return source;
   final maxDim = math.max(source.width, source.height);
   final scale = math.min(1.0, 1200.0 / maxDim);
   final small = scale < 1.0
-      ? img.copyResize(source,
+      ? img.copyResize(
+          source,
           width: (source.width * scale).round(),
-          interpolation: img.Interpolation.average)
+          interpolation: img.Interpolation.average,
+        )
       : source;
 
   final w = small.width;
@@ -138,7 +118,8 @@ img.Image applyDeskew(img.Image source, {double maxAngle = 15.0}) {
   var maxGy = 0.0;
   for (var y = 1; y < h - 1; y++) {
     for (var x = 1; x < w - 1; x++) {
-      final gy = -lum[(y - 1) * w + (x - 1)] +
+      final gy =
+          -lum[(y - 1) * w + (x - 1)] +
           -2 * lum[(y - 1) * w + x] +
           -lum[(y - 1) * w + (x + 1)] +
           lum[(y + 1) * w + (x - 1)] +
@@ -172,10 +153,11 @@ img.Image applyDeskew(img.Image source, {double maxAngle = 15.0}) {
 
   if (edgeCount < cw * ch * 0.005) return source;
 
-  final coarseAngle =
-      _findBestAngle(edges, cw, ch, -maxAngle, maxAngle, 0.5);
+  final coarseAngle = _findBestAngle(edges, cw, ch, -maxAngle, maxAngle, 0.5);
   final fineAngle = _findBestAngle(
-    edges, cw, ch,
+    edges,
+    cw,
+    ch,
     coarseAngle - 0.75,
     coarseAngle + 0.75,
     0.05,
@@ -183,14 +165,21 @@ img.Image applyDeskew(img.Image source, {double maxAngle = 15.0}) {
 
   if (fineAngle.abs() < 0.3) return source;
 
-  final rotated = img.copyRotate(source,
-      angle: fineAngle, interpolation: img.Interpolation.linear);
+  final rotated = img.copyRotate(
+    source,
+    angle: fineAngle,
+    interpolation: img.Interpolation.linear,
+  );
   return _cropRotationBorders(rotated, source.width, source.height, fineAngle);
 }
 
 double _findBestAngle(
-  Float32List edges, int w, int h,
-  double minAngle, double maxAngle, double step,
+  Float32List edges,
+  int w,
+  int h,
+  double minAngle,
+  double maxAngle,
+  double step,
 ) {
   double bestAngle = 0;
   double bestVariance = -1;
@@ -205,7 +194,11 @@ double _findBestAngle(
 }
 
 double _edgeProjectionVariance(
-    Float32List edges, int w, int h, double angleDeg) {
+  Float32List edges,
+  int w,
+  int h,
+  double angleDeg,
+) {
   final rad = angleDeg * math.pi / 180.0;
   final sinA = math.sin(rad);
   final cosA = math.cos(rad);
