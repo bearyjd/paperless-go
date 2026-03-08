@@ -1,0 +1,9 @@
+Performance and bug fixes.
+
+• 60% faster image enhancement (Receipt, B&W presets)
+• Fixed CSRF token race condition on concurrent uploads
+• Fixed retry interceptor hanging on unexpected errors
+• Fixed share intent dropping multiple files
+• Fixed stale error messages persisting after retry
+• Fixed image cache being cleared globally on rotate/crop
+• Prepared F-Droid compatible build (pure-Dart fallback for ML Kit)
