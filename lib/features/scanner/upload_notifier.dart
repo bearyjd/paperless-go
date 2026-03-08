@@ -33,11 +33,17 @@ class UploadState {
     String? errorMessage,
     double? progress,
   }) {
+    // When status changes, clear stale fields from the previous state
+    // to prevent the UI from showing e.g. an old errorMessage after retry.
+    final newStatus = status ?? this.status;
+    final statusChanged = newStatus != this.status;
     return UploadState(
-      status: status ?? this.status,
+      status: newStatus,
       taskId: taskId ?? this.taskId,
-      errorMessage: errorMessage ?? this.errorMessage,
-      progress: progress ?? this.progress,
+      errorMessage: statusChanged
+          ? errorMessage
+          : (errorMessage ?? this.errorMessage),
+      progress: statusChanged ? progress : (progress ?? this.progress),
     );
   }
 }
@@ -60,6 +66,7 @@ class UploadNotifier extends _$UploadNotifier {
   /// Convert scanned images to a single PDF and upload.
   Future<void> uploadScannedImages({
     required List<String> imagePaths,
+    bool preProcessed = false,
     String? title,
     int? correspondent,
     int? documentType,
@@ -71,7 +78,7 @@ class UploadNotifier extends _$UploadNotifier {
     String? pdfPath;
     String? safeFilename;
     try {
-      pdfPath = await _imagesToPdf(imagePaths);
+      pdfPath = await _imagesToPdf(imagePaths, preProcessed: preProcessed);
       safeFilename = _safeFilename(title ?? 'scan');
 
       final api = ref.read(paperlessApiProvider);
@@ -93,10 +100,7 @@ class UploadNotifier extends _$UploadNotifier {
       // Clean up temp PDF after successful upload
       _deleteTempFile(pdfPath);
 
-      state = UploadState(
-        status: UploadStatus.processing,
-        taskId: taskId,
-      );
+      state = UploadState(status: UploadStatus.processing, taskId: taskId);
 
       _startPolling(taskId);
     } catch (e) {
@@ -150,10 +154,7 @@ class UploadNotifier extends _$UploadNotifier {
         },
       );
 
-      state = UploadState(
-        status: UploadStatus.processing,
-        taskId: taskId,
-      );
+      state = UploadState(status: UploadStatus.processing, taskId: taskId);
 
       _startPolling(taskId);
     } catch (e) {
@@ -213,14 +214,18 @@ class UploadNotifier extends _$UploadNotifier {
     _pollTimer?.cancel();
     var attempts = 0;
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
-      if (_disposed) { timer.cancel(); return; }
+      if (_disposed) {
+        timer.cancel();
+        return;
+      }
       attempts++;
       if (attempts > _maxPollAttempts) {
         timer.cancel();
         state = UploadState(
           status: UploadStatus.failure,
           taskId: taskId,
-          errorMessage: 'Processing timed out after 5 minutes. The document may still be processing on the server.',
+          errorMessage:
+              'Processing timed out after 5 minutes. The document may still be processing on the server.',
         );
         return;
       }
@@ -238,7 +243,8 @@ class UploadNotifier extends _$UploadNotifier {
           );
         } else if (status == 'FAILURE') {
           timer.cancel();
-          final errorMsg = result['result'] as String? ?? 'Upload processing failed';
+          final errorMsg =
+              result['result'] as String? ?? 'Upload processing failed';
           state = UploadState(
             status: UploadStatus.failure,
             taskId: taskId,
@@ -250,8 +256,21 @@ class UploadNotifier extends _$UploadNotifier {
           );
         }
         // PENDING / STARTED → keep polling
+      } on DioException catch (e) {
+        // Stop polling on auth errors — token likely expired or revoked.
+        // Continuing to poll would just waste 5 minutes of retries.
+        if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+          timer.cancel();
+          state = UploadState(
+            status: UploadStatus.failure,
+            taskId: taskId,
+            errorMessage:
+                'Authentication error while checking status. Please re-login.',
+          );
+        }
+        // Other errors (network blip, 500) → keep polling
       } catch (_) {
-        // Ignore polling errors, keep trying
+        // Unexpected non-Dio error → keep polling
       }
     });
   }
@@ -262,10 +281,16 @@ class UploadNotifier extends _$UploadNotifier {
   }
 
   /// Convert a list of image paths to a single PDF file.
-  Future<String> _imagesToPdf(List<String> imagePaths) async {
+  /// If images came from the enhance pipeline, they're already EXIF-oriented
+  /// and JPEG-encoded, so we skip the expensive decode→encode cycle.
+  Future<String> _imagesToPdf(
+    List<String> imagePaths, {
+    bool preProcessed = false,
+  }) async {
     return PdfGenerator.generatePdf(
       imagePaths: imagePaths,
       jpegQuality: 85,
+      preProcessed: preProcessed,
     );
   }
 

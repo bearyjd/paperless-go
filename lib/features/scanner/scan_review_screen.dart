@@ -38,14 +38,14 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Review (${_pages.length} ${_pages.length == 1 ? 'page' : 'pages'})'),
+        title: Text(
+          'Review (${_pages.length} ${_pages.length == 1 ? 'page' : 'pages'})',
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilledButton(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(0, 36),
-              ),
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
               onPressed: _pages.isNotEmpty && !_isProcessing
                   ? () => context.push('/scan/enhance', extra: _pages)
                   : null,
@@ -82,24 +82,33 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
                 ),
                 // Controls row
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       // Delete
                       IconButton(
-                        onPressed: _isProcessing ? null : () => _removePage(_currentPage),
+                        onPressed: _isProcessing
+                            ? null
+                            : () => _removePage(_currentPage),
                         icon: const Icon(Icons.delete_outline),
                         tooltip: 'Remove page',
                       ),
                       // Rotate CCW
                       IconButton(
-                        onPressed: _isProcessing ? null : () => _rotatePage(clockwise: false),
+                        onPressed: _isProcessing
+                            ? null
+                            : () => _rotatePage(clockwise: false),
                         icon: const Icon(Icons.rotate_left),
                         tooltip: 'Rotate left',
                       ),
                       // Rotate CW
                       IconButton(
-                        onPressed: _isProcessing ? null : () => _rotatePage(clockwise: true),
+                        onPressed: _isProcessing
+                            ? null
+                            : () => _rotatePage(clockwise: true),
                         icon: const Icon(Icons.rotate_right),
                         tooltip: 'Rotate right',
                       ),
@@ -125,7 +134,8 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
                         tooltip: 'Move left',
                       ),
                       IconButton(
-                        onPressed: _isProcessing || _currentPage >= _pages.length - 1
+                        onPressed:
+                            _isProcessing || _currentPage >= _pages.length - 1
                             ? null
                             : () => _movePage(_currentPage, _currentPage + 1),
                         icon: const Icon(Icons.arrow_forward),
@@ -163,10 +173,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(4),
-                          child: Image.file(
-                            File(_pages[i]),
-                            fit: BoxFit.cover,
-                          ),
+                          child: Image.file(File(_pages[i]), fit: BoxFit.cover),
                         ),
                       ),
                     ),
@@ -187,8 +194,10 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
         clockwise: clockwise,
       );
       if (!mounted) return;
-      imageCache.clear();
-      imageCache.clearLiveImages();
+      // Evict only the old image from Flutter's cache instead of clearing
+      // the entire cache, which would affect unrelated screens.
+      final oldFileKey = FileImage(File(oldPath));
+      imageCache.evict(oldFileKey);
       setState(() {
         _pages[_currentPage] = newPath;
         _isProcessing = false;
@@ -196,9 +205,9 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isProcessing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Rotate failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Rotate failed: $e')));
     }
   }
 
@@ -210,8 +219,9 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
       ),
     );
     if (result != null && mounted) {
-      imageCache.clear();
-      imageCache.clearLiveImages();
+      // Evict only the old image from Flutter's cache
+      final oldFileKey = FileImage(File(_pages[_currentPage]));
+      imageCache.evict(oldFileKey);
       setState(() {
         _pages[_currentPage] = result;
       });
