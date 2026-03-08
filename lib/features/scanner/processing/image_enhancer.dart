@@ -6,11 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
-import 'filters/adaptive_contrast.dart';
-import 'filters/binarize.dart';
 import 'filters/deskew.dart';
-import 'filters/shadow_removal.dart';
-import 'filters/sharpen.dart';
 import 'presets.dart';
 
 /// Messages sent from the processing isolate to report progress.
@@ -233,7 +229,8 @@ Uint8List _processInIsolate(_ProcessingParams params) {
   }
 
   // Apply deskew in the isolate (no redundant decode/encode)
-  final needsDeskew = params.preset != ProcessingPreset.none &&
+  final needsDeskew =
+      params.preset != ProcessingPreset.none &&
       params.preset != ProcessingPreset.photo;
   if (needsDeskew) {
     if (params.deskewAngle != null &&
@@ -283,7 +280,8 @@ void _processInIsolateWithProgress(_IsolateProgressParams params) {
     }
 
     // Apply deskew in the isolate
-    final needsDeskew = params.preset != ProcessingPreset.none &&
+    final needsDeskew =
+        params.preset != ProcessingPreset.none &&
         params.preset != ProcessingPreset.photo;
     if (needsDeskew) {
       sendPort.send(['Deskewing', 0.15]);
@@ -298,7 +296,12 @@ void _processInIsolateWithProgress(_IsolateProgressParams params) {
 
     // Apply preset filters with per-step progress
     sendPort.send(['Applying filters', 0.35]);
-    final enhanced = _applyPresetWithProgress(image, params.preset, sendPort);
+    final enhanced = applyPreset(
+      image,
+      params.preset,
+      skipDeskew: true,
+      onProgress: (label, percent) => sendPort.send([label, percent]),
+    );
 
     sendPort.send(['Encoding', 0.90]);
     final bytes = Uint8List.fromList(img.encodeJpg(enhanced, quality: 92));
@@ -306,53 +309,5 @@ void _processInIsolateWithProgress(_IsolateProgressParams params) {
     sendPort.send(ProcessingComplete(bytes));
   } catch (e) {
     sendPort.send('Processing error: $e');
-  }
-}
-
-/// Like [applyPreset] but sends progress updates via [sendPort].
-img.Image _applyPresetWithProgress(
-  img.Image source,
-  ProcessingPreset preset,
-  SendPort sendPort,
-) {
-  switch (preset) {
-    case ProcessingPreset.none:
-      return source.clone();
-
-    case ProcessingPreset.auto:
-      sendPort.send(['Adjusting contrast', 0.40]);
-      var result = applyAdaptiveContrast(source, strength: 0.7);
-      sendPort.send(['Sharpening', 0.65]);
-      result = applySharpen(result, amount: 1.2, radius: 1);
-      return result;
-
-    case ProcessingPreset.receipt:
-      sendPort.send(['Adjusting contrast', 0.40]);
-      var result = applyAdaptiveContrast(source, strength: 1.0);
-      sendPort.send(['Removing shadows', 0.55]);
-      result = applyShadowRemoval(result, blurRadius: 20);
-      sendPort.send(['Binarizing', 0.70]);
-      result = applyBinarize(result, windowSize: 15, k: 0.3);
-      return result;
-
-    case ProcessingPreset.bwText:
-      sendPort.send(['Adjusting contrast', 0.40]);
-      var result = applyAdaptiveContrast(source, strength: 0.8);
-      sendPort.send(['Sharpening', 0.55]);
-      result = applySharpen(result, amount: 1.5, radius: 1);
-      sendPort.send(['Binarizing', 0.70]);
-      result = applyBinarize(result, windowSize: 15, k: 0.2);
-      return result;
-
-    case ProcessingPreset.colorDocument:
-      sendPort.send(['Adjusting contrast', 0.40]);
-      var result = applyAdaptiveContrast(source, strength: 0.6);
-      sendPort.send(['Sharpening', 0.65]);
-      result = applySharpen(result, amount: 1.0, radius: 1);
-      return result;
-
-    case ProcessingPreset.photo:
-      sendPort.send(['Sharpening', 0.40]);
-      return applySharpen(source, amount: 0.8, radius: 1);
   }
 }
