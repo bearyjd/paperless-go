@@ -162,8 +162,8 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
       _enhancedPaths = List.filled(_originalPaths.length, null);
       _previewEnhanced = null;
     });
-    // Only generate a separate fast preview for multi-page scans
-    if (_originalPaths.length > 1 && _previewOriginal != null) {
+    // Generate a fast low-res preview immediately for all scan sizes
+    if (_previewOriginal != null) {
       _updatePreviewEnhanced(_previewOriginal!);
     }
     _processAllPages();
