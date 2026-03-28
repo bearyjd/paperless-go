@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ class _CropScreenState extends State<CropScreen> {
   Rect _cropRect = const Rect.fromLTWH(0.1, 0.1, 0.8, 0.8);
   bool _isProcessing = false;
   Size? _imageSize;
+  Uint8List? _imageBytes;
   final GlobalKey<_CropOverlayWrapperState> _overlayKey = GlobalKey();
 
   @override
@@ -38,6 +40,7 @@ class _CropScreenState extends State<CropScreen> {
           frame.image.width.toDouble(),
           frame.image.height.toDouble(),
         );
+        _imageBytes = bytes;
       });
     }
     frame.image.dispose();
@@ -118,8 +121,8 @@ class _CropScreenState extends State<CropScreen> {
                       top: offsetY,
                       width: displayWidth,
                       height: displayHeight,
-                      child: Image.file(
-                        File(widget.imagePath),
+                      child: Image.memory(
+                        _imageBytes!,
                         fit: BoxFit.contain,
                       ),
                     ),
