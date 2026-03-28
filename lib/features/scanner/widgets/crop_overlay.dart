@@ -51,12 +51,22 @@ class CropOverlayState extends State<CropOverlay> {
       (displayCrop.height / widget.displaySize.height)
           .clamp(_minCropFraction, 1.0),
     );
-    // Clamp right/bottom edges
+    // Clamp right/bottom edges, then re-enforce minimum dimensions
     if (_crop.right > 1.0) {
-      _crop = Rect.fromLTRB(_crop.left, _crop.top, 1.0, _crop.bottom);
+      _crop = Rect.fromLTRB(
+        (_crop.right - _minCropFraction).clamp(0.0, 1.0 - _minCropFraction),
+        _crop.top,
+        1.0,
+        _crop.bottom,
+      );
     }
     if (_crop.bottom > 1.0) {
-      _crop = Rect.fromLTRB(_crop.left, _crop.top, _crop.right, 1.0);
+      _crop = Rect.fromLTRB(
+        _crop.left,
+        (_crop.bottom - _minCropFraction).clamp(0.0, 1.0 - _minCropFraction),
+        _crop.right,
+        1.0,
+      );
     }
     widget.onCropChanged(_crop);
   }
