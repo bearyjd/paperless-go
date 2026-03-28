@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/api/api_providers.dart';
+import '../../core/models/document.dart';
 import '../../core/models/saved_view.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
 import 'bulk_action_bar.dart';
+import 'document_detail_notifier.dart';
 import 'documents_notifier.dart';
 import 'filter_bottom_sheet.dart';
 
@@ -44,6 +47,52 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
 
   void _clearSelection() {
     setState(() => _selectedIds.clear());
+  }
+
+  Future<void> _shareDocument(BuildContext context, WidgetRef ref, int docId, String title) async {
+    try {
+      final path = await ref.read(documentDownloadProvider(docId, title).future);
+      await Share.shareXFiles([XFile(path)]);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to share: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showDocumentContextMenu(
+    BuildContext context,
+    WidgetRef ref,
+    Document doc,
+  ) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Share'),
+              onTap: () => Navigator.pop(context, 'share'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.check_box_outline_blank),
+              title: const Text('Select'),
+              onTap: () => Navigator.pop(context, 'select'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    if (action == 'share') {
+      await _shareDocument(context, ref, doc.id, doc.title);
+    } else if (action == 'select') {
+      _toggleSelection(doc.id);
+    }
   }
 
   void _applySavedView(SavedView view) {
@@ -314,7 +363,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                                 onTap: _isSelecting
                                     ? () => _toggleSelection(doc.id)
                                     : () => context.push('/documents/${doc.id}'),
-                                onLongPress: () => _toggleSelection(doc.id),
+                                onLongPress: () => _showDocumentContextMenu(context, ref, doc),
                               ),
                               if (isSelected)
                                 Positioned.fill(
