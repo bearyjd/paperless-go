@@ -113,10 +113,10 @@ class MetadataMatcher {
 
       case 3: // exact match
         if (entity.matchStr.isEmpty) return false;
-        final needle = entity.isInsensitive
-            ? entity.matchStr.toLowerCase()
-            : entity.matchStr.toLowerCase();
-        return textLower.contains(needle);
+        if (entity.isInsensitive) {
+          return textLower.contains(entity.matchStr.toLowerCase());
+        }
+        return text.contains(entity.matchStr);
 
       case 4: // regex
         if (entity.matchStr.isEmpty) return false;
