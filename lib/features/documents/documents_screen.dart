@@ -413,12 +413,72 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   onClearSelection: _clearSelection,
                   onRefresh: () =>
                       ref.read(documentsNotifierProvider.notifier).refresh(),
+                  onShare: () => _shareSelected(context, ref),
                 ),
               ),
             ),
         ],
       ),
     );
+  }
+
+  Future<bool?> _confirmBulkShare(BuildContext context, int count) {
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Share documents?'),
+        content: Text(
+          'Sharing $count documents requires downloading them all. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _shareSelected(BuildContext context, WidgetRef ref) async {
+    final docs = ref.read(documentsNotifierProvider).valueOrNull?.documents ?? [];
+    final selectedDocs = docs.where((d) => _selectedIds.contains(d.id)).toList();
+    if (selectedDocs.isEmpty) return;
+
+    if (selectedDocs.length > 5) {
+      final confirmed = await _confirmBulkShare(context, selectedDocs.length);
+      if (confirmed != true || !context.mounted) return;
+    }
+
+    final paths = <String>[];
+    final failures = <String>[];
+
+    for (final doc in selectedDocs) {
+      try {
+        final path = await ref.read(
+          documentDownloadProvider(doc.id, doc.title).future,
+        );
+        paths.add(path);
+      } catch (_) {
+        failures.add(doc.title);
+      }
+    }
+
+    if (paths.isNotEmpty) {
+      await Share.shareXFiles(paths.map((p) => XFile(p)).toList());
+    }
+
+    if (failures.isNotEmpty && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to download: ${failures.join(', ')}'),
+        ),
+      );
+    }
   }
 
   void _showFilterSheet(BuildContext context, DocumentsFilter currentFilter) {

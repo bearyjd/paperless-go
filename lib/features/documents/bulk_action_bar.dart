@@ -11,12 +11,14 @@ class BulkActionBar extends ConsumerWidget {
   final Set<int> selectedIds;
   final VoidCallback onClearSelection;
   final VoidCallback onRefresh;
+  final VoidCallback onShare;
 
   const BulkActionBar({
     super.key,
     required this.selectedIds,
     required this.onClearSelection,
     required this.onRefresh,
+    required this.onShare,
   });
 
   @override
@@ -59,6 +61,11 @@ class BulkActionBar extends ConsumerWidget {
               icon: Icons.category_outlined,
               tooltip: 'Set document type',
               onPressed: () => _showBulkDocTypeDialog(context, ref),
+            ),
+            _ActionButton(
+              icon: Icons.share_outlined,
+              tooltip: 'Share',
+              onPressed: onShare,
             ),
             _ActionButton(
               icon: Icons.delete_outline,
