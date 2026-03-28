@@ -425,18 +425,18 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
   Future<bool?> _confirmBulkShare(BuildContext context, int count) {
     return showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('Share documents?'),
         content: Text(
           'Sharing $count documents requires downloading them all. Continue?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Share'),
           ),
         ],
