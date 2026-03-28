@@ -363,7 +363,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                                 onTap: _isSelecting
                                     ? () => _toggleSelection(doc.id)
                                     : () => context.push('/documents/${doc.id}'),
-                                onLongPress: () => _showDocumentContextMenu(context, ref, doc),
+                                onLongPress: _isSelecting
+                                    ? () => _toggleSelection(doc.id)
+                                    : () => _showDocumentContextMenu(context, ref, doc),
                               ),
                               if (isSelected)
                                 Positioned.fill(
