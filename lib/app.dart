@@ -385,8 +385,12 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
       if (pictures != null && pictures.isNotEmpty && mounted) {
         GoRouter.of(context).push('/scan/review', extra: pictures);
       }
-    } catch (_) {
-      // User cancelled or error
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scanner error: $e')),
+        );
+      }
     }
   }
 
@@ -405,8 +409,12 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
         );
         GoRouter.of(context).push('/scan/review', extra: pictures);
       }
-    } catch (_) {
-      // User cancelled or error
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scanner error: $e')),
+        );
+      }
     }
   }
 
@@ -424,8 +432,12 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
           'filename': file.name,
         });
       }
-    } catch (_) {
-      // User cancelled or error
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File picker error: $e')),
+        );
+      }
     }
   }
 
