@@ -47,12 +47,8 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
     final bytes = await File(_originalPaths[_currentPage]).readAsBytes();
     if (!mounted) return;
     setState(() => _previewOriginal = bytes);
-    // Only generate a separate fast preview for multi-page scans.
-    // For single-page, the full processing result will arrive quickly
-    // and running both concurrently just doubles the CPU work.
-    if (_originalPaths.length > 1) {
-      _updatePreviewEnhanced(bytes);
-    }
+    // Generate a fast low-res preview immediately while full processing runs.
+    _updatePreviewEnhanced(bytes);
   }
 
   Future<void> _updatePreviewEnhanced(Uint8List originalBytes) async {

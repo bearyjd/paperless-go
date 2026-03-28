@@ -240,6 +240,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
       return;
     }
     setState(() {
+      File(_pages[index]).delete().ignore(); // clean up temp file
       _pages.removeAt(index);
       if (_currentPage >= _pages.length) {
         _currentPage = _pages.length - 1;
