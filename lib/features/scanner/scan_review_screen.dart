@@ -198,6 +198,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
       // the entire cache, which would affect unrelated screens.
       final oldFileKey = FileImage(File(oldPath));
       imageCache.evict(oldFileKey);
+      File(oldPath).delete().ignore(); // clean up temp file
       setState(() {
         _pages[_currentPage] = newPath;
         _isProcessing = false;
@@ -220,8 +221,10 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
     );
     if (result != null && mounted) {
       // Evict only the old image from Flutter's cache
-      final oldFileKey = FileImage(File(_pages[_currentPage]));
+      final oldPath = _pages[_currentPage];
+      final oldFileKey = FileImage(File(oldPath));
       imageCache.evict(oldFileKey);
+      File(oldPath).delete().ignore(); // clean up temp file
       setState(() {
         _pages[_currentPage] = result;
       });
