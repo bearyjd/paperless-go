@@ -470,6 +470,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
 
     if (paths.isNotEmpty) {
       await Share.shareXFiles(paths.map((p) => XFile(p)).toList());
+      if (context.mounted) _clearSelection();
     }
 
     if (failures.isNotEmpty && context.mounted) {
