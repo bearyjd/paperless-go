@@ -73,6 +73,13 @@ GoRouter router(Ref ref) {
       ),
     ),
     redirect: (context, state) {
+      // Intercept Android VIEW intent URIs (content://, file://) before GoRouter
+      // tries to treat them as deep link paths and shows "Page not found".
+      // Redirect to '/' so the app shell renders and ShareIntentHandler picks up
+      // the file via getInitialMedia() in its addPostFrameCallback.
+      final scheme = state.uri.scheme;
+      if (scheme == 'content' || scheme == 'file') return '/';
+
       final authState = ref.read(authStateProvider);
       // Don't redirect while auth state is still loading from storage
       if (authState.isLoading && !authState.hasError) return null;
