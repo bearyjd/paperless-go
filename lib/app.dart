@@ -427,9 +427,13 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
       );
       if (result != null && result.files.single.path != null && mounted) {
         final file = result.files.single;
+        final ext = file.extension?.toLowerCase();
+        final isImage = ext == 'png' || ext == 'jpg' || ext == 'jpeg' ||
+            ext == 'tiff' || ext == 'webp';
         GoRouter.of(context).push('/scan/upload', extra: {
           'filePath': file.path!,
           'filename': file.name,
+          if (isImage) 'ocrImagePath': file.path!,
         });
       }
     } catch (e) {
