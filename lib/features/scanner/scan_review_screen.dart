@@ -186,6 +186,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
   }
 
   Future<void> _rotatePage({required bool clockwise}) async {
+    if (_isProcessing) return;
     setState(() => _isProcessing = true);
     try {
       final oldPath = _pages[_currentPage];
