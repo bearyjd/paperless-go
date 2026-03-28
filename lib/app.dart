@@ -77,6 +77,8 @@ GoRouter router(Ref ref) {
       // tries to treat them as deep link paths and shows "Page not found".
       // Redirect to '/' so the app shell renders and ShareIntentHandler picks up
       // the file via getInitialMedia() in its addPostFrameCallback.
+      // Note: GoRouter re-evaluates this redirect for the returned '/' path,
+      // so auth guards below still apply on the second pass.
       final scheme = state.uri.scheme;
       if (scheme == 'content' || scheme == 'file') return '/';
 
