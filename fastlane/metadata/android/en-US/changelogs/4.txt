@@ -1,0 +1,7 @@
+* Fix share intent routing — sharing PDFs to app now opens upload screen
+* Share documents out via long-press context menu or bulk selection
+* Fix case-sensitive metadata matching for document auto-tagging
+* Fix temp file leaks from crop and rotate in scan review
+* Show errors from scanner and file picker instead of silent failures
+* Fast preview for single-page scans on preset change
+* OCR metadata suggestions now work for image files picked from file picker
