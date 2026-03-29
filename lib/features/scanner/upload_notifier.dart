@@ -240,8 +240,12 @@ class UploadNotifier extends _$UploadNotifier {
 
         if (status == 'SUCCESS') {
           timer.cancel();
-          final docIdStr = result['related_document'] as String?;
-          final docId = docIdStr != null ? int.tryParse(docIdStr) : null;
+          final rawDocId = result['related_document'];
+          final docId = rawDocId is int
+              ? rawDocId
+              : rawDocId is String
+                  ? int.tryParse(rawDocId)
+                  : null;
           state = UploadState(
             status: UploadStatus.success,
             taskId: taskId,
