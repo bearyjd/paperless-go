@@ -168,13 +168,14 @@ class CustomFieldsScreen extends ConsumerWidget {
 
                 Map<String, dynamic>? extraData;
                 if (selectedType == 'select') {
-                  final raw = optionsController.text;
-                  final options = raw
+                  final options = optionsController.text
                       .split(',')
                       .map((s) => s.trim())
                       .where((s) => s.isNotEmpty)
                       .toList();
-                  extraData = {'select_options': options};
+                  if (options.isNotEmpty) {
+                    extraData = {'select_options': options};
+                  }
                 }
 
                 if (ctx.mounted) Navigator.pop(ctx);
@@ -198,9 +199,6 @@ class CustomFieldsScreen extends ConsumerWidget {
                       SnackBar(content: Text('Failed to create: $e')),
                     );
                   }
-                } finally {
-                  nameController.dispose();
-                  optionsController.dispose();
                 }
               },
               child: const Text('Create'),
@@ -253,8 +251,6 @@ class CustomFieldsScreen extends ConsumerWidget {
                     SnackBar(content: Text('Failed to rename: $e')),
                   );
                 }
-              } finally {
-                nameController.dispose();
               }
             },
             child: const Text('Save'),
