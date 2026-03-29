@@ -18,8 +18,9 @@ class EditQueueService {
   }
 
   Future<bool> hasPending() async {
-    final count = await _db.select(_db.pendingEdits).get();
-    return count.isNotEmpty;
+    final query = _db.select(_db.pendingEdits)..limit(1);
+    final result = await query.get();
+    return result.isNotEmpty;
   }
 
   Future<void> enqueue({
@@ -27,20 +28,19 @@ class EditQueueService {
     required String field,
     required String value,
   }) async {
-    // Coalesce: delete existing edit for same doc+field
-    await (_db.delete(_db.pendingEdits)
-          ..where(
-            (t) => t.documentId.equals(documentId) & t.field.equals(field),
-          ))
-        .go();
-    await _db.into(_db.pendingEdits).insert(
-      PendingEditsCompanion.insert(
-        documentId: documentId,
-        field: field,
-        value: value,
-        queuedAt: DateTime.now(),
-      ),
-    );
+    await _db.transaction(() async {
+      await (_db.delete(_db.pendingEdits)
+            ..where((t) => t.documentId.equals(documentId) & t.field.equals(field)))
+          .go();
+      await _db.into(_db.pendingEdits).insert(
+        PendingEditsCompanion.insert(
+          documentId: documentId,
+          field: field,
+          value: value,
+          queuedAt: DateTime.now(),
+        ),
+      );
+    });
   }
 
   Future<void> dequeue(int id) async {

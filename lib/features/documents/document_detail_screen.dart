@@ -32,7 +32,8 @@ class DocumentDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
-  bool _isLocked = false;
+  bool _isLocked = true;
+  bool _lockCheckComplete = false;
   bool _authenticated = false;
   final _biometricService = BiometricService();
 
@@ -45,7 +46,10 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
   Future<void> _loadLockState() async {
     final locked = await ref.read(documentLockServiceProvider).isLocked(widget.documentId);
     if (mounted) {
-      setState(() => _isLocked = locked);
+      setState(() {
+        _isLocked = locked;
+        _lockCheckComplete = true;
+      });
     }
   }
 
@@ -67,6 +71,14 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
     final correspondentsAsync = ref.watch(correspondentsProvider);
     final docTypesAsync = ref.watch(documentTypesProvider);
     final storagePathsAsync = ref.watch(storagePathsProvider);
+
+    // Show loading indicator until the async lock check completes
+    if (!_lockCheckComplete) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     // Show biometric gate when document is locked and not yet authenticated
     if (_isLocked && !_authenticated) {

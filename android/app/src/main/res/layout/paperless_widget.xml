@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="@android:color/white">
+    android:background="?android:attr/colorBackground">
 
     <TextView
         android:id="@+id/tv_title"
@@ -12,7 +12,8 @@
         android:layout_height="wrap_content"
         android:text="Paperless Go"
         android:textSize="16sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:textColor="?android:attr/textColorPrimary" />
 
     <TextView
         android:id="@+id/tv_doc_count"
@@ -20,7 +21,8 @@
         android:layout_height="wrap_content"
         android:text="-- documents"
         android:textSize="14sp"
-        android:layout_marginTop="4dp" />
+        android:layout_marginTop="4dp"
+        android:textColor="?android:attr/textColorPrimary" />
 
     <LinearLayout
         android:layout_width="match_parent"
