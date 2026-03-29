@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/thumbnail_cache.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/services/pdf_tools_service.dart';
@@ -129,6 +130,12 @@ class DocumentDetailScreen extends ConsumerWidget {
                   const PopupMenuItem(value: 'split', child: ListTile(
                     leading: Icon(Icons.call_split),
                     title: Text('Split document'),
+                    contentPadding: EdgeInsets.zero,
+                  )),
+                  const PopupMenuItem(value: 'annotate', child: ListTile(
+                    leading: Icon(Icons.draw),
+                    title: Text('Annotate'),
+                    dense: true,
                     contentPadding: EdgeInsets.zero,
                   )),
                   const PopupMenuItem(value: 'compress_share', child: ListTile(
@@ -593,6 +600,21 @@ class DocumentDetailScreen extends ConsumerWidget {
                 SnackBar(content: Text('Failed to split: $e')),
               );
             }
+          }
+        }
+      case 'annotate':
+        try {
+          final dir = await getTemporaryDirectory();
+          final path = '${dir.path}/annotate_$documentId.pdf';
+          await ref.read(paperlessApiProvider).downloadDocument(documentId, path);
+          if (context.mounted) {
+            context.push('/annotate', extra: {'pdfPath': path, 'title': title});
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to load document: $e')),
+            );
           }
         }
       case 'compress_share':
