@@ -18,6 +18,7 @@ import 'features/documents/document_detail_screen.dart';
 import 'features/documents/document_preview_screen.dart';
 import 'features/documents/documents_screen.dart';
 import 'features/inbox/inbox_screen.dart';
+import 'features/dashboard/dashboard_screen.dart';
 import 'features/login/login_screen.dart';
 import 'features/scanner/enhance_screen.dart';
 import 'features/scanner/pdf_preview_screen.dart';
@@ -111,6 +112,10 @@ GoRouter router(Ref ref) {
         builder: (_, __) => const TrashScreen(),
       ),
       GoRoute(
+        path: '/inbox',
+        builder: (_, __) => const InboxScreen(),
+      ),
+      GoRoute(
         path: '/search/similar/:id',
         builder: (_, state) {
           final id = int.tryParse(state.pathParameters['id'] ?? '');
@@ -191,7 +196,7 @@ GoRouter router(Ref ref) {
       ShellRoute(
         builder: (context, state, child) => _AppShell(child: child),
         routes: [
-          GoRoute(path: '/', builder: (_, __) => const InboxScreen()),
+          GoRoute(path: '/', builder: (_, __) => const DashboardScreen()),
           GoRoute(path: '/documents', builder: (_, __) => const DocumentsScreen()),
           GoRoute(path: '/scan', builder: (_, __) => const ScannerScreen()),
           GoRoute(path: '/chat', builder: (_, __) => const ChatScreen()),
@@ -327,7 +332,10 @@ class _AppShell extends ConsumerWidget {
           }
         },
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.inbox), label: 'Inbox'),
+          NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Home'),
           NavigationDestination(icon: Icon(Icons.description_outlined), label: 'Docs'),
           NavigationDestination(icon: Icon(Icons.document_scanner_outlined), label: 'Scan'),
           NavigationDestination(icon: Icon(Icons.chat_outlined), label: 'Chat'),
