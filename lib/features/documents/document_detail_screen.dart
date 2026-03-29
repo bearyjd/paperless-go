@@ -14,6 +14,7 @@ import '../../core/models/document_type.dart';
 import '../../core/models/storage_path.dart';
 import '../../core/models/tag.dart';
 import '../../shared/widgets/tag_chip.dart';
+import 'ai_edit_trail_notifier.dart';
 import 'document_detail_notifier.dart';
 import 'documents_notifier.dart';
 import '../inbox/inbox_notifier.dart';
@@ -411,6 +412,9 @@ class DocumentDetailScreen extends ConsumerWidget {
 
               // Notes
               _NotesSection(documentId: documentId),
+
+              // AI edit trail
+              _AiEditTrailSection(documentId: documentId),
 
               const Divider(height: 32),
 
@@ -1406,5 +1410,102 @@ class _ShareLinksSectionState extends ConsumerState<_ShareLinksSection> {
           })),
       ],
     );
+  }
+}
+
+class _AiEditTrailSection extends ConsumerWidget {
+  final int documentId;
+  const _AiEditTrailSection({required this.documentId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trailAsync = ref.watch(aiEditTrailProvider(documentId));
+    return trailAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (edits) {
+        if (edits.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Divider(height: 32),
+            Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.tertiary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'AI Applied at Upload',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...edits.map(
+              (edit) => _AiEditRow(documentId: documentId, edit: edit),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AiEditRow extends ConsumerWidget {
+  final int documentId;
+  final AiEditEntry edit;
+  const _AiEditRow({required this.documentId, required this.edit});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        Icons.auto_awesome,
+        size: 16,
+        color: Theme.of(context).colorScheme.tertiary,
+      ),
+      title: Text(
+        _fieldLabel(edit.fieldName),
+        style: Theme.of(context).textTheme.labelMedium,
+      ),
+      subtitle: edit.newValue != null
+          ? Text(
+              edit.newValue!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : Text(
+              'Cleared',
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+      trailing: IconButton(
+        icon: const Icon(Icons.delete_outline, size: 18),
+        tooltip: 'Remove from history',
+        onPressed: () =>
+            ref.read(aiEditTrailProvider(documentId).notifier)
+                .deleteEdit(edit.id),
+      ),
+    );
+  }
+
+  String _fieldLabel(String fieldName) {
+    return switch (fieldName) {
+      'title' => 'Title',
+      'correspondent' => 'Correspondent',
+      'document_type' => 'Document Type',
+      'tags' => 'Tags',
+      'created' => 'Created Date',
+      _ => fieldName
+              .split('_')
+              .map((w) => w.isEmpty
+                  ? ''
+                  : '${w[0].toUpperCase()}${w.substring(1)}')
+              .join(' '),
+    };
   }
 }
