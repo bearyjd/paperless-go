@@ -272,18 +272,22 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                                 for (final view in savedViewsAsync.valueOrNull!)
                                   Padding(
                                     padding: const EdgeInsets.only(right: 6),
-                                    child: FilterChip(
-                                      label: Text(view.name),
-                                      selected: _activeSavedViewId == view.id,
-                                      onSelected: (_) {
-                                        if (_activeSavedViewId == view.id) {
-                                          setState(() => _activeSavedViewId = null);
-                                          ref.read(documentsNotifierProvider.notifier)
-                                              .applyFilter(DocumentsFilter(ordering: _ordering));
-                                        } else {
-                                          _applySavedView(view);
-                                        }
-                                      },
+                                    child: GestureDetector(
+                                      onLongPress: () =>
+                                          _showChipManagementSheet(context, view),
+                                      child: FilterChip(
+                                        label: Text(view.name),
+                                        selected: _activeSavedViewId == view.id,
+                                        onSelected: (_) {
+                                          if (_activeSavedViewId == view.id) {
+                                            setState(() => _activeSavedViewId = null);
+                                            ref.read(documentsNotifierProvider.notifier)
+                                                .applyFilter(DocumentsFilter(ordering: _ordering));
+                                          } else {
+                                            _applySavedView(view);
+                                          }
+                                        },
+                                      ),
                                     ),
                                   ),
                               ],
@@ -540,6 +544,142 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to save view: $e')),
+          );
+        }
+      }
+    } finally {
+      nameController.dispose();
+    }
+  }
+
+  Future<void> _showChipManagementSheet(
+      BuildContext context, SavedView view) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Rename'),
+              onTap: () => Navigator.pop(context, 'rename'),
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline,
+                  color: Theme.of(context).colorScheme.error),
+              title: Text('Delete',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.error)),
+              onTap: () => Navigator.pop(context, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!context.mounted) return;
+
+    if (action == 'delete') {
+      await _deleteSavedView(context, view);
+    } else if (action == 'rename') {
+      await _renameSavedView(context, view);
+    }
+  }
+
+  Future<void> _deleteSavedView(BuildContext context, SavedView view) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete view?'),
+        content: Text('Delete "${view.name}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(paperlessApiProvider).deleteSavedView(view.id);
+      if (_activeSavedViewId == view.id) {
+        setState(() => _activeSavedViewId = null);
+        ref.read(documentsNotifierProvider.notifier)
+            .applyFilter(DocumentsFilter(ordering: _ordering));
+      }
+      ref.invalidate(savedViewsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"${view.name}" deleted')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _renameSavedView(BuildContext context, SavedView view) async {
+    final nameController = TextEditingController(text: view.name);
+
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Rename view'),
+          content: TextField(
+            controller: nameController,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Name'),
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (nameController.text.trim().isEmpty) return;
+                Navigator.pop(ctx, true);
+              },
+              child: const Text('Rename'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !context.mounted) return;
+
+      final newName = nameController.text.trim();
+      try {
+        await ref
+            .read(paperlessApiProvider)
+            .updateSavedView(view.id, name: newName);
+        ref.invalidate(savedViewsProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Renamed to "$newName"')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to rename: $e')),
           );
         }
       }
