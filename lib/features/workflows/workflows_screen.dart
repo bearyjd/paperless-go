@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../shared/widgets/empty_state.dart';
 
 class WorkflowsScreen extends ConsumerWidget {
   const WorkflowsScreen({super.key});
@@ -20,7 +21,11 @@ class WorkflowsScreen extends ConsumerWidget {
         error: (err, _) => Center(child: Text('Error: $err')),
         data: (workflows) {
           if (workflows.isEmpty) {
-            return const Center(child: Text('No workflows configured'));
+            return const EmptyState(
+              icon: Icons.route_outlined,
+              title: 'No workflows configured',
+              description: 'Workflows are created in the Paperless-ngx web UI',
+            );
           }
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(workflowsProvider),

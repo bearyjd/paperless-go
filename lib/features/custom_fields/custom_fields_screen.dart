@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../core/models/custom_field.dart';
 import 'custom_field_helpers.dart';
 
@@ -38,20 +39,10 @@ class CustomFieldsScreen extends ConsumerWidget {
               ..sort((a, b) => a.name.compareTo(b.name));
 
             if (sorted.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.extension, size: 48),
-                    SizedBox(height: 12),
-                    Text('No custom fields'),
-                    SizedBox(height: 4),
-                    Text(
-                      'Tap + to create one',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ],
-                ),
+              return const EmptyState(
+                icon: Icons.extension_outlined,
+                title: 'No custom fields defined',
+                description: 'Tap + to create one',
               );
             }
 
