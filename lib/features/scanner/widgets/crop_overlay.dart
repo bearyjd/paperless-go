@@ -92,7 +92,7 @@ class CropOverlayState extends State<CropOverlay> {
           width: rect.width,
           height: rect.height,
           child: CustomPaint(
-            painter: _GridPainter(color: Colors.white.withValues(alpha: 0.4)),
+            painter: _GridPainter(color: Colors.white.withValues(alpha: 0.4)), // On forced-dark background
           ),
         ),
         // Crop border
@@ -103,7 +103,7 @@ class CropOverlayState extends State<CropOverlay> {
           height: rect.height,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.white, width: 2),
+              border: Border.all(color: Colors.white, width: 2), // On forced-dark background
             ),
           ),
         ),
@@ -151,7 +151,7 @@ class CropOverlayState extends State<CropOverlay> {
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
+            border: Border.all(color: Colors.white, width: 2), // On forced-dark background
           ),
         ),
       ),
@@ -224,7 +224,7 @@ class _MaskPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.black54;
+    final paint = Paint()..color = Colors.black54; // Intentional: semi-transparent overlay to dim area outside crop
     final fullRect = Rect.fromLTWH(0, 0, size.width, size.height);
     canvas.saveLayer(fullRect, Paint());
     canvas.drawRect(fullRect, paint);

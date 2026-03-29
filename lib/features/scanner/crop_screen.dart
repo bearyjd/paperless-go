@@ -68,17 +68,17 @@ class _CropScreenState extends State<CropScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.black, // Intentional: dark background for image editing
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.black, // Intentional: dark background for image editing
+        foregroundColor: Colors.white, // On forced-dark background
         title: const Text('Crop'),
         actions: [
           TextButton(
             onPressed: _isProcessing
                 ? null
                 : () => _overlayKey.currentState?.reset(),
-            child: const Text('Reset', style: TextStyle(color: Colors.white70)),
+            child: const Text('Reset', style: TextStyle(color: Colors.white70)), // On forced-dark background
           ),
           IconButton(
             onPressed: _isProcessing ? null : _apply,
@@ -87,9 +87,9 @@ class _CropScreenState extends State<CropScreen> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2, color: Colors.white), // On forced-dark background
                   )
-                : const Icon(Icons.check, color: Colors.white),
+                : const Icon(Icons.check, color: Colors.white), // On forced-dark background
             tooltip: 'Apply crop',
           ),
         ],
