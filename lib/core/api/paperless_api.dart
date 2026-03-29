@@ -7,6 +7,7 @@ import '../models/document.dart';
 import '../models/document_type.dart';
 import '../models/note.dart';
 import '../models/saved_view.dart';
+import '../models/workflow.dart';
 import '../models/storage_path.dart';
 import '../models/tag.dart';
 
@@ -471,4 +472,27 @@ class PaperlessApi {
 
   /// Base URL for building full share link URLs.
   String get baseUrl => _dio.options.baseUrl;
+
+  // Workflows
+
+  Future<List<Workflow>> getWorkflows() async {
+    final response = await _dio.get('api/workflows/');
+    final data = response.data;
+    final List results =
+        data is Map ? (data['results'] as List? ?? []) : (data as List);
+    return results
+        .map((e) => Workflow.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<Workflow> toggleWorkflow(int id, {required bool enabled}) async {
+    final response = await _dio.patch('api/workflows/$id/', data: {
+      'enabled': enabled,
+    });
+    return Workflow.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteWorkflow(int id) async {
+    await _dio.delete('api/workflows/$id/');
+  }
 }
