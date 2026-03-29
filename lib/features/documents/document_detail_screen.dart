@@ -718,6 +718,7 @@ class _CustomFieldsSection extends ConsumerWidget {
               dataType: dataType,
               fieldId: instance.field,
               value: instance.value,
+              extraData: fieldDef?.extraData,
               onSave: (newValue) async {
                 final updatedFields = fieldInstances.map((fi) {
                   if (fi.field == instance.field) {
@@ -750,6 +751,7 @@ class _CustomFieldTile extends StatelessWidget {
   final String dataType;
   final int fieldId;
   final dynamic value;
+  final Map<String, dynamic>? extraData;
   final ValueChanged<dynamic> onSave;
 
   const _CustomFieldTile({
@@ -758,6 +760,7 @@ class _CustomFieldTile extends StatelessWidget {
     required this.dataType,
     required this.fieldId,
     required this.value,
+    this.extraData,
     required this.onSave,
   });
 
@@ -798,8 +801,24 @@ class _CustomFieldTile extends StatelessWidget {
         return val;
       }
     }
-    if (type == 'monetary' && val != null) {
-      return '\$${val.toString()}';
+    if (type == 'monetary' && val != null) return '\$${val.toString()}';
+    if (type == 'select') {
+      final options = extraData?['select_options'] as List<dynamic>? ?? [];
+      return _displaySelectValue(val, options);
+    }
+    return val.toString();
+  }
+
+  String _displaySelectValue(dynamic val, List<dynamic> options) {
+    if (val == null) return 'Not set';
+    for (final opt in options) {
+      if (opt is Map) {
+        if (opt['id'] == val || opt['id'].toString() == val.toString()) {
+          return opt['label'].toString();
+        }
+      } else if (opt.toString() == val.toString()) {
+        return opt.toString();
+      }
     }
     return val.toString();
   }
@@ -835,10 +854,51 @@ class _CustomFieldTile extends StatelessWidget {
     }
   }
 
+  static const _selectNone = '__none__';
+
   Future<void> _editSelectValue(BuildContext context) async {
-    // Select custom fields require the option ID (integer).
-    // Full option picker would need the field definition's extra_data.
-    await _editTextValue(context, TextInputType.number);
+    final options = extraData?['select_options'] as List<dynamic>? ?? [];
+    if (options.isEmpty) {
+      await _editTextValue(context, TextInputType.text);
+      return;
+    }
+    final result = await showModalBottomSheet<dynamic>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(fieldName,
+                  style: Theme.of(ctx).textTheme.titleMedium),
+            ),
+            ListTile(
+              title: const Text('None'),
+              trailing: value == null ? const Icon(Icons.check) : null,
+              onTap: () => Navigator.pop(ctx, _selectNone),
+            ),
+            ...options.map((opt) {
+              final id = opt is Map ? opt['id'] : opt;
+              final label = opt is Map
+                  ? opt['label'].toString()
+                  : opt.toString();
+              final isSelected = value != null &&
+                  (id == value || id.toString() == value.toString());
+              return ListTile(
+                title: Text(label),
+                trailing: isSelected ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.pop(ctx, id),
+              );
+            }),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (result == null) return;
+    onSave(result == _selectNone ? null : result);
   }
 
   Future<void> _editTextValue(BuildContext context, TextInputType keyboardType) async {
