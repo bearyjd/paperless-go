@@ -160,6 +160,13 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push('/labels'),
           ),
           ListTile(
+            leading: const Icon(Icons.route_outlined),
+            title: const Text('Workflows'),
+            subtitle: const Text('View and manage automation rules'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/workflows'),
+          ),
+          ListTile(
             leading: const Icon(Icons.delete_outline),
             title: const Text('Trash'),
             subtitle: const Text('View and restore deleted documents'),
