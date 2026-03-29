@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/services/pdf_renderer_channel.dart';
+import 'annotation_export.dart';
 import 'annotation_model.dart';
 import 'annotation_painter.dart';
 
@@ -126,9 +130,34 @@ class _AnnotateScreenState extends State<AnnotateScreen> {
     }
   }
 
-  Future<void> _share() async {
+  Future<void> _saveAndShare() async {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Saving annotated PDF...')),
+    );
     try {
-      await Share.shareXFiles([XFile(widget.pdfPath)]);
+      final compositeImages = <Uint8List>[];
+      for (int i = 0; i < _pages.length; i++) {
+        final strokes = _annotationState.strokes(i);
+        final decoded = img.decodePng(_pages[i]);
+        final width = decoded?.width ?? 800;
+        final height = decoded?.height ?? 1200;
+        final composited = await compositePageImage(
+          pageImagePng: _pages[i],
+          strokes: strokes,
+          pageWidth: width,
+          pageHeight: height,
+        );
+        compositeImages.add(composited);
+      }
+      final pdfBytes = await buildAnnotatedPdf(
+        compositeImages: compositeImages,
+        jpegQuality: 85,
+      );
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/annotated.pdf');
+      await file.writeAsBytes(pdfBytes);
+      await Share.shareXFiles([XFile(file.path, mimeType: 'application/pdf')]);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -165,7 +194,7 @@ class _AnnotateScreenState extends State<AnnotateScreen> {
           IconButton(
             icon: const Icon(Icons.share),
             tooltip: 'Share',
-            onPressed: _share,
+            onPressed: _saveAndShare,
           ),
         ],
       ),
