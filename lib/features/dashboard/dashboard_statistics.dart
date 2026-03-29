@@ -12,7 +12,6 @@ class DashboardStatistics {
   final int correspondentCount;
   final int documentTypeCount;
   final int storagePathCount;
-  final int characterCount;
 
   const DashboardStatistics({
     required this.documentsTotal,
@@ -21,7 +20,6 @@ class DashboardStatistics {
     required this.correspondentCount,
     required this.documentTypeCount,
     required this.storagePathCount,
-    required this.characterCount,
   });
 
   factory DashboardStatistics.fromJson(Map<String, dynamic> json) {
@@ -32,7 +30,6 @@ class DashboardStatistics {
       correspondentCount: (json['correspondent_count'] as num?)?.toInt() ?? 0,
       documentTypeCount: (json['document_type_count'] as num?)?.toInt() ?? 0,
       storagePathCount: (json['storage_path_count'] as num?)?.toInt() ?? 0,
-      characterCount: (json['character_count'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -41,7 +38,7 @@ class DashboardStatistics {
 class DashboardStatisticsNotifier extends _$DashboardStatisticsNotifier {
   @override
   Future<DashboardStatistics> build() async {
-    final json = await ref.read(paperlessApiProvider).getStatistics();
+    final json = await ref.watch(paperlessApiProvider).getStatistics();
     return DashboardStatistics.fromJson(json);
   }
 

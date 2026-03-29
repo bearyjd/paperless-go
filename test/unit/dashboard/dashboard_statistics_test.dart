@@ -11,7 +11,6 @@ void main() {
         'correspondent_count': 18,
         'document_type_count': 8,
         'storage_path_count': 3,
-        'character_count': 1234567,
       });
       expect(stats.documentsTotal, 142);
       expect(stats.documentsInbox, 5);
@@ -19,7 +18,6 @@ void main() {
       expect(stats.correspondentCount, 18);
       expect(stats.documentTypeCount, 8);
       expect(stats.storagePathCount, 3);
-      expect(stats.characterCount, 1234567);
     });
 
     test('defaults all fields to 0 when JSON is empty', () {
@@ -30,7 +28,6 @@ void main() {
       expect(stats.correspondentCount, 0);
       expect(stats.documentTypeCount, 0);
       expect(stats.storagePathCount, 0);
-      expect(stats.characterCount, 0);
     });
 
     test('handles num (double) values from JSON decoder', () {
