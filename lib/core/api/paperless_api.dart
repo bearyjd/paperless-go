@@ -375,6 +375,34 @@ class PaperlessApi {
     );
   }
 
+  Future<CustomField> createCustomField({
+    required String name,
+    required String dataType,
+    Map<String, dynamic>? extraData,
+  }) async {
+    final data = <String, dynamic>{
+      'name': name,
+      'data_type': dataType,
+    };
+    if (extraData != null) data['extra_data'] = extraData;
+    final response = await _dio.post('api/custom_fields/', data: data);
+    return CustomField.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<CustomField> updateCustomField(int id, {String? name}) async {
+    final data = <String, dynamic>{};
+    if (name != null) data['name'] = name;
+    if (data.isEmpty) {
+      throw ArgumentError('At least one field must be provided to updateCustomField');
+    }
+    final response = await _dio.patch('api/custom_fields/$id/', data: data);
+    return CustomField.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteCustomField(int id) async {
+    await _dio.delete('api/custom_fields/$id/');
+  }
+
   // Trash
 
   /// Get trashed documents.
