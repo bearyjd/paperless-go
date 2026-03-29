@@ -87,6 +87,12 @@ GoRouter router(Ref ref) {
       // so auth guards below still apply on the second pass.
       final scheme = state.uri.scheme;
       if (scheme == 'content' || scheme == 'file') return '/';
+      if (scheme == 'paperlessgo') {
+        final path = state.uri.host;
+        if (path == 'scan') return '/scan';
+        if (path == 'upload') return '/scan';
+        return '/';
+      }
 
       final authState = ref.read(authStateProvider);
       // Don't redirect while auth state is still loading from storage

@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../core/services/home_widget_service.dart';
 
 part 'dashboard_statistics.g.dart';
 
@@ -39,7 +40,9 @@ class DashboardStatisticsNotifier extends _$DashboardStatisticsNotifier {
   @override
   Future<DashboardStatistics> build() async {
     final json = await ref.watch(paperlessApiProvider).getStatistics();
-    return DashboardStatistics.fromJson(json);
+    final stats = DashboardStatistics.fromJson(json);
+    HomeWidgetService.updateDocCount(stats.documentsTotal);
+    return stats;
   }
 
   Future<void> refresh() async {
