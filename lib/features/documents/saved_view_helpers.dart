@@ -82,6 +82,10 @@ List<FilterRule> documentsFilterToFilterRules(DocumentsFilter filter) {
         ruleType: _kRuleDocumentType,
         value: filter.documentTypeId.toString()));
   }
+  // Note: Paperless-ngx distinguishes "has tag" (type 6, all match) from
+  // "has any tag" (type 7, any match). During conversion, both are collapsed
+  // into tagIds and re-emitted as type 6. This means a saved view originally
+  // using "any" semantics will become "all" after re-saving from the app.
   for (final tagId in filter.tagIds ?? []) {
     rules.add(FilterRule(ruleType: _kRuleHasTag, value: tagId.toString()));
   }
