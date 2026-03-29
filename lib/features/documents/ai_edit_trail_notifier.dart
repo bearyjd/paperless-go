@@ -54,18 +54,20 @@ class AiEditTrail extends _$AiEditTrail {
 
   Future<void> recordEdits(EditMap edits, String source) async {
     final db = ref.read(appDatabaseProvider);
-    for (final entry in edits.entries) {
-      await db.into(db.aiEdits).insert(
-            AiEditsCompanion.insert(
-              documentId: documentId,
-              fieldName: entry.key,
-              oldValue: Value(entry.value.oldValue),
-              newValue: Value(entry.value.newValue),
-              source: source,
-              appliedAt: DateTime.now(),
-            ),
-          );
-    }
+    await db.transaction(() async {
+      for (final entry in edits.entries) {
+        await db.into(db.aiEdits).insert(
+              AiEditsCompanion.insert(
+                documentId: documentId,
+                fieldName: entry.key,
+                oldValue: Value(entry.value.oldValue),
+                newValue: Value(entry.value.newValue),
+                source: source,
+                appliedAt: DateTime.now(),
+              ),
+            );
+      }
+    });
     ref.invalidateSelf();
   }
 
