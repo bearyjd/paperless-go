@@ -3109,6 +3109,152 @@ class AiEditsCompanion extends UpdateCompanion<AiEdit> {
   }
 }
 
+class $LockedDocumentsTable extends LockedDocuments
+    with TableInfo<$LockedDocumentsTable, LockedDocument> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LockedDocumentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _documentIdMeta = const VerificationMeta(
+    'documentId',
+  );
+  @override
+  late final GeneratedColumn<int> documentId = GeneratedColumn<int>(
+    'document_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [documentId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'locked_documents';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LockedDocument> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('document_id')) {
+      context.handle(
+        _documentIdMeta,
+        documentId.isAcceptableOrUnknown(data['document_id']!, _documentIdMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {documentId};
+  @override
+  LockedDocument map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LockedDocument(
+      documentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}document_id'],
+      )!,
+    );
+  }
+
+  @override
+  $LockedDocumentsTable createAlias(String alias) {
+    return $LockedDocumentsTable(attachedDatabase, alias);
+  }
+}
+
+class LockedDocument extends DataClass implements Insertable<LockedDocument> {
+  final int documentId;
+  const LockedDocument({required this.documentId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['document_id'] = Variable<int>(documentId);
+    return map;
+  }
+
+  LockedDocumentsCompanion toCompanion(bool nullToAbsent) {
+    return LockedDocumentsCompanion(documentId: Value(documentId));
+  }
+
+  factory LockedDocument.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LockedDocument(
+      documentId: serializer.fromJson<int>(json['documentId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{'documentId': serializer.toJson<int>(documentId)};
+  }
+
+  LockedDocument copyWith({int? documentId}) =>
+      LockedDocument(documentId: documentId ?? this.documentId);
+  LockedDocument copyWithCompanion(LockedDocumentsCompanion data) {
+    return LockedDocument(
+      documentId: data.documentId.present
+          ? data.documentId.value
+          : this.documentId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LockedDocument(')
+          ..write('documentId: $documentId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => documentId.hashCode;
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LockedDocument && other.documentId == this.documentId);
+}
+
+class LockedDocumentsCompanion extends UpdateCompanion<LockedDocument> {
+  final Value<int> documentId;
+  const LockedDocumentsCompanion({this.documentId = const Value.absent()});
+  LockedDocumentsCompanion.insert({this.documentId = const Value.absent()});
+  static Insertable<LockedDocument> custom({Expression<int>? documentId}) {
+    return RawValuesInsertable({
+      if (documentId != null) 'document_id': documentId,
+    });
+  }
+
+  LockedDocumentsCompanion copyWith({Value<int>? documentId}) {
+    return LockedDocumentsCompanion(documentId: documentId ?? this.documentId);
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (documentId.present) {
+      map['document_id'] = Variable<int>(documentId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LockedDocumentsCompanion(')
+          ..write('documentId: $documentId')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3132,6 +3278,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $PendingUploadsTable pendingUploads = $PendingUploadsTable(this);
   late final $AiEditsTable aiEdits = $AiEditsTable(this);
+  late final $LockedDocumentsTable lockedDocuments = $LockedDocumentsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3147,6 +3296,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cachedWorkflows,
     pendingUploads,
     aiEdits,
+    lockedDocuments,
   ];
 }
 
@@ -5015,6 +5165,122 @@ typedef $$AiEditsTableProcessedTableManager =
       AiEdit,
       PrefetchHooks Function()
     >;
+typedef $$LockedDocumentsTableCreateCompanionBuilder =
+    LockedDocumentsCompanion Function({Value<int> documentId});
+typedef $$LockedDocumentsTableUpdateCompanionBuilder =
+    LockedDocumentsCompanion Function({Value<int> documentId});
+
+class $$LockedDocumentsTableFilterComposer
+    extends Composer<_$AppDatabase, $LockedDocumentsTable> {
+  $$LockedDocumentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get documentId => $composableBuilder(
+    column: $table.documentId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LockedDocumentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LockedDocumentsTable> {
+  $$LockedDocumentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get documentId => $composableBuilder(
+    column: $table.documentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LockedDocumentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LockedDocumentsTable> {
+  $$LockedDocumentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get documentId => $composableBuilder(
+    column: $table.documentId,
+    builder: (column) => column,
+  );
+}
+
+class $$LockedDocumentsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LockedDocumentsTable,
+          LockedDocument,
+          $$LockedDocumentsTableFilterComposer,
+          $$LockedDocumentsTableOrderingComposer,
+          $$LockedDocumentsTableAnnotationComposer,
+          $$LockedDocumentsTableCreateCompanionBuilder,
+          $$LockedDocumentsTableUpdateCompanionBuilder,
+          (
+            LockedDocument,
+            BaseReferences<
+              _$AppDatabase,
+              $LockedDocumentsTable,
+              LockedDocument
+            >,
+          ),
+          LockedDocument,
+          PrefetchHooks Function()
+        > {
+  $$LockedDocumentsTableTableManager(
+    _$AppDatabase db,
+    $LockedDocumentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LockedDocumentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LockedDocumentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LockedDocumentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({Value<int> documentId = const Value.absent()}) =>
+                  LockedDocumentsCompanion(documentId: documentId),
+          createCompanionCallback:
+              ({Value<int> documentId = const Value.absent()}) =>
+                  LockedDocumentsCompanion.insert(documentId: documentId),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LockedDocumentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LockedDocumentsTable,
+      LockedDocument,
+      $$LockedDocumentsTableFilterComposer,
+      $$LockedDocumentsTableOrderingComposer,
+      $$LockedDocumentsTableAnnotationComposer,
+      $$LockedDocumentsTableCreateCompanionBuilder,
+      $$LockedDocumentsTableUpdateCompanionBuilder,
+      (
+        LockedDocument,
+        BaseReferences<_$AppDatabase, $LockedDocumentsTable, LockedDocument>,
+      ),
+      LockedDocument,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5039,4 +5305,6 @@ class $AppDatabaseManager {
       $$PendingUploadsTableTableManager(_db, _db.pendingUploads);
   $$AiEditsTableTableManager get aiEdits =>
       $$AiEditsTableTableManager(_db, _db.aiEdits);
+  $$LockedDocumentsTableTableManager get lockedDocuments =>
+      $$LockedDocumentsTableTableManager(_db, _db.lockedDocuments);
 }

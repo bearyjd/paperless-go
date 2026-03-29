@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/services/biometric_service.dart';
+import '../../core/services/document_lock_service.dart';
 import '../../core/services/pdf_tools_service.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_provider.dart';
@@ -21,17 +23,73 @@ import 'document_detail_notifier.dart';
 import 'documents_notifier.dart';
 import '../inbox/inbox_notifier.dart';
 
-class DocumentDetailScreen extends ConsumerWidget {
+class DocumentDetailScreen extends ConsumerStatefulWidget {
   final int documentId;
   const DocumentDetailScreen({super.key, required this.documentId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DocumentDetailScreen> createState() => _DocumentDetailScreenState();
+}
+
+class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
+  bool _isLocked = false;
+  bool _authenticated = false;
+  final _biometricService = BiometricService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLockState();
+  }
+
+  Future<void> _loadLockState() async {
+    final locked = await ref.read(documentLockServiceProvider).isLocked(widget.documentId);
+    if (mounted) {
+      setState(() => _isLocked = locked);
+    }
+  }
+
+  Future<void> _authenticate() async {
+    final success = await _biometricService.authenticate(
+      reason: 'Authenticate to view locked document',
+    );
+    if (mounted && success) {
+      setState(() => _authenticated = true);
+    }
+  }
+
+  int get documentId => widget.documentId;
+
+  @override
+  Widget build(BuildContext context) {
     final docAsync = ref.watch(documentDetailProvider(documentId));
     final tagsAsync = ref.watch(tagsProvider);
     final correspondentsAsync = ref.watch(correspondentsProvider);
     final docTypesAsync = ref.watch(documentTypesProvider);
     final storagePathsAsync = ref.watch(storagePathsProvider);
+
+    // Show biometric gate when document is locked and not yet authenticated
+    if (_isLocked && !_authenticated) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.lock_outline, size: 64),
+              const SizedBox(height: 16),
+              const Text('This document is locked'),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _authenticate,
+                icon: const Icon(Icons.fingerprint),
+                label: const Text('Authenticate'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return docAsync.when(
       loading: () => Scaffold(
@@ -148,6 +206,16 @@ class DocumentDetailScreen extends ConsumerWidget {
                     title: Text('Password Protect & Share'),
                     contentPadding: EdgeInsets.zero,
                   )),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: _isLocked ? 'unlock_doc' : 'lock_doc',
+                    child: ListTile(
+                      leading: Icon(_isLocked ? Icons.lock_open : Icons.lock_outline),
+                      title: Text(_isLocked ? 'Remove Lock' : 'Lock Document'),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
                   const PopupMenuDivider(),
                   const PopupMenuItem(value: 'delete', child: ListTile(
                     leading: Icon(Icons.delete_outline, color: Colors.red),
@@ -491,6 +559,26 @@ class DocumentDetailScreen extends ConsumerWidget {
     BuildContext context, WidgetRef ref, String action, String title,
   ) async {
     switch (action) {
+      case 'lock_doc':
+        await ref.read(documentLockServiceProvider).lock(documentId);
+        if (mounted) setState(() => _isLocked = true);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Document locked')),
+          );
+        }
+      case 'unlock_doc':
+        final authed = await _biometricService.authenticate(
+          reason: 'Unlock document',
+        );
+        if (!authed) return;
+        await ref.read(documentLockServiceProvider).unlock(documentId);
+        if (mounted) setState(() => _isLocked = false);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Document unlocked')),
+          );
+        }
       case 'download':
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Downloading...')),
