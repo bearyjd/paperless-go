@@ -79,6 +79,18 @@ class PendingUploads extends Table {
   TextColumn get lastError => text().nullable()();
 }
 
+/// Records metadata fields auto-applied from AI suggestions (OCR or chat).
+class AiEdits extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get documentId => integer()();
+  TextColumn get fieldName => text()();
+  TextColumn get oldValue => text().nullable()();
+  TextColumn get newValue => text().nullable()();
+  /// Source: 'ocr_suggestion' or 'chat'
+  TextColumn get source => text()();
+  DateTimeColumn get appliedAt => dateTime()();
+}
+
 @DriftDatabase(tables: [
   CachedDocuments,
   CachedTags,
@@ -88,10 +100,20 @@ class PendingUploads extends Table {
   CachedSavedViews,
   CachedCustomFields,
   PendingUploads,
+  AiEdits,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.createTable(aiEdits);
+      }
+    },
+  );
 }
