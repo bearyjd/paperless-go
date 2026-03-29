@@ -137,5 +137,24 @@ final customFieldsProvider = FutureProvider<Map<int, CustomField>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CustomFieldsRef = FutureProviderRef<Map<int, CustomField>>;
+String _$workflowsHash() => r'152cddce8786d06fa113c86a299abdda0ab09525';
+
+/// All workflows.
+///
+/// Copied from [workflows].
+@ProviderFor(workflows)
+final workflowsProvider = AutoDisposeFutureProvider<List<Workflow>>.internal(
+  workflows,
+  name: r'workflowsProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$workflowsHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef WorkflowsRef = AutoDisposeFutureProviderRef<List<Workflow>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

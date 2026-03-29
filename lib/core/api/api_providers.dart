@@ -8,6 +8,7 @@ import '../models/document_type.dart';
 import '../models/saved_view.dart';
 import '../models/storage_path.dart';
 import '../models/tag.dart';
+import '../models/workflow.dart';
 import 'paperless_api.dart';
 
 part 'api_providers.g.dart';
@@ -118,4 +119,11 @@ Future<Map<int, CustomField>> customFields(Ref ref) async {
     if (cached.isNotEmpty) return cached;
     rethrow;
   }
+}
+
+/// All workflows.
+@riverpod
+Future<List<Workflow>> workflows(Ref ref) async {
+  final api = ref.watch(paperlessApiProvider);
+  return api.getWorkflows();
 }
