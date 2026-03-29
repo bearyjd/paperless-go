@@ -2405,6 +2405,463 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
   }
 }
 
+class $AiEditsTable extends AiEdits with TableInfo<$AiEditsTable, AiEdit> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AiEditsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _documentIdMeta = const VerificationMeta(
+    'documentId',
+  );
+  @override
+  late final GeneratedColumn<int> documentId = GeneratedColumn<int>(
+    'document_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fieldNameMeta = const VerificationMeta(
+    'fieldName',
+  );
+  @override
+  late final GeneratedColumn<String> fieldName = GeneratedColumn<String>(
+    'field_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _oldValueMeta = const VerificationMeta(
+    'oldValue',
+  );
+  @override
+  late final GeneratedColumn<String> oldValue = GeneratedColumn<String>(
+    'old_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _newValueMeta = const VerificationMeta(
+    'newValue',
+  );
+  @override
+  late final GeneratedColumn<String> newValue = GeneratedColumn<String>(
+    'new_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _appliedAtMeta = const VerificationMeta(
+    'appliedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> appliedAt = GeneratedColumn<DateTime>(
+    'applied_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    documentId,
+    fieldName,
+    oldValue,
+    newValue,
+    source,
+    appliedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_edits';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiEdit> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('document_id')) {
+      context.handle(
+        _documentIdMeta,
+        documentId.isAcceptableOrUnknown(data['document_id']!, _documentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_documentIdMeta);
+    }
+    if (data.containsKey('field_name')) {
+      context.handle(
+        _fieldNameMeta,
+        fieldName.isAcceptableOrUnknown(data['field_name']!, _fieldNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldNameMeta);
+    }
+    if (data.containsKey('old_value')) {
+      context.handle(
+        _oldValueMeta,
+        oldValue.isAcceptableOrUnknown(data['old_value']!, _oldValueMeta),
+      );
+    }
+    if (data.containsKey('new_value')) {
+      context.handle(
+        _newValueMeta,
+        newValue.isAcceptableOrUnknown(data['new_value']!, _newValueMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('applied_at')) {
+      context.handle(
+        _appliedAtMeta,
+        appliedAt.isAcceptableOrUnknown(data['applied_at']!, _appliedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_appliedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AiEdit map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiEdit(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      documentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}document_id'],
+      )!,
+      fieldName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}field_name'],
+      )!,
+      oldValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}old_value'],
+      ),
+      newValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}new_value'],
+      ),
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      appliedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}applied_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AiEditsTable createAlias(String alias) {
+    return $AiEditsTable(attachedDatabase, alias);
+  }
+}
+
+class AiEdit extends DataClass implements Insertable<AiEdit> {
+  final int id;
+  final int documentId;
+  final String fieldName;
+  final String? oldValue;
+  final String? newValue;
+
+  /// Source: 'ocr_suggestion' or 'chat'
+  final String source;
+  final DateTime appliedAt;
+  const AiEdit({
+    required this.id,
+    required this.documentId,
+    required this.fieldName,
+    this.oldValue,
+    this.newValue,
+    required this.source,
+    required this.appliedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['document_id'] = Variable<int>(documentId);
+    map['field_name'] = Variable<String>(fieldName);
+    if (!nullToAbsent || oldValue != null) {
+      map['old_value'] = Variable<String>(oldValue);
+    }
+    if (!nullToAbsent || newValue != null) {
+      map['new_value'] = Variable<String>(newValue);
+    }
+    map['source'] = Variable<String>(source);
+    map['applied_at'] = Variable<DateTime>(appliedAt);
+    return map;
+  }
+
+  AiEditsCompanion toCompanion(bool nullToAbsent) {
+    return AiEditsCompanion(
+      id: Value(id),
+      documentId: Value(documentId),
+      fieldName: Value(fieldName),
+      oldValue: oldValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(oldValue),
+      newValue: newValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(newValue),
+      source: Value(source),
+      appliedAt: Value(appliedAt),
+    );
+  }
+
+  factory AiEdit.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiEdit(
+      id: serializer.fromJson<int>(json['id']),
+      documentId: serializer.fromJson<int>(json['documentId']),
+      fieldName: serializer.fromJson<String>(json['fieldName']),
+      oldValue: serializer.fromJson<String?>(json['oldValue']),
+      newValue: serializer.fromJson<String?>(json['newValue']),
+      source: serializer.fromJson<String>(json['source']),
+      appliedAt: serializer.fromJson<DateTime>(json['appliedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'documentId': serializer.toJson<int>(documentId),
+      'fieldName': serializer.toJson<String>(fieldName),
+      'oldValue': serializer.toJson<String?>(oldValue),
+      'newValue': serializer.toJson<String?>(newValue),
+      'source': serializer.toJson<String>(source),
+      'appliedAt': serializer.toJson<DateTime>(appliedAt),
+    };
+  }
+
+  AiEdit copyWith({
+    int? id,
+    int? documentId,
+    String? fieldName,
+    Value<String?> oldValue = const Value.absent(),
+    Value<String?> newValue = const Value.absent(),
+    String? source,
+    DateTime? appliedAt,
+  }) => AiEdit(
+    id: id ?? this.id,
+    documentId: documentId ?? this.documentId,
+    fieldName: fieldName ?? this.fieldName,
+    oldValue: oldValue.present ? oldValue.value : this.oldValue,
+    newValue: newValue.present ? newValue.value : this.newValue,
+    source: source ?? this.source,
+    appliedAt: appliedAt ?? this.appliedAt,
+  );
+  AiEdit copyWithCompanion(AiEditsCompanion data) {
+    return AiEdit(
+      id: data.id.present ? data.id.value : this.id,
+      documentId: data.documentId.present
+          ? data.documentId.value
+          : this.documentId,
+      fieldName: data.fieldName.present ? data.fieldName.value : this.fieldName,
+      oldValue: data.oldValue.present ? data.oldValue.value : this.oldValue,
+      newValue: data.newValue.present ? data.newValue.value : this.newValue,
+      source: data.source.present ? data.source.value : this.source,
+      appliedAt: data.appliedAt.present ? data.appliedAt.value : this.appliedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiEdit(')
+          ..write('id: $id, ')
+          ..write('documentId: $documentId, ')
+          ..write('fieldName: $fieldName, ')
+          ..write('oldValue: $oldValue, ')
+          ..write('newValue: $newValue, ')
+          ..write('source: $source, ')
+          ..write('appliedAt: $appliedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    documentId,
+    fieldName,
+    oldValue,
+    newValue,
+    source,
+    appliedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiEdit &&
+          other.id == this.id &&
+          other.documentId == this.documentId &&
+          other.fieldName == this.fieldName &&
+          other.oldValue == this.oldValue &&
+          other.newValue == this.newValue &&
+          other.source == this.source &&
+          other.appliedAt == this.appliedAt);
+}
+
+class AiEditsCompanion extends UpdateCompanion<AiEdit> {
+  final Value<int> id;
+  final Value<int> documentId;
+  final Value<String> fieldName;
+  final Value<String?> oldValue;
+  final Value<String?> newValue;
+  final Value<String> source;
+  final Value<DateTime> appliedAt;
+  const AiEditsCompanion({
+    this.id = const Value.absent(),
+    this.documentId = const Value.absent(),
+    this.fieldName = const Value.absent(),
+    this.oldValue = const Value.absent(),
+    this.newValue = const Value.absent(),
+    this.source = const Value.absent(),
+    this.appliedAt = const Value.absent(),
+  });
+  AiEditsCompanion.insert({
+    this.id = const Value.absent(),
+    required int documentId,
+    required String fieldName,
+    this.oldValue = const Value.absent(),
+    this.newValue = const Value.absent(),
+    required String source,
+    required DateTime appliedAt,
+  }) : documentId = Value(documentId),
+       fieldName = Value(fieldName),
+       source = Value(source),
+       appliedAt = Value(appliedAt);
+  static Insertable<AiEdit> custom({
+    Expression<int>? id,
+    Expression<int>? documentId,
+    Expression<String>? fieldName,
+    Expression<String>? oldValue,
+    Expression<String>? newValue,
+    Expression<String>? source,
+    Expression<DateTime>? appliedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (documentId != null) 'document_id': documentId,
+      if (fieldName != null) 'field_name': fieldName,
+      if (oldValue != null) 'old_value': oldValue,
+      if (newValue != null) 'new_value': newValue,
+      if (source != null) 'source': source,
+      if (appliedAt != null) 'applied_at': appliedAt,
+    });
+  }
+
+  AiEditsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? documentId,
+    Value<String>? fieldName,
+    Value<String?>? oldValue,
+    Value<String?>? newValue,
+    Value<String>? source,
+    Value<DateTime>? appliedAt,
+  }) {
+    return AiEditsCompanion(
+      id: id ?? this.id,
+      documentId: documentId ?? this.documentId,
+      fieldName: fieldName ?? this.fieldName,
+      oldValue: oldValue ?? this.oldValue,
+      newValue: newValue ?? this.newValue,
+      source: source ?? this.source,
+      appliedAt: appliedAt ?? this.appliedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (documentId.present) {
+      map['document_id'] = Variable<int>(documentId.value);
+    }
+    if (fieldName.present) {
+      map['field_name'] = Variable<String>(fieldName.value);
+    }
+    if (oldValue.present) {
+      map['old_value'] = Variable<String>(oldValue.value);
+    }
+    if (newValue.present) {
+      map['new_value'] = Variable<String>(newValue.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (appliedAt.present) {
+      map['applied_at'] = Variable<DateTime>(appliedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiEditsCompanion(')
+          ..write('id: $id, ')
+          ..write('documentId: $documentId, ')
+          ..write('fieldName: $fieldName, ')
+          ..write('oldValue: $oldValue, ')
+          ..write('newValue: $newValue, ')
+          ..write('source: $source, ')
+          ..write('appliedAt: $appliedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2424,6 +2881,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CachedCustomFieldsTable cachedCustomFields =
       $CachedCustomFieldsTable(this);
   late final $PendingUploadsTable pendingUploads = $PendingUploadsTable(this);
+  late final $AiEditsTable aiEdits = $AiEditsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2437,6 +2895,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cachedSavedViews,
     cachedCustomFields,
     pendingUploads,
+    aiEdits,
   ];
 }
 
@@ -3915,6 +4374,234 @@ typedef $$PendingUploadsTableProcessedTableManager =
       PendingUpload,
       PrefetchHooks Function()
     >;
+typedef $$AiEditsTableCreateCompanionBuilder =
+    AiEditsCompanion Function({
+      Value<int> id,
+      required int documentId,
+      required String fieldName,
+      Value<String?> oldValue,
+      Value<String?> newValue,
+      required String source,
+      required DateTime appliedAt,
+    });
+typedef $$AiEditsTableUpdateCompanionBuilder =
+    AiEditsCompanion Function({
+      Value<int> id,
+      Value<int> documentId,
+      Value<String> fieldName,
+      Value<String?> oldValue,
+      Value<String?> newValue,
+      Value<String> source,
+      Value<DateTime> appliedAt,
+    });
+
+class $$AiEditsTableFilterComposer
+    extends Composer<_$AppDatabase, $AiEditsTable> {
+  $$AiEditsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get documentId => $composableBuilder(
+    column: $table.documentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fieldName => $composableBuilder(
+    column: $table.fieldName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get oldValue => $composableBuilder(
+    column: $table.oldValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get newValue => $composableBuilder(
+    column: $table.newValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get appliedAt => $composableBuilder(
+    column: $table.appliedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AiEditsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AiEditsTable> {
+  $$AiEditsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get documentId => $composableBuilder(
+    column: $table.documentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fieldName => $composableBuilder(
+    column: $table.fieldName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get oldValue => $composableBuilder(
+    column: $table.oldValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get newValue => $composableBuilder(
+    column: $table.newValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get appliedAt => $composableBuilder(
+    column: $table.appliedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AiEditsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AiEditsTable> {
+  $$AiEditsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get documentId => $composableBuilder(
+    column: $table.documentId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fieldName =>
+      $composableBuilder(column: $table.fieldName, builder: (column) => column);
+
+  GeneratedColumn<String> get oldValue =>
+      $composableBuilder(column: $table.oldValue, builder: (column) => column);
+
+  GeneratedColumn<String> get newValue =>
+      $composableBuilder(column: $table.newValue, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get appliedAt =>
+      $composableBuilder(column: $table.appliedAt, builder: (column) => column);
+}
+
+class $$AiEditsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AiEditsTable,
+          AiEdit,
+          $$AiEditsTableFilterComposer,
+          $$AiEditsTableOrderingComposer,
+          $$AiEditsTableAnnotationComposer,
+          $$AiEditsTableCreateCompanionBuilder,
+          $$AiEditsTableUpdateCompanionBuilder,
+          (AiEdit, BaseReferences<_$AppDatabase, $AiEditsTable, AiEdit>),
+          AiEdit,
+          PrefetchHooks Function()
+        > {
+  $$AiEditsTableTableManager(_$AppDatabase db, $AiEditsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AiEditsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AiEditsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AiEditsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> documentId = const Value.absent(),
+                Value<String> fieldName = const Value.absent(),
+                Value<String?> oldValue = const Value.absent(),
+                Value<String?> newValue = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<DateTime> appliedAt = const Value.absent(),
+              }) => AiEditsCompanion(
+                id: id,
+                documentId: documentId,
+                fieldName: fieldName,
+                oldValue: oldValue,
+                newValue: newValue,
+                source: source,
+                appliedAt: appliedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int documentId,
+                required String fieldName,
+                Value<String?> oldValue = const Value.absent(),
+                Value<String?> newValue = const Value.absent(),
+                required String source,
+                required DateTime appliedAt,
+              }) => AiEditsCompanion.insert(
+                id: id,
+                documentId: documentId,
+                fieldName: fieldName,
+                oldValue: oldValue,
+                newValue: newValue,
+                source: source,
+                appliedAt: appliedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AiEditsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AiEditsTable,
+      AiEdit,
+      $$AiEditsTableFilterComposer,
+      $$AiEditsTableOrderingComposer,
+      $$AiEditsTableAnnotationComposer,
+      $$AiEditsTableCreateCompanionBuilder,
+      $$AiEditsTableUpdateCompanionBuilder,
+      (AiEdit, BaseReferences<_$AppDatabase, $AiEditsTable, AiEdit>),
+      AiEdit,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3935,4 +4622,6 @@ class $AppDatabaseManager {
       $$CachedCustomFieldsTableTableManager(_db, _db.cachedCustomFields);
   $$PendingUploadsTableTableManager get pendingUploads =>
       $$PendingUploadsTableTableManager(_db, _db.pendingUploads);
+  $$AiEditsTableTableManager get aiEdits =>
+      $$AiEditsTableTableManager(_db, _db.aiEdits);
 }
