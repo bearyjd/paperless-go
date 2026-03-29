@@ -556,22 +556,22 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       BuildContext context, SavedView view) async {
     final action = await showModalBottomSheet<String>(
       context: context,
-      builder: (_) => SafeArea(
+      builder: (sheetCtx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
               title: const Text('Rename'),
-              onTap: () => Navigator.pop(context, 'rename'),
+              onTap: () => Navigator.pop(sheetCtx, 'rename'),
             ),
             ListTile(
               leading: Icon(Icons.delete_outline,
-                  color: Theme.of(context).colorScheme.error),
+                  color: Theme.of(sheetCtx).colorScheme.error),
               title: Text('Delete',
                   style: TextStyle(
-                      color: Theme.of(context).colorScheme.error)),
-              onTap: () => Navigator.pop(context, 'delete'),
+                      color: Theme.of(sheetCtx).colorScheme.error)),
+              onTap: () => Navigator.pop(sheetCtx, 'delete'),
             ),
           ],
         ),
