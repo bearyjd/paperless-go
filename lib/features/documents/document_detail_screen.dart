@@ -337,13 +337,11 @@ class DocumentDetailScreen extends ConsumerWidget {
               ),
 
               // Custom fields
-              if (doc.customFields.isNotEmpty) ...[
-                const Divider(height: 32),
-                _CustomFieldsSection(
-                  documentId: documentId,
-                  fieldInstances: doc.customFields,
-                ),
-              ],
+              const Divider(height: 32),
+              _CustomFieldsSection(
+                documentId: documentId,
+                fieldInstances: doc.customFields,
+              ),
 
               const Divider(height: 32),
 
@@ -703,45 +701,159 @@ class _CustomFieldsSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Custom Fields', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        ...fieldInstances.map((instance) {
-          final fieldDef = fieldDefs[instance.field];
-          final fieldName = fieldDef?.name ?? 'Field ${instance.field}';
-          final dataType = fieldDef?.dataType ?? 'string';
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _CustomFieldTile(
-              documentId: documentId,
-              fieldName: fieldName,
-              dataType: dataType,
-              fieldId: instance.field,
-              value: instance.value,
-              extraData: fieldDef?.extraData,
-              onSave: (newValue) async {
-                final updatedFields = fieldInstances.map((fi) {
-                  if (fi.field == instance.field) {
-                    return {'field': fi.field, 'value': newValue};
-                  }
-                  return {'field': fi.field, 'value': fi.value};
-                }).toList();
-                try {
-                  await ref.read(documentDetailProvider(documentId).notifier)
-                      .updateField({'custom_fields': updatedFields});
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to update field: $e')),
-                    );
-                  }
-                }
-              },
+        Row(
+          children: [
+            Text('Custom Fields',
+                style: Theme.of(context).textTheme.titleSmall),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.add, size: 20),
+              onPressed: () =>
+                  _showAddFieldPicker(context, ref, fieldDefs),
             ),
-          );
-        }),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (fieldInstances.isEmpty && fieldDefs.isEmpty)
+          Text(
+            'No custom fields configured on this server',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          )
+        else if (fieldInstances.isEmpty)
+          Text(
+            'No values set — tap + to add',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          )
+        else
+          ...fieldInstances.map((instance) {
+            final fieldDef = fieldDefs[instance.field];
+            final fieldName = fieldDef?.name ?? 'Field ${instance.field}';
+            final dataType = fieldDef?.dataType ?? 'string';
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _CustomFieldTile(
+                documentId: documentId,
+                fieldName: fieldName,
+                dataType: dataType,
+                fieldId: instance.field,
+                value: instance.value,
+                extraData: fieldDef?.extraData,
+                onSave: (newValue) async {
+                  final updatedFields = fieldInstances.map((fi) {
+                    if (fi.field == instance.field) {
+                      return {'field': fi.field, 'value': newValue};
+                    }
+                    return {'field': fi.field, 'value': fi.value};
+                  }).toList();
+                  try {
+                    await ref
+                        .read(documentDetailProvider(documentId).notifier)
+                        .updateField({'custom_fields': updatedFields});
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content:
+                                Text('Failed to update field: $e')),
+                      );
+                    }
+                  }
+                },
+              ),
+            );
+          }),
       ],
     );
+  }
+
+  void _showAddFieldPicker(
+    BuildContext context,
+    WidgetRef ref,
+    Map<int, CustomField> fieldDefs,
+  ) {
+    // Only show fields that aren't already assigned
+    final assignedIds = fieldInstances.map((fi) => fi.field).toSet();
+    final available = fieldDefs.values
+        .where((f) => !assignedIds.contains(f.id))
+        .toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+
+    if (available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All custom fields already assigned')),
+      );
+      return;
+    }
+
+    showModalBottomSheet<CustomField>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text('Add Custom Field',
+                    style: Theme.of(ctx).textTheme.titleMedium),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: available
+                      .map((f) => ListTile(
+                            title: Text(f.name),
+                            subtitle: Text(f.dataType,
+                                style: Theme.of(ctx).textTheme.bodySmall),
+                            onTap: () => Navigator.pop(ctx, f),
+                          ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    ).then((selectedField) {
+      if (selectedField == null || !context.mounted) return;
+      // Open the edit dialog immediately for the newly selected field
+      _CustomFieldTile(
+        documentId: documentId,
+        fieldName: selectedField.name,
+        dataType: selectedField.dataType,
+        fieldId: selectedField.id,
+        value: null,
+        extraData: selectedField.extraData,
+        onSave: (newValue) async {
+          final updatedFields = [
+            ...fieldInstances
+                .map((fi) => {'field': fi.field, 'value': fi.value}),
+            {'field': selectedField.id, 'value': newValue},
+          ];
+          try {
+            await ref
+                .read(documentDetailProvider(documentId).notifier)
+                .updateField({'custom_fields': updatedFields});
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to add field: $e')),
+              );
+            }
+          }
+        },
+      ).callEditField(context);
+    });
   }
 }
 
@@ -951,6 +1063,11 @@ class _CustomFieldTile extends StatelessWidget {
     } catch (_) {
       // Dialog cancelled
     }
+  }
+
+  // Called externally to trigger the edit dialog for a new (unset) field.
+  void callEditField(BuildContext context) {
+    _editField(context);
   }
 }
 
