@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/api/api_providers.dart';
+import '../../core/models/correspondent.dart';
 import '../../core/models/document.dart';
+import '../../core/models/document_type.dart';
 import '../../core/models/saved_view.dart';
+import '../../core/models/tag.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
 import 'bulk_action_bar.dart';
@@ -216,9 +219,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
               ),
             ),
             data: (docsData) {
-              final tags = tagsAsync.valueOrNull ?? {};
-              final correspondents = correspondentsAsync.valueOrNull ?? {};
-              final docTypes = docTypesAsync.valueOrNull ?? {};
+              final tags = tagsAsync.valueOrNull ?? <int, Tag>{};
+              final correspondents = correspondentsAsync.valueOrNull ?? <int, Correspondent>{};
+              final docTypes = docTypesAsync.valueOrNull ?? <int, DocumentType>{};
 
               if (docsData.documents.isEmpty) {
                 return Center(
@@ -704,9 +707,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
 
 class _ActiveFiltersBar extends StatelessWidget {
   final DocumentsFilter filter;
-  final Map<int, dynamic> tags;
-  final Map<int, dynamic> correspondents;
-  final Map<int, dynamic> docTypes;
+  final Map<int, Tag> tags;
+  final Map<int, Correspondent> correspondents;
+  final Map<int, DocumentType> docTypes;
   final VoidCallback onClear;
   final VoidCallback onSave;
 
@@ -724,14 +727,14 @@ class _ActiveFiltersBar extends StatelessWidget {
     final chips = <Widget>[];
 
     if (filter.correspondentId != null) {
-      final name = (correspondents[filter.correspondentId] as dynamic)?.name ?? '?';
+      final name = correspondents[filter.correspondentId]?.name ?? '?';
       chips.add(Chip(
         label: Text('Corr: $name', style: const TextStyle(fontSize: 12)),
         visualDensity: VisualDensity.compact,
       ));
     }
     if (filter.documentTypeId != null) {
-      final name = (docTypes[filter.documentTypeId] as dynamic)?.name ?? '?';
+      final name = docTypes[filter.documentTypeId]?.name ?? '?';
       chips.add(Chip(
         label: Text('Type: $name', style: const TextStyle(fontSize: 12)),
         visualDensity: VisualDensity.compact,
@@ -739,7 +742,7 @@ class _ActiveFiltersBar extends StatelessWidget {
     }
     if (filter.tagIds != null) {
       for (final tagId in filter.tagIds!) {
-        final name = (tags[tagId] as dynamic)?.name ?? '?';
+        final name = tags[tagId]?.name ?? '?';
         chips.add(Chip(
           label: Text(name, style: const TextStyle(fontSize: 12)),
           visualDensity: VisualDensity.compact,
