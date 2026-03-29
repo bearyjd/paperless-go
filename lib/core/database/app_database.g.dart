@@ -3456,6 +3456,356 @@ class DocumentTemplatesCompanion extends UpdateCompanion<DocumentTemplateRow> {
   }
 }
 
+class $PendingEditsTable extends PendingEdits
+    with TableInfo<$PendingEditsTable, PendingEdit> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingEditsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _documentIdMeta = const VerificationMeta(
+    'documentId',
+  );
+  @override
+  late final GeneratedColumn<int> documentId = GeneratedColumn<int>(
+    'document_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fieldMeta = const VerificationMeta('field');
+  @override
+  late final GeneratedColumn<String> field = GeneratedColumn<String>(
+    'field',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _queuedAtMeta = const VerificationMeta(
+    'queuedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> queuedAt = GeneratedColumn<DateTime>(
+    'queued_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    documentId,
+    field,
+    value,
+    queuedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_edits';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PendingEdit> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('document_id')) {
+      context.handle(
+        _documentIdMeta,
+        documentId.isAcceptableOrUnknown(data['document_id']!, _documentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_documentIdMeta);
+    }
+    if (data.containsKey('field')) {
+      context.handle(
+        _fieldMeta,
+        field.isAcceptableOrUnknown(data['field']!, _fieldMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('queued_at')) {
+      context.handle(
+        _queuedAtMeta,
+        queuedAt.isAcceptableOrUnknown(data['queued_at']!, _queuedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_queuedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PendingEdit map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingEdit(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      documentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}document_id'],
+      )!,
+      field: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}field'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+      queuedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}queued_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PendingEditsTable createAlias(String alias) {
+    return $PendingEditsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingEdit extends DataClass implements Insertable<PendingEdit> {
+  final int id;
+  final int documentId;
+  final String field;
+  final String value;
+  final DateTime queuedAt;
+  const PendingEdit({
+    required this.id,
+    required this.documentId,
+    required this.field,
+    required this.value,
+    required this.queuedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['document_id'] = Variable<int>(documentId);
+    map['field'] = Variable<String>(field);
+    map['value'] = Variable<String>(value);
+    map['queued_at'] = Variable<DateTime>(queuedAt);
+    return map;
+  }
+
+  PendingEditsCompanion toCompanion(bool nullToAbsent) {
+    return PendingEditsCompanion(
+      id: Value(id),
+      documentId: Value(documentId),
+      field: Value(field),
+      value: Value(value),
+      queuedAt: Value(queuedAt),
+    );
+  }
+
+  factory PendingEdit.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingEdit(
+      id: serializer.fromJson<int>(json['id']),
+      documentId: serializer.fromJson<int>(json['documentId']),
+      field: serializer.fromJson<String>(json['field']),
+      value: serializer.fromJson<String>(json['value']),
+      queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'documentId': serializer.toJson<int>(documentId),
+      'field': serializer.toJson<String>(field),
+      'value': serializer.toJson<String>(value),
+      'queuedAt': serializer.toJson<DateTime>(queuedAt),
+    };
+  }
+
+  PendingEdit copyWith({
+    int? id,
+    int? documentId,
+    String? field,
+    String? value,
+    DateTime? queuedAt,
+  }) => PendingEdit(
+    id: id ?? this.id,
+    documentId: documentId ?? this.documentId,
+    field: field ?? this.field,
+    value: value ?? this.value,
+    queuedAt: queuedAt ?? this.queuedAt,
+  );
+  PendingEdit copyWithCompanion(PendingEditsCompanion data) {
+    return PendingEdit(
+      id: data.id.present ? data.id.value : this.id,
+      documentId: data.documentId.present
+          ? data.documentId.value
+          : this.documentId,
+      field: data.field.present ? data.field.value : this.field,
+      value: data.value.present ? data.value.value : this.value,
+      queuedAt: data.queuedAt.present ? data.queuedAt.value : this.queuedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingEdit(')
+          ..write('id: $id, ')
+          ..write('documentId: $documentId, ')
+          ..write('field: $field, ')
+          ..write('value: $value, ')
+          ..write('queuedAt: $queuedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, documentId, field, value, queuedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingEdit &&
+          other.id == this.id &&
+          other.documentId == this.documentId &&
+          other.field == this.field &&
+          other.value == this.value &&
+          other.queuedAt == this.queuedAt);
+}
+
+class PendingEditsCompanion extends UpdateCompanion<PendingEdit> {
+  final Value<int> id;
+  final Value<int> documentId;
+  final Value<String> field;
+  final Value<String> value;
+  final Value<DateTime> queuedAt;
+  const PendingEditsCompanion({
+    this.id = const Value.absent(),
+    this.documentId = const Value.absent(),
+    this.field = const Value.absent(),
+    this.value = const Value.absent(),
+    this.queuedAt = const Value.absent(),
+  });
+  PendingEditsCompanion.insert({
+    this.id = const Value.absent(),
+    required int documentId,
+    required String field,
+    required String value,
+    required DateTime queuedAt,
+  }) : documentId = Value(documentId),
+       field = Value(field),
+       value = Value(value),
+       queuedAt = Value(queuedAt);
+  static Insertable<PendingEdit> custom({
+    Expression<int>? id,
+    Expression<int>? documentId,
+    Expression<String>? field,
+    Expression<String>? value,
+    Expression<DateTime>? queuedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (documentId != null) 'document_id': documentId,
+      if (field != null) 'field': field,
+      if (value != null) 'value': value,
+      if (queuedAt != null) 'queued_at': queuedAt,
+    });
+  }
+
+  PendingEditsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? documentId,
+    Value<String>? field,
+    Value<String>? value,
+    Value<DateTime>? queuedAt,
+  }) {
+    return PendingEditsCompanion(
+      id: id ?? this.id,
+      documentId: documentId ?? this.documentId,
+      field: field ?? this.field,
+      value: value ?? this.value,
+      queuedAt: queuedAt ?? this.queuedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (documentId.present) {
+      map['document_id'] = Variable<int>(documentId.value);
+    }
+    if (field.present) {
+      map['field'] = Variable<String>(field.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (queuedAt.present) {
+      map['queued_at'] = Variable<DateTime>(queuedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingEditsCompanion(')
+          ..write('id: $id, ')
+          ..write('documentId: $documentId, ')
+          ..write('field: $field, ')
+          ..write('value: $value, ')
+          ..write('queuedAt: $queuedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3484,6 +3834,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $DocumentTemplatesTable documentTemplates =
       $DocumentTemplatesTable(this);
+  late final $PendingEditsTable pendingEdits = $PendingEditsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3501,6 +3852,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     aiEdits,
     lockedDocuments,
     documentTemplates,
+    pendingEdits,
   ];
 }
 
@@ -5630,6 +5982,202 @@ typedef $$DocumentTemplatesTableProcessedTableManager =
       DocumentTemplateRow,
       PrefetchHooks Function()
     >;
+typedef $$PendingEditsTableCreateCompanionBuilder =
+    PendingEditsCompanion Function({
+      Value<int> id,
+      required int documentId,
+      required String field,
+      required String value,
+      required DateTime queuedAt,
+    });
+typedef $$PendingEditsTableUpdateCompanionBuilder =
+    PendingEditsCompanion Function({
+      Value<int> id,
+      Value<int> documentId,
+      Value<String> field,
+      Value<String> value,
+      Value<DateTime> queuedAt,
+    });
+
+class $$PendingEditsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingEditsTable> {
+  $$PendingEditsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get documentId => $composableBuilder(
+    column: $table.documentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get field => $composableBuilder(
+    column: $table.field,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PendingEditsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingEditsTable> {
+  $$PendingEditsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get documentId => $composableBuilder(
+    column: $table.documentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get field => $composableBuilder(
+    column: $table.field,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PendingEditsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingEditsTable> {
+  $$PendingEditsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get documentId => $composableBuilder(
+    column: $table.documentId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get field =>
+      $composableBuilder(column: $table.field, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get queuedAt =>
+      $composableBuilder(column: $table.queuedAt, builder: (column) => column);
+}
+
+class $$PendingEditsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PendingEditsTable,
+          PendingEdit,
+          $$PendingEditsTableFilterComposer,
+          $$PendingEditsTableOrderingComposer,
+          $$PendingEditsTableAnnotationComposer,
+          $$PendingEditsTableCreateCompanionBuilder,
+          $$PendingEditsTableUpdateCompanionBuilder,
+          (
+            PendingEdit,
+            BaseReferences<_$AppDatabase, $PendingEditsTable, PendingEdit>,
+          ),
+          PendingEdit,
+          PrefetchHooks Function()
+        > {
+  $$PendingEditsTableTableManager(_$AppDatabase db, $PendingEditsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingEditsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingEditsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingEditsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> documentId = const Value.absent(),
+                Value<String> field = const Value.absent(),
+                Value<String> value = const Value.absent(),
+                Value<DateTime> queuedAt = const Value.absent(),
+              }) => PendingEditsCompanion(
+                id: id,
+                documentId: documentId,
+                field: field,
+                value: value,
+                queuedAt: queuedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int documentId,
+                required String field,
+                required String value,
+                required DateTime queuedAt,
+              }) => PendingEditsCompanion.insert(
+                id: id,
+                documentId: documentId,
+                field: field,
+                value: value,
+                queuedAt: queuedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PendingEditsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PendingEditsTable,
+      PendingEdit,
+      $$PendingEditsTableFilterComposer,
+      $$PendingEditsTableOrderingComposer,
+      $$PendingEditsTableAnnotationComposer,
+      $$PendingEditsTableCreateCompanionBuilder,
+      $$PendingEditsTableUpdateCompanionBuilder,
+      (
+        PendingEdit,
+        BaseReferences<_$AppDatabase, $PendingEditsTable, PendingEdit>,
+      ),
+      PendingEdit,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5658,4 +6206,6 @@ class $AppDatabaseManager {
       $$LockedDocumentsTableTableManager(_db, _db.lockedDocuments);
   $$DocumentTemplatesTableTableManager get documentTemplates =>
       $$DocumentTemplatesTableTableManager(_db, _db.documentTemplates);
+  $$PendingEditsTableTableManager get pendingEdits =>
+      $$PendingEditsTableTableManager(_db, _db.pendingEdits);
 }

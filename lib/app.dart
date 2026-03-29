@@ -7,6 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'core/auth/auth_provider.dart';
 import 'core/services/connectivity_service.dart';
+import 'core/services/edit_queue_processor.dart';
 import 'core/services/upload_queue_service.dart';
 import 'core/theme.dart';
 import 'features/login/lock_screen.dart';
@@ -345,6 +346,8 @@ class _AppShell extends ConsumerWidget {
 
     // Keep upload queue service alive
     ref.watch(uploadQueueServiceProvider);
+    // Keep edit queue processor alive; re-runs when connectivity changes
+    ref.watch(editQueueProcessorProvider);
 
     return Scaffold(
       body: Column(
