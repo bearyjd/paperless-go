@@ -708,8 +708,9 @@ class _CustomFieldsSection extends ConsumerWidget {
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.add, size: 20),
-              onPressed: () =>
-                  _showAddFieldPicker(context, ref, fieldDefs),
+              onPressed: fieldsAsync.isLoading
+                  ? null
+                  : () => _showAddFieldPicker(context, ref, fieldDefs),
             ),
           ],
         ),
@@ -826,13 +827,13 @@ class _CustomFieldsSection extends ConsumerWidget {
       ),
     ).then((selectedField) async {
       if (selectedField == null || !context.mounted) return;
-      // Open the edit dialog immediately for the newly selected field
-      await _CustomFieldTile(
-        documentId: documentId,
+      // If the user dismisses the edit dialog without saving, nothing is persisted.
+      // This is intentional — the field picker can be re-opened via '+'.
+      await _editCustomFieldInline(
+        context: context,
         fieldName: selectedField.name,
         dataType: selectedField.dataType,
-        fieldId: selectedField.id,
-        value: null,
+        currentValue: null,
         extraData: selectedField.extraData,
         onSave: (newValue) async {
           final updatedFields = [
@@ -852,7 +853,7 @@ class _CustomFieldsSection extends ConsumerWidget {
             }
           }
         },
-      ).callEditField(context);
+      );
     });
   }
 }
@@ -890,6 +891,171 @@ String _displaySelectValue(dynamic val, List<dynamic> options) {
     }
   }
   return val.toString();
+}
+
+/// Opens the appropriate edit dialog for [dataType] and returns the new value,
+/// or null if the user cancelled. Handles all types that [_CustomFieldTile] supports.
+Future<void> _editCustomFieldInline({
+  required BuildContext context,
+  required String fieldName,
+  required String dataType,
+  required dynamic currentValue,
+  required Map<String, dynamic>? extraData,
+  required ValueChanged<dynamic> onSave,
+}) async {
+  await _editCustomFieldValue(
+    context: context,
+    fieldName: fieldName,
+    dataType: dataType,
+    currentValue: currentValue,
+    extraData: extraData,
+    onSave: onSave,
+  );
+}
+
+/// Core editing logic for a single custom field. Used by both _CustomFieldTile
+/// (via its onTap) and _showAddFieldPicker (for newly added fields).
+Future<void> _editCustomFieldValue({
+  required BuildContext context,
+  required String fieldName,
+  required String dataType,
+  required dynamic currentValue,
+  required Map<String, dynamic>? extraData,
+  required ValueChanged<dynamic> onSave,
+}) async {
+  switch (dataType) {
+    case 'boolean':
+      onSave(currentValue != true);
+    case 'date':
+      final current = currentValue is String && currentValue.toString().isNotEmpty
+          ? DateTime.tryParse(currentValue.toString())
+          : null;
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: current ?? DateTime.now(),
+        firstDate: DateTime(1900),
+        lastDate: DateTime.now().add(const Duration(days: 3650)),
+      );
+      if (picked != null) {
+        onSave(picked.toIso8601String().split('T').first);
+      }
+    case 'integer':
+      await _editCustomFieldText(context, fieldName, currentValue, TextInputType.number, onSave, dataType);
+    case 'float' || 'monetary':
+      await _editCustomFieldText(context, fieldName, currentValue, const TextInputType.numberWithOptions(decimal: true), onSave, dataType);
+    case 'url':
+      await _editCustomFieldText(context, fieldName, currentValue, TextInputType.url, onSave, dataType);
+    case 'select':
+      await _editCustomFieldSelect(context, fieldName, currentValue, extraData, onSave);
+    default:
+      await _editCustomFieldText(context, fieldName, currentValue, TextInputType.text, onSave, dataType);
+  }
+}
+
+Future<void> _editCustomFieldText(
+  BuildContext context,
+  String fieldName,
+  dynamic currentValue,
+  TextInputType keyboardType,
+  ValueChanged<dynamic> onSave,
+  String dataType,
+) async {
+  final controller = TextEditingController(text: currentValue?.toString() ?? '');
+  try {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Edit $fieldName'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(hintText: fieldName),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (result != null) {
+      if (dataType == 'integer') {
+        onSave(int.tryParse(result));
+      } else if (dataType == 'float' || dataType == 'monetary') {
+        onSave(double.tryParse(result));
+      } else {
+        onSave(result.isEmpty ? null : result);
+      }
+    }
+  } catch (_) {
+    // Dialog cancelled
+  }
+}
+
+Future<void> _editCustomFieldSelect(
+  BuildContext context,
+  String fieldName,
+  dynamic currentValue,
+  Map<String, dynamic>? extraData,
+  ValueChanged<dynamic> onSave,
+) async {
+  const selectNone = '__none__';
+  final options = extraData?['select_options'] as List<dynamic>? ?? [];
+  if (options.isEmpty) {
+    await _editCustomFieldText(context, fieldName, currentValue, TextInputType.text, onSave, 'string');
+    return;
+  }
+  final result = await showModalBottomSheet<dynamic>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(fieldName, style: Theme.of(ctx).textTheme.titleMedium),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  ListTile(
+                    title: const Text('None'),
+                    trailing: currentValue == null ? const Icon(Icons.check) : null,
+                    onTap: () => Navigator.pop(ctx, selectNone),
+                  ),
+                  ...options.map((opt) {
+                    final id = opt is Map ? opt['id'] : opt;
+                    final label = opt is Map
+                        ? (opt['label']?.toString() ?? opt['id']?.toString() ?? '')
+                        : opt.toString();
+                    final isSelected = id == currentValue ||
+                        id.toString() == currentValue.toString();
+                    return ListTile(
+                      title: Text(label),
+                      trailing: isSelected ? const Icon(Icons.check) : null,
+                      onTap: () => Navigator.pop(ctx, id),
+                    );
+                  }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (result == null) return;
+  onSave(result == selectNone ? null : result);
 }
 
 class _CustomFieldTile extends StatelessWidget {
@@ -938,135 +1104,14 @@ class _CustomFieldTile extends StatelessWidget {
     };
   }
 
-  Future<void> _editField(BuildContext context) async {
-    switch (dataType) {
-      case 'boolean':
-        onSave(value != true);
-      case 'date':
-        final current = value is String && value.toString().isNotEmpty
-            ? DateTime.tryParse(value.toString())
-            : null;
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: current ?? DateTime.now(),
-          firstDate: DateTime(1900),
-          lastDate: DateTime.now().add(const Duration(days: 3650)),
-        );
-        if (picked != null) {
-          onSave(picked.toIso8601String().split('T').first);
-        }
-      case 'integer':
-        await _editTextValue(context, TextInputType.number);
-      case 'float' || 'monetary':
-        await _editTextValue(
-            context, const TextInputType.numberWithOptions(decimal: true));
-      case 'url':
-        await _editTextValue(context, TextInputType.url);
-      case 'select':
-        await _editSelectValue(context);
-      default:
-        await _editTextValue(context, TextInputType.text);
-    }
-  }
-
-  static const _selectNone = '__none__';
-
-  Future<void> _editSelectValue(BuildContext context) async {
-    final options = extraData?['select_options'] as List<dynamic>? ?? [];
-    if (options.isEmpty) {
-      await _editTextValue(context, TextInputType.text);
-      return;
-    }
-    final result = await showModalBottomSheet<dynamic>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(ctx).size.height * 0.6,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(fieldName,
-                    style: Theme.of(ctx).textTheme.titleMedium),
-              ),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    ListTile(
-                      title: const Text('None'),
-                      trailing: value == null ? const Icon(Icons.check) : null,
-                      onTap: () => Navigator.pop(ctx, _selectNone),
-                    ),
-                    ...options.map((opt) {
-                      final id = opt is Map ? opt['id'] : opt;
-                      final label = opt is Map
-                          ? (opt['label']?.toString() ?? opt['id']?.toString() ?? '')
-                          : opt.toString();
-                      final isSelected =
-                          id == value || id.toString() == value.toString();
-                      return ListTile(
-                        title: Text(label),
-                        trailing: isSelected ? const Icon(Icons.check) : null,
-                        onTap: () => Navigator.pop(ctx, id),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (result == null) return;
-    onSave(result == _selectNone ? null : result);
-  }
-
-  Future<void> _editTextValue(BuildContext context, TextInputType keyboardType) async {
-    final controller = TextEditingController(text: value?.toString() ?? '');
-    try {
-      final result = await showDialog<String>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text('Edit $fieldName'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            keyboardType: keyboardType,
-            decoration: InputDecoration(hintText: fieldName),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, controller.text),
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      );
-      if (result != null) {
-        if (dataType == 'integer') {
-          onSave(int.tryParse(result));
-        } else if (dataType == 'float' || dataType == 'monetary') {
-          onSave(double.tryParse(result));
-        } else {
-          onSave(result.isEmpty ? null : result);
-        }
-      }
-    } catch (_) {
-      // Dialog cancelled
-    }
-  }
-
-  // Called externally to trigger the edit dialog for a new (unset) field.
-  Future<void> callEditField(BuildContext context) => _editField(context);
+  Future<void> _editField(BuildContext context) => _editCustomFieldValue(
+    context: context,
+    fieldName: fieldName,
+    dataType: dataType,
+    currentValue: value,
+    extraData: extraData,
+    onSave: onSave,
+  );
 }
 
 class _NotesSection extends ConsumerWidget {
