@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/loading_skeleton.dart';
 
 class WorkflowsScreen extends ConsumerWidget {
   const WorkflowsScreen({super.key});
@@ -17,7 +18,7 @@ class WorkflowsScreen extends ConsumerWidget {
         title: const Text('Workflows'),
       ),
       body: workflowsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const WorkflowsSkeleton(),
         error: (err, _) => Center(child: Text('Error: $err')),
         data: (workflows) {
           if (workflows.isEmpty) {
