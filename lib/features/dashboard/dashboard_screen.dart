@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/widgets/loading_skeleton.dart';
 import 'dashboard_statistics.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -27,14 +28,7 @@ class DashboardScreen extends ConsumerWidget {
             .read(dashboardStatisticsNotifierProvider.notifier)
             .refresh(),
         child: statsAsync.when(
-          loading: () => const CustomScrollView(
-            physics: AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            ],
-          ),
+          loading: () => const DashboardSkeleton(),
           error: (e, _) => CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
