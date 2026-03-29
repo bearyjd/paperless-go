@@ -29,7 +29,7 @@ Map<String, dynamic> _$$SavedViewImplToJson(_$SavedViewImpl instance) =>
       'show_in_sidebar': instance.showInSidebar,
       'sort_field': instance.sortField,
       'sort_reverse': instance.sortReverse,
-      'filter_rules': instance.filterRules,
+      'filter_rules': instance.filterRules.map((e) => e.toJson()).toList(),
     };
 
 _$FilterRuleImpl _$$FilterRuleImplFromJson(Map<String, dynamic> json) =>

@@ -7,7 +7,7 @@ part of 'dashboard_statistics.dart';
 // **************************************************************************
 
 String _$dashboardStatisticsNotifierHash() =>
-    r'e2e98f2a494dc1eba2d5dcee6a982c7e3031d0fa';
+    r'7f0dda8b6d9fa8492ef64dc50b00d10e97cde00a';
 
 /// See also [DashboardStatisticsNotifier].
 @ProviderFor(DashboardStatisticsNotifier)

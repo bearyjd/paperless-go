@@ -6,7 +6,7 @@ part of 'ai_edit_trail_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$aiEditTrailHash() => r'135d1a0db001bb369415f33f03deb5cce7c0cd35';
+String _$aiEditTrailHash() => r'bd03a29296bcc6a5054e2d982f5279d03bd1841b';
 
 /// Copied from Dart SDK
 class _SystemHash {

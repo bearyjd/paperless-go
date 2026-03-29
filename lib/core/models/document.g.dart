@@ -59,6 +59,6 @@ Map<String, dynamic> _$$DocumentImplToJson(_$DocumentImpl instance) =>
       'original_file_name': instance.originalFileName,
       'archived_file_name': instance.archivedFileName,
       'content': instance.content,
-      'custom_fields': instance.customFields,
-      'notes': instance.notes,
+      'custom_fields': instance.customFields.map((e) => e.toJson()).toList(),
+      'notes': instance.notes.map((e) => e.toJson()).toList(),
     };
