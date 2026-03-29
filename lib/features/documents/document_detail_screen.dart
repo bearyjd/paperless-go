@@ -806,7 +806,7 @@ class _CustomFieldTile extends StatelessWidget {
       leading: Icon(_iconForType(dataType)),
       title: Text(fieldName, style: Theme.of(context).textTheme.labelSmall),
       subtitle: Text(
-        _displayValue(value, dataType),
+        displayCustomFieldValue(value, dataType, extraData: extraData),
         style: Theme.of(context).textTheme.bodyMedium,
       ),
       onTap: () => _editField(context),
@@ -825,12 +825,6 @@ class _CustomFieldTile extends StatelessWidget {
       _ => Icons.extension,
     };
   }
-
-  String _displayValue(dynamic val, String type) {
-    return displayCustomFieldValue(val, type,
-        extraData: extraData);
-  }
-
 
   Future<void> _editField(BuildContext context) async {
     switch (dataType) {
@@ -875,34 +869,46 @@ class _CustomFieldTile extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(fieldName,
-                  style: Theme.of(ctx).textTheme.titleMedium),
-            ),
-            ListTile(
-              title: const Text('None'),
-              trailing: value == null ? const Icon(Icons.check) : null,
-              onTap: () => Navigator.pop(ctx, _selectNone),
-            ),
-            ...options.map((opt) {
-              final id = opt is Map ? opt['id'] : opt;
-              final label = opt is Map
-                  ? (opt['label']?.toString() ?? opt['id']?.toString() ?? '')
-                  : opt.toString();
-              final isSelected = value != null &&
-                  (id == value || id.toString() == value.toString());
-              return ListTile(
-                title: Text(label),
-                trailing: isSelected ? const Icon(Icons.check) : null,
-                onTap: () => Navigator.pop(ctx, id),
-              );
-            }),
-            const SizedBox(height: 8),
-          ],
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(fieldName,
+                    style: Theme.of(ctx).textTheme.titleMedium),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ListTile(
+                      title: const Text('None'),
+                      trailing: value == null ? const Icon(Icons.check) : null,
+                      onTap: () => Navigator.pop(ctx, _selectNone),
+                    ),
+                    ...options.map((opt) {
+                      final id = opt is Map ? opt['id'] : opt;
+                      final label = opt is Map
+                          ? (opt['label']?.toString() ?? opt['id']?.toString() ?? '')
+                          : opt.toString();
+                      final isSelected =
+                          id == value || id.toString() == value.toString();
+                      return ListTile(
+                        title: Text(label),
+                        trailing: isSelected ? const Icon(Icons.check) : null,
+                        onTap: () => Navigator.pop(ctx, id),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
