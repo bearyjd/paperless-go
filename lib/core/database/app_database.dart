@@ -113,6 +113,14 @@ class AiEdits extends Table {
   DateTimeColumn get appliedAt => dateTime()();
 }
 
+class PendingEdits extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get documentId => integer()();
+  TextColumn get field => text()();
+  TextColumn get value => text()();
+  DateTimeColumn get queuedAt => dateTime()();
+}
+
 @DriftDatabase(tables: [
   CachedDocuments,
   CachedTags,
@@ -126,12 +134,13 @@ class AiEdits extends Table {
   AiEdits,
   LockedDocuments,
   DocumentTemplates,
+  PendingEdits,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -147,6 +156,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 5) {
         await migrator.createTable(documentTemplates);
+      }
+      if (from < 6) {
+        await migrator.createTable(pendingEdits);
       }
     },
   );
