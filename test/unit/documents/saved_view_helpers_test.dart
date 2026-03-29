@@ -156,5 +156,17 @@ void main() {
       expect(field, 'title');
       expect(reverse, isFalse);
     });
+
+    test('returns default for empty string', () {
+      final (field, reverse) = parseOrdering('');
+      expect(field, 'created');
+      expect(reverse, isTrue);
+    });
+
+    test('handles double-dash prefix', () {
+      final (field, reverse) = parseOrdering('--created');
+      expect(field, '-created');
+      expect(reverse, isTrue);
+    });
   });
 }

@@ -29,6 +29,9 @@ DocumentsFilter filterRulesToDocumentsFilter(
       case _kRuleTitleWord:
       case _kRuleExtendedMatch:
       case _kRuleFullTextQuery:
+        // If multiple query-type rules exist, the last one wins.
+        // Paperless-ngx web UI may create views with both title and
+        // full-text rules; we collapse them to a single query here.
         if (rule.value != null && rule.value!.isNotEmpty) {
           query = rule.value;
         }
@@ -98,6 +101,7 @@ List<FilterRule> documentsFilterToFilterRules(DocumentsFilter filter) {
 
 /// Parses an ordering string (e.g., `'-created'`) into a `(sortField, sortReverse)` record.
 (String sortField, bool sortReverse) parseOrdering(String ordering) {
+  if (ordering.isEmpty) return ('created', true);
   if (ordering.startsWith('-')) {
     return (ordering.substring(1), true);
   }
