@@ -14,6 +14,7 @@ import 'features/upload/share_intent_handler.dart';
 import 'features/ai_chat/chat_screen.dart';
 import 'features/labels/labels_screen.dart';
 import 'features/search/search_screen.dart';
+import 'features/custom_fields/custom_fields_screen.dart';
 import 'features/workflows/workflow_detail_screen.dart';
 import 'features/workflows/workflows_screen.dart';
 import 'features/documents/document_detail_screen.dart';
@@ -108,6 +109,10 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/workflows',
         builder: (_, __) => const WorkflowsScreen(),
+      ),
+      GoRoute(
+        path: '/custom-fields',
+        builder: (_, __) => const CustomFieldsScreen(),
       ),
       GoRoute(
         path: '/workflows/:id',

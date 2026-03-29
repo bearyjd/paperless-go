@@ -167,6 +167,13 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push('/workflows'),
           ),
           ListTile(
+            leading: const Icon(Icons.extension_outlined),
+            title: const Text('Custom Fields'),
+            subtitle: const Text('Create and manage field definitions'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/custom-fields'),
+          ),
+          ListTile(
             leading: const Icon(Icons.delete_outline),
             title: const Text('Trash'),
             subtitle: const Text('View and restore deleted documents'),
