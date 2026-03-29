@@ -150,8 +150,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   color: _connectionOk == null
                                       ? null
                                       : _connectionOk!
-                                          ? Colors.green
-                                          : Colors.red,
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).colorScheme.error,
                                 ),
                                 onPressed: _testConnection,
                                 tooltip: 'Test connection',
@@ -183,12 +183,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         padding: const EdgeInsets.only(top: 8),
                         child: Row(
                           children: [
-                            Icon(Icons.warning_amber, size: 16, color: Colors.orange[700]),
+                            Icon(Icons.warning_amber, size: 16, color: Theme.of(context).colorScheme.error),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 'Insecure connection — credentials sent in plaintext',
-                                style: TextStyle(fontSize: 12, color: Colors.orange[700]),
+                                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.error),
                               ),
                             ),
                           ],
@@ -263,11 +263,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         _submit();
                       },
                       child: isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20, height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onPrimary,
                               ),
                             )
                           : const Text('Login'),

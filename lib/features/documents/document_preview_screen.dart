@@ -49,10 +49,10 @@ class _DocumentPreviewScreenState extends ConsumerState<DocumentPreviewScreen> {
           builder: (context, loadingState, page, pagesCount) =>
               Text(pagesCount != null ? 'Page $page of $pagesCount' : 'Loading...'),
         ),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.black, // Intentional: dark background for media viewing
+        foregroundColor: Colors.white, // On forced-dark background
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.black, // Intentional: dark background for media viewing
       body: PdfViewPinch(
         controller: _pdfController,
         padding: 8,
@@ -60,22 +60,22 @@ class _DocumentPreviewScreenState extends ConsumerState<DocumentPreviewScreen> {
         builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
           options: const DefaultBuilderOptions(),
           documentLoaderBuilder: (_) => const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+            child: CircularProgressIndicator(color: Colors.white), // On forced-dark background
           ),
           pageLoaderBuilder: (_) => const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+            child: CircularProgressIndicator(color: Colors.white), // On forced-dark background
           ),
           errorBuilder: (_, error) => Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.white54),
+                Icon(Icons.error_outline, size: 48, color: Colors.white.withValues(alpha: 0.54)), // On forced-dark background
                 const SizedBox(height: 16),
                 Text('Failed to load PDF',
-                    style: TextStyle(color: Colors.white70)),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.70))), // On forced-dark background
                 const SizedBox(height: 8),
                 Text(error.toString(),
-                    style: TextStyle(color: Colors.white38, fontSize: 12)),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.38), fontSize: 12)), // On forced-dark background
               ],
             ),
           ),
