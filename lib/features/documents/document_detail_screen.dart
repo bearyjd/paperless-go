@@ -109,6 +109,28 @@ class DocumentDetailScreen extends ConsumerWidget {
                     title: Text('More like this'),
                     contentPadding: EdgeInsets.zero,
                   )),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(value: 'rotate_cw', child: ListTile(
+                    leading: Icon(Icons.rotate_right),
+                    title: Text('Rotate 90° CW'),
+                    contentPadding: EdgeInsets.zero,
+                  )),
+                  const PopupMenuItem(value: 'rotate_180', child: ListTile(
+                    leading: Icon(Icons.rotate_90_degrees_cw),
+                    title: Text('Rotate 180°'),
+                    contentPadding: EdgeInsets.zero,
+                  )),
+                  const PopupMenuItem(value: 'rotate_ccw', child: ListTile(
+                    leading: Icon(Icons.rotate_left),
+                    title: Text('Rotate 90° CCW'),
+                    contentPadding: EdgeInsets.zero,
+                  )),
+                  const PopupMenuItem(value: 'split', child: ListTile(
+                    leading: Icon(Icons.call_split),
+                    title: Text('Split document'),
+                    contentPadding: EdgeInsets.zero,
+                  )),
+                  const PopupMenuDivider(),
                   const PopupMenuItem(value: 'delete', child: ListTile(
                     leading: Icon(Icons.delete_outline, color: Colors.red),
                     title: Text('Delete', style: TextStyle(color: Colors.red)),
@@ -486,6 +508,82 @@ class DocumentDetailScreen extends ConsumerWidget {
         }
       case 'more_like':
         context.push('/search/similar/$documentId');
+      case 'rotate_cw':
+      case 'rotate_180':
+      case 'rotate_ccw':
+        final degrees = switch (action) {
+          'rotate_cw' => 90,
+          'rotate_180' => 180,
+          _ => 270,
+        };
+        try {
+          await ref.read(paperlessApiProvider).bulkEdit(
+                documents: [documentId],
+                method: 'rotate',
+                parameters: {'degrees': degrees},
+              );
+          ref.invalidate(documentDetailProvider(documentId));
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Rotated $degrees°')),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to rotate: $e')),
+            );
+          }
+        }
+      case 'split':
+        final controller = TextEditingController();
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Split document'),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Page ranges',
+                hintText: 'e.g. 1-3, 4-6',
+              ),
+              autofocus: true,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Split'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed == true) {
+          final input = controller.text.trim();
+          if (input.isEmpty) break;
+          try {
+            await ref.read(paperlessApiProvider).bulkEdit(
+                  documents: [documentId],
+                  method: 'split',
+                  parameters: {'pages': input},
+                );
+            ref.invalidate(documentsNotifierProvider);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Document split successfully')),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to split: $e')),
+              );
+            }
+          }
+        }
       case 'delete':
         final confirmed = await showDialog<bool>(
           context: context,
