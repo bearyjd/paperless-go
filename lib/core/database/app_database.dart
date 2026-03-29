@@ -95,6 +95,12 @@ class LockedDocuments extends Table {
   Set<Column> get primaryKey => {documentId};
 }
 
+@DataClassName('DocumentTemplateRow')
+class DocumentTemplates extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get jsonData => text()();
+}
+
 /// Records metadata fields auto-applied from AI suggestions (OCR or chat).
 class AiEdits extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -119,12 +125,13 @@ class AiEdits extends Table {
   PendingUploads,
   AiEdits,
   LockedDocuments,
+  DocumentTemplates,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -137,6 +144,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await migrator.createTable(lockedDocuments);
+      }
+      if (from < 5) {
+        await migrator.createTable(documentTemplates);
       }
     },
   );
