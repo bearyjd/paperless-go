@@ -6,6 +6,7 @@ import '../../core/thumbnail_cache.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/services/pdf_tools_service.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/models/correspondent.dart';
@@ -128,6 +129,16 @@ class DocumentDetailScreen extends ConsumerWidget {
                   const PopupMenuItem(value: 'split', child: ListTile(
                     leading: Icon(Icons.call_split),
                     title: Text('Split document'),
+                    contentPadding: EdgeInsets.zero,
+                  )),
+                  const PopupMenuItem(value: 'compress_share', child: ListTile(
+                    leading: Icon(Icons.compress),
+                    title: Text('Compress & Share'),
+                    contentPadding: EdgeInsets.zero,
+                  )),
+                  const PopupMenuItem(value: 'protect_share', child: ListTile(
+                    leading: Icon(Icons.lock_outline),
+                    title: Text('Password Protect & Share'),
                     contentPadding: EdgeInsets.zero,
                   )),
                   const PopupMenuDivider(),
@@ -582,6 +593,109 @@ class DocumentDetailScreen extends ConsumerWidget {
                 SnackBar(content: Text('Failed to split: $e')),
               );
             }
+          }
+        }
+      case 'compress_share':
+        final selectedQuality = await showDialog<CompressionQuality>(
+          context: context,
+          builder: (ctx) => SimpleDialog(
+            title: const Text('Select compression quality'),
+            children: CompressionQuality.values.map((q) => SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, q),
+              child: Text(q.label),
+            )).toList(),
+          ),
+        );
+        if (selectedQuality == null) break;
+        if (!context.mounted) break;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Compressing...')),
+        );
+        try {
+          final tempPath = await ref.read(
+            documentDownloadProvider(documentId, title).future,
+          );
+          final outputPath = await compressPdf(
+            inputPath: tempPath,
+            quality: selectedQuality,
+          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            await Share.shareXFiles([XFile(outputPath)]);
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Compress failed: $e')),
+            );
+          }
+        }
+      case 'protect_share':
+        final passwordController = TextEditingController();
+        String? validationError;
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => StatefulBuilder(
+            builder: (ctx, setState) => AlertDialog(
+              title: const Text('Password protect PDF'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      errorText: validationError,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final err = validatePassword(passwordController.text);
+                    if (err != null) {
+                      setState(() => validationError = err);
+                    } else {
+                      Navigator.pop(ctx, true);
+                    }
+                  },
+                  child: const Text('Protect & Share'),
+                ),
+              ],
+            ),
+          ),
+        );
+        if (confirmed != true) break;
+        if (!context.mounted) break;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Encrypting...')),
+        );
+        try {
+          final tempPath = await ref.read(
+            documentDownloadProvider(documentId, title).future,
+          );
+          final outputPath = await protectPdf(
+            inputPath: tempPath,
+            password: passwordController.text,
+          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            await Share.shareXFiles([XFile(outputPath)]);
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Protect failed: $e')),
+            );
           }
         }
       case 'delete':
