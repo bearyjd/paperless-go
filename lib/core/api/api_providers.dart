@@ -125,5 +125,14 @@ Future<Map<int, CustomField>> customFields(Ref ref) async {
 @Riverpod(keepAlive: true)
 Future<List<Workflow>> workflows(Ref ref) async {
   final api = ref.watch(paperlessApiProvider);
-  return api.getWorkflows();
+  final cache = ref.watch(cacheRepositoryProvider);
+  try {
+    final result = await api.getWorkflows();
+    await cache.cacheWorkflows(result);
+    return result;
+  } catch (e) {
+    final cached = await cache.getCachedWorkflows();
+    if (cached.isNotEmpty) return cached;
+    rethrow;
+  }
 }

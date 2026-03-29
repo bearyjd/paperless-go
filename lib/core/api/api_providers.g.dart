@@ -137,7 +137,7 @@ final customFieldsProvider = FutureProvider<Map<int, CustomField>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CustomFieldsRef = FutureProviderRef<Map<int, CustomField>>;
-String _$workflowsHash() => r'285b1e0a5e04c313d7f3abaf3a97367385f813c9';
+String _$workflowsHash() => r'e57e2af25616ad4bcce05fdf1ec4d98bc925d2bb';
 
 /// All workflows.
 ///
