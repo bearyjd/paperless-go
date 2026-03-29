@@ -88,6 +88,13 @@ class PendingUploads extends Table {
   TextColumn get lastError => text().nullable()();
 }
 
+class LockedDocuments extends Table {
+  IntColumn get documentId => integer()();
+
+  @override
+  Set<Column> get primaryKey => {documentId};
+}
+
 /// Records metadata fields auto-applied from AI suggestions (OCR or chat).
 class AiEdits extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -111,12 +118,13 @@ class AiEdits extends Table {
   CachedWorkflows,
   PendingUploads,
   AiEdits,
+  LockedDocuments,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -126,6 +134,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 3) {
         await migrator.createTable(cachedWorkflows);
+      }
+      if (from < 4) {
+        await migrator.createTable(lockedDocuments);
       }
     },
   );
