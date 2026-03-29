@@ -14,6 +14,8 @@ import 'features/upload/share_intent_handler.dart';
 import 'features/ai_chat/chat_screen.dart';
 import 'features/labels/labels_screen.dart';
 import 'features/search/search_screen.dart';
+import 'features/workflows/workflow_detail_screen.dart';
+import 'features/workflows/workflows_screen.dart';
 import 'features/documents/document_detail_screen.dart';
 import 'features/documents/document_preview_screen.dart';
 import 'features/documents/documents_screen.dart';
@@ -102,6 +104,18 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/labels',
         builder: (_, __) => const LabelsScreen(),
+      ),
+      GoRoute(
+        path: '/workflows',
+        builder: (_, __) => const WorkflowsScreen(),
+      ),
+      GoRoute(
+        path: '/workflows/:id',
+        builder: (_, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          if (id == null) return const Scaffold(body: Center(child: Text('Invalid workflow ID')));
+          return WorkflowDetailScreen(workflowId: id);
+        },
       ),
       GoRoute(
         path: '/settings',
