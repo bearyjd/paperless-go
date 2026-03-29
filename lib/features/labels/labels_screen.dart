@@ -51,7 +51,21 @@ class _TagsTab extends ConsumerWidget {
 
     return tagsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error: $err')),
+      error: (err, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48),
+            const SizedBox(height: 16),
+            Text('Failed to load\n$err', textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton.tonal(
+              onPressed: () => ref.invalidate(tagsProvider),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
       data: (tags) {
         final sorted = tags.values.toList()
           ..sort((a, b) => a.name.compareTo(b.name));
@@ -201,7 +215,21 @@ class _CorrespondentsTab extends ConsumerWidget {
 
     return corrsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error: $err')),
+      error: (err, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48),
+            const SizedBox(height: 16),
+            Text('Failed to load\n$err', textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton.tonal(
+              onPressed: () => ref.invalidate(correspondentsProvider),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
       data: (correspondents) {
         final sorted = correspondents.values.toList()
           ..sort((a, b) => a.name.compareTo(b.name));
@@ -340,7 +368,21 @@ class _DocumentTypesTab extends ConsumerWidget {
 
     return typesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error: $err')),
+      error: (err, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48),
+            const SizedBox(height: 16),
+            Text('Failed to load\n$err', textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton.tonal(
+              onPressed: () => ref.invalidate(documentTypesProvider),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
       data: (docTypes) {
         final sorted = docTypes.values.toList()
           ..sort((a, b) => a.name.compareTo(b.name));
@@ -474,7 +516,21 @@ class _StoragePathsTab extends ConsumerWidget {
 
     return pathsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error: $err')),
+      error: (err, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48),
+            const SizedBox(height: 16),
+            Text('Failed to load\n$err', textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton.tonal(
+              onPressed: () => ref.invalidate(storagePathsProvider),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
       data: (storagePaths) {
         final sorted = storagePaths.values.toList()
           ..sort((a, b) => a.name.compareTo(b.name));

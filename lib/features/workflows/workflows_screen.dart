@@ -19,7 +19,21 @@ class WorkflowsScreen extends ConsumerWidget {
       ),
       body: workflowsAsync.when(
         loading: () => const WorkflowsSkeleton(),
-        error: (err, _) => Center(child: Text('Error: $err')),
+        error: (err, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text('Failed to load\n$err', textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton.tonal(
+                onPressed: () => ref.invalidate(workflowsProvider),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
         data: (workflows) {
           if (workflows.isEmpty) {
             return const EmptyState(
