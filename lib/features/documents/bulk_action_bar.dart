@@ -84,6 +84,8 @@ class BulkActionBar extends ConsumerWidget {
                     _showBulkMergeDialog(context, ref);
                   case 'rotate':
                     _showBulkRotateDialog(context, ref);
+                  case 'redo_ocr':
+                    _showBulkOcrDialog(context, ref);
                 }
               },
               itemBuilder: (_) => [
@@ -109,6 +111,14 @@ class BulkActionBar extends ConsumerWidget {
                   child: ListTile(
                     leading: Icon(Icons.rotate_right),
                     title: Text('Rotate'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'redo_ocr',
+                  child: ListTile(
+                    leading: Icon(Icons.document_scanner_outlined),
+                    title: Text('Re-run OCR'),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
@@ -363,6 +373,50 @@ class BulkActionBar extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to rotate: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showBulkOcrDialog(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Re-run OCR?'),
+        content: Text(
+          'Re-run OCR on ${selectedIds.length} documents? This may take a while.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Re-run OCR'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final count = selectedIds.length;
+      try {
+        final api = ref.read(paperlessApiProvider);
+        await api.bulkEdit(
+          documents: selectedIds.toList(),
+          method: 'redo_ocr',
+        );
+        if (!context.mounted) return;
+        onClearSelection();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('OCR re-run started for $count documents')),
+        );
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to re-run OCR: $e')),
           );
         }
       }
