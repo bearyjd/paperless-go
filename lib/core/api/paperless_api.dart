@@ -259,12 +259,7 @@ class PaperlessApi {
   }) async {
     final response = await _dio.post('api/saved_views/', data: {
       'name': name,
-      'filter_rules': filterRules
-          .map((r) => {
-                'rule_type': r.ruleType,
-                if (r.value != null) 'value': r.value,
-              })
-          .toList(),
+      'filter_rules': filterRules.map((r) => r.toJson()).toList(),
       'sort_field': sortField,
       'sort_reverse': sortReverse,
       'show_on_dashboard': showOnDashboard,
@@ -287,6 +282,7 @@ class PaperlessApi {
     if (name != null) data['name'] = name;
     if (showOnDashboard != null) data['show_on_dashboard'] = showOnDashboard;
     if (showInSidebar != null) data['show_in_sidebar'] = showInSidebar;
+    if (data.isEmpty) throw ArgumentError('At least one field must be provided to updateSavedView');
     final response = await _dio.patch('api/saved_views/$id/', data: data);
     return SavedView.fromJson(response.data as Map<String, dynamic>);
   }
