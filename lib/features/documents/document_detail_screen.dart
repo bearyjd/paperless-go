@@ -897,7 +897,7 @@ class _CustomFieldsSection extends ConsumerWidget {
       if (selectedField == null || !context.mounted) return;
       // If the user dismisses the edit dialog without saving, nothing is persisted.
       // This is intentional — the field picker can be re-opened via '+'.
-      await _editCustomFieldInline(
+      await _editCustomFieldValue(
         context: context,
         fieldName: selectedField.name,
         dataType: selectedField.dataType,
@@ -959,26 +959,6 @@ String _displaySelectValue(dynamic val, List<dynamic> options) {
     }
   }
   return val.toString();
-}
-
-/// Opens the appropriate edit dialog for [dataType] and returns the new value,
-/// or null if the user cancelled. Handles all types that [_CustomFieldTile] supports.
-Future<void> _editCustomFieldInline({
-  required BuildContext context,
-  required String fieldName,
-  required String dataType,
-  required dynamic currentValue,
-  required Map<String, dynamic>? extraData,
-  required ValueChanged<dynamic> onSave,
-}) async {
-  await _editCustomFieldValue(
-    context: context,
-    fieldName: fieldName,
-    dataType: dataType,
-    currentValue: currentValue,
-    extraData: extraData,
-    onSave: onSave,
-  );
 }
 
 /// Core editing logic for a single custom field. Used by both _CustomFieldTile
@@ -1422,7 +1402,10 @@ class _AiEditTrailSection extends ConsumerWidget {
     final trailAsync = ref.watch(aiEditTrailProvider(documentId));
     return trailAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, __) {
+        debugPrint('AiEditTrailSection error: $e');
+        return const SizedBox.shrink();
+      },
       data: (edits) {
         if (edits.isEmpty) return const SizedBox.shrink();
         return Column(
@@ -1486,9 +1469,14 @@ class _AiEditRow extends ConsumerWidget {
       trailing: IconButton(
         icon: const Icon(Icons.delete_outline, size: 18),
         tooltip: 'Remove from history',
-        onPressed: () =>
-            ref.read(aiEditTrailProvider(documentId).notifier)
-                .deleteEdit(edit.id),
+        onPressed: () {
+          ref
+              .read(aiEditTrailProvider(documentId).notifier)
+              .deleteEdit(edit.id)
+              .catchError((Object e) {
+                debugPrint('Failed to delete AI edit: $e');
+              });
+        },
       ),
     );
   }
