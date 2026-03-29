@@ -22,29 +22,42 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: statsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              const Text('Failed to load statistics'),
-              const SizedBox(height: 8),
-              FilledButton.tonal(
-                onPressed: () =>
-                    ref.invalidate(dashboardStatisticsNotifierProvider),
-                child: const Text('Retry'),
+      body: RefreshIndicator(
+        onRefresh: () => ref
+            .read(dashboardStatisticsNotifierProvider.notifier)
+            .refresh(),
+        child: statsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48),
+                      const SizedBox(height: 16),
+                      const Text('Failed to load statistics'),
+                      const SizedBox(height: 8),
+                      Text(
+                        e.toString(),
+                        style: Theme.of(context).textTheme.bodySmall,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton.tonal(
+                        onPressed: () =>
+                            ref.invalidate(dashboardStatisticsNotifierProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
-        ),
-        data: (stats) => RefreshIndicator(
-          onRefresh: () => ref
-              .read(dashboardStatisticsNotifierProvider.notifier)
-              .refresh(),
-          child: _DashboardBody(stats: stats),
+          data: (stats) => _DashboardBody(stats: stats),
         ),
       ),
     );
@@ -128,6 +141,9 @@ class _StatCard extends StatelessWidget {
     return Card(
       elevation: 0,
       color: colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: InkWell(
         onTap: hasAction ? () => onTap!(context) : null,
         borderRadius: BorderRadius.circular(12),
