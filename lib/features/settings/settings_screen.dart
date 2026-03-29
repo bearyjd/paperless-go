@@ -174,6 +174,13 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push('/custom-fields'),
           ),
           ListTile(
+            leading: const Icon(Icons.bookmark_outline),
+            title: const Text('Upload Templates'),
+            subtitle: const Text('Save metadata presets for quick upload'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/templates'),
+          ),
+          ListTile(
             leading: const Icon(Icons.delete_outline),
             title: const Text('Trash'),
             subtitle: const Text('View and restore deleted documents'),

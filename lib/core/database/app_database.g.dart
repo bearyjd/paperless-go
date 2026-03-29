@@ -3255,6 +3255,207 @@ class LockedDocumentsCompanion extends UpdateCompanion<LockedDocument> {
   }
 }
 
+class $DocumentTemplatesTable extends DocumentTemplates
+    with TableInfo<$DocumentTemplatesTable, DocumentTemplateRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentTemplatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _jsonDataMeta = const VerificationMeta(
+    'jsonData',
+  );
+  @override
+  late final GeneratedColumn<String> jsonData = GeneratedColumn<String>(
+    'json_data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, jsonData];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'document_templates';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DocumentTemplateRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('json_data')) {
+      context.handle(
+        _jsonDataMeta,
+        jsonData.isAcceptableOrUnknown(data['json_data']!, _jsonDataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_jsonDataMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DocumentTemplateRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DocumentTemplateRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      jsonData: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}json_data'],
+      )!,
+    );
+  }
+
+  @override
+  $DocumentTemplatesTable createAlias(String alias) {
+    return $DocumentTemplatesTable(attachedDatabase, alias);
+  }
+}
+
+class DocumentTemplateRow extends DataClass
+    implements Insertable<DocumentTemplateRow> {
+  final int id;
+  final String jsonData;
+  const DocumentTemplateRow({required this.id, required this.jsonData});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['json_data'] = Variable<String>(jsonData);
+    return map;
+  }
+
+  DocumentTemplatesCompanion toCompanion(bool nullToAbsent) {
+    return DocumentTemplatesCompanion(id: Value(id), jsonData: Value(jsonData));
+  }
+
+  factory DocumentTemplateRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DocumentTemplateRow(
+      id: serializer.fromJson<int>(json['id']),
+      jsonData: serializer.fromJson<String>(json['jsonData']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'jsonData': serializer.toJson<String>(jsonData),
+    };
+  }
+
+  DocumentTemplateRow copyWith({int? id, String? jsonData}) =>
+      DocumentTemplateRow(
+        id: id ?? this.id,
+        jsonData: jsonData ?? this.jsonData,
+      );
+  DocumentTemplateRow copyWithCompanion(DocumentTemplatesCompanion data) {
+    return DocumentTemplateRow(
+      id: data.id.present ? data.id.value : this.id,
+      jsonData: data.jsonData.present ? data.jsonData.value : this.jsonData,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentTemplateRow(')
+          ..write('id: $id, ')
+          ..write('jsonData: $jsonData')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, jsonData);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DocumentTemplateRow &&
+          other.id == this.id &&
+          other.jsonData == this.jsonData);
+}
+
+class DocumentTemplatesCompanion extends UpdateCompanion<DocumentTemplateRow> {
+  final Value<int> id;
+  final Value<String> jsonData;
+  const DocumentTemplatesCompanion({
+    this.id = const Value.absent(),
+    this.jsonData = const Value.absent(),
+  });
+  DocumentTemplatesCompanion.insert({
+    this.id = const Value.absent(),
+    required String jsonData,
+  }) : jsonData = Value(jsonData);
+  static Insertable<DocumentTemplateRow> custom({
+    Expression<int>? id,
+    Expression<String>? jsonData,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (jsonData != null) 'json_data': jsonData,
+    });
+  }
+
+  DocumentTemplatesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? jsonData,
+  }) {
+    return DocumentTemplatesCompanion(
+      id: id ?? this.id,
+      jsonData: jsonData ?? this.jsonData,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (jsonData.present) {
+      map['json_data'] = Variable<String>(jsonData.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentTemplatesCompanion(')
+          ..write('id: $id, ')
+          ..write('jsonData: $jsonData')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3281,6 +3482,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LockedDocumentsTable lockedDocuments = $LockedDocumentsTable(
     this,
   );
+  late final $DocumentTemplatesTable documentTemplates =
+      $DocumentTemplatesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3297,6 +3500,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pendingUploads,
     aiEdits,
     lockedDocuments,
+    documentTemplates,
   ];
 }
 
@@ -5281,6 +5485,151 @@ typedef $$LockedDocumentsTableProcessedTableManager =
       LockedDocument,
       PrefetchHooks Function()
     >;
+typedef $$DocumentTemplatesTableCreateCompanionBuilder =
+    DocumentTemplatesCompanion Function({
+      Value<int> id,
+      required String jsonData,
+    });
+typedef $$DocumentTemplatesTableUpdateCompanionBuilder =
+    DocumentTemplatesCompanion Function({
+      Value<int> id,
+      Value<String> jsonData,
+    });
+
+class $$DocumentTemplatesTableFilterComposer
+    extends Composer<_$AppDatabase, $DocumentTemplatesTable> {
+  $$DocumentTemplatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get jsonData => $composableBuilder(
+    column: $table.jsonData,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DocumentTemplatesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DocumentTemplatesTable> {
+  $$DocumentTemplatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get jsonData => $composableBuilder(
+    column: $table.jsonData,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DocumentTemplatesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DocumentTemplatesTable> {
+  $$DocumentTemplatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get jsonData =>
+      $composableBuilder(column: $table.jsonData, builder: (column) => column);
+}
+
+class $$DocumentTemplatesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DocumentTemplatesTable,
+          DocumentTemplateRow,
+          $$DocumentTemplatesTableFilterComposer,
+          $$DocumentTemplatesTableOrderingComposer,
+          $$DocumentTemplatesTableAnnotationComposer,
+          $$DocumentTemplatesTableCreateCompanionBuilder,
+          $$DocumentTemplatesTableUpdateCompanionBuilder,
+          (
+            DocumentTemplateRow,
+            BaseReferences<
+              _$AppDatabase,
+              $DocumentTemplatesTable,
+              DocumentTemplateRow
+            >,
+          ),
+          DocumentTemplateRow,
+          PrefetchHooks Function()
+        > {
+  $$DocumentTemplatesTableTableManager(
+    _$AppDatabase db,
+    $DocumentTemplatesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DocumentTemplatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DocumentTemplatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DocumentTemplatesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> jsonData = const Value.absent(),
+              }) => DocumentTemplatesCompanion(id: id, jsonData: jsonData),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String jsonData,
+              }) =>
+                  DocumentTemplatesCompanion.insert(id: id, jsonData: jsonData),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DocumentTemplatesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DocumentTemplatesTable,
+      DocumentTemplateRow,
+      $$DocumentTemplatesTableFilterComposer,
+      $$DocumentTemplatesTableOrderingComposer,
+      $$DocumentTemplatesTableAnnotationComposer,
+      $$DocumentTemplatesTableCreateCompanionBuilder,
+      $$DocumentTemplatesTableUpdateCompanionBuilder,
+      (
+        DocumentTemplateRow,
+        BaseReferences<
+          _$AppDatabase,
+          $DocumentTemplatesTable,
+          DocumentTemplateRow
+        >,
+      ),
+      DocumentTemplateRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5307,4 +5656,6 @@ class $AppDatabaseManager {
       $$AiEditsTableTableManager(_db, _db.aiEdits);
   $$LockedDocumentsTableTableManager get lockedDocuments =>
       $$LockedDocumentsTableTableManager(_db, _db.lockedDocuments);
+  $$DocumentTemplatesTableTableManager get documentTemplates =>
+      $$DocumentTemplatesTableTableManager(_db, _db.documentTemplates);
 }

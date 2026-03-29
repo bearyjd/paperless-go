@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../core/models/document_template.dart';
 import '../../core/models/tag.dart';
+import '../../core/services/template_service.dart';
 import '../../shared/widgets/tag_chip.dart';
 import 'providers/metadata_suggestion_provider.dart';
 import 'processing/metadata_matcher.dart';
@@ -148,6 +150,13 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isScannedImages ? 'Upload Scan' : 'Upload File'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark_outlined),
+            tooltip: 'Use template',
+            onPressed: isUploading ? null : () => _showTemplatePicker(context, ref),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -317,7 +326,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
-          ] else
+          ] else ...[
             FilledButton.icon(
               onPressed: _submit,
               icon: const Icon(Icons.cloud_upload),
@@ -326,6 +335,13 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _saveAsTemplate(context, ref),
+              icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+              label: const Text('Save as template'),
+            ),
+          ],
         ],
       ),
     );
@@ -441,6 +457,130 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
     if (picked != null) {
       setState(() => _created = picked);
     }
+  }
+
+  void _applyTemplate(DocumentTemplate template) {
+    setState(() {
+      if (template.correspondentId != null) {
+        _correspondent = template.correspondentId;
+        _suggestedCorrespondent = false;
+        _appliedAiEdits.remove('correspondent');
+      }
+      if (template.documentTypeId != null) {
+        _documentType = template.documentTypeId;
+        _suggestedDocType = false;
+        _appliedAiEdits.remove('document_type');
+      }
+      if (template.tagIds.isNotEmpty) {
+        for (final id in template.tagIds) {
+          if (!_selectedTags.contains(id)) {
+            _selectedTags.add(id);
+          }
+        }
+        _suggestedTags = false;
+        _appliedAiEdits.remove('tags');
+      }
+    });
+  }
+
+  void _showTemplatePicker(BuildContext context, WidgetRef ref) {
+    final templatesAsync = ref.read(templatesProvider);
+    final templates = templatesAsync.valueOrNull ?? [];
+
+    if (templates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No templates saved yet')),
+      );
+      return;
+    }
+
+    final sorted = [...templates]..sort((a, b) => a.name.compareTo(b.name));
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SizedBox(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Apply Template',
+                style: Theme.of(ctx).textTheme.titleMedium,
+              ),
+            ),
+            ...sorted.map(
+              (t) => ListTile(
+                leading: const Icon(Icons.bookmark_outline),
+                title: Text(t.name),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _applyTemplate(t);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Applied template "${t.name}"')),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveAsTemplate(BuildContext context, WidgetRef ref) {
+    final nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Save as Template'),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Template name',
+            hintText: 'e.g. Invoice, Bank Statement',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final name = nameController.text.trim();
+              if (name.isEmpty) return;
+              if (ctx.mounted) Navigator.pop(ctx);
+              try {
+                await ref.read(templateServiceProvider).create(
+                      name: name,
+                      correspondentId: _correspondent,
+                      documentTypeId: _documentType,
+                      tagIds: List<int>.from(_selectedTags),
+                    );
+                ref.invalidate(templatesProvider);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Saved template "$name"')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to save template: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _submit() {
