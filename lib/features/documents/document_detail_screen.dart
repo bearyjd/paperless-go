@@ -262,6 +262,70 @@ class DocumentDetailScreen extends ConsumerWidget {
                 },
               ),
 
+              // Scan date shortcut — shown below created date
+              if (doc.added != null) ...[
+                const SizedBox(height: 2),
+                Padding(
+                  padding: const EdgeInsets.only(left: 40),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.upload_file_outlined,
+                        size: 14,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Scanned ${DateFormat.yMMMd().format(doc.added!)}',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                      const Spacer(),
+                      if (doc.added!.toIso8601String().split('T').first !=
+                          (doc.created?.toIso8601String().split('T').first ??
+                              ''))
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8),
+                            textStyle:
+                                Theme.of(context).textTheme.labelSmall,
+                          ),
+                          onPressed: () async {
+                            final scanDate = doc.added!
+                                .toIso8601String()
+                                .split('T')
+                                .first;
+                            try {
+                              await ref
+                                  .read(documentDetailProvider(documentId)
+                                      .notifier)
+                                  .updateField({'created': scanDate});
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Failed to update date: $e')),
+                                );
+                              }
+                            }
+                          },
+                          child: const Text('Use as created'),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+
               // ASN (editable)
               ListTile(
                 contentPadding: EdgeInsets.zero,
