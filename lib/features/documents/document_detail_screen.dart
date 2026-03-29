@@ -824,10 +824,10 @@ class _CustomFieldsSection extends ConsumerWidget {
           ),
         ),
       ),
-    ).then((selectedField) {
+    ).then((selectedField) async {
       if (selectedField == null || !context.mounted) return;
       // Open the edit dialog immediately for the newly selected field
-      _CustomFieldTile(
+      await _CustomFieldTile(
         documentId: documentId,
         fieldName: selectedField.name,
         dataType: selectedField.dataType,
@@ -1066,9 +1066,7 @@ class _CustomFieldTile extends StatelessWidget {
   }
 
   // Called externally to trigger the edit dialog for a new (unset) field.
-  void callEditField(BuildContext context) {
-    _editField(context);
-  }
+  Future<void> callEditField(BuildContext context) => _editField(context);
 }
 
 class _NotesSection extends ConsumerWidget {
