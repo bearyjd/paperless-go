@@ -249,6 +249,48 @@ class PaperlessApi {
     );
   }
 
+  Future<SavedView> createSavedView({
+    required String name,
+    required List<FilterRule> filterRules,
+    required String sortField,
+    required bool sortReverse,
+    bool showOnDashboard = false,
+    bool showInSidebar = false,
+  }) async {
+    final response = await _dio.post('api/saved_views/', data: {
+      'name': name,
+      'filter_rules': filterRules
+          .map((r) => {
+                'rule_type': r.ruleType,
+                if (r.value != null) 'value': r.value,
+              })
+          .toList(),
+      'sort_field': sortField,
+      'sort_reverse': sortReverse,
+      'show_on_dashboard': showOnDashboard,
+      'show_in_sidebar': showInSidebar,
+    });
+    return SavedView.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteSavedView(int id) async {
+    await _dio.delete('api/saved_views/$id/');
+  }
+
+  Future<SavedView> updateSavedView(
+    int id, {
+    String? name,
+    bool? showOnDashboard,
+    bool? showInSidebar,
+  }) async {
+    final data = <String, dynamic>{};
+    if (name != null) data['name'] = name;
+    if (showOnDashboard != null) data['show_on_dashboard'] = showOnDashboard;
+    if (showInSidebar != null) data['show_in_sidebar'] = showInSidebar;
+    final response = await _dio.patch('api/saved_views/$id/', data: data);
+    return SavedView.fromJson(response.data as Map<String, dynamic>);
+  }
+
   // Statistics
 
   Future<Map<String, dynamic>> getStatistics() async {
