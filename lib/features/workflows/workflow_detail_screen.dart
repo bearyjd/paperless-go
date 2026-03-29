@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../core/models/correspondent.dart';
+import '../../core/models/document_type.dart';
+import '../../core/models/storage_path.dart';
+import '../../core/models/tag.dart';
 import '../../core/models/workflow.dart';
 import 'workflow_helpers.dart';
 
@@ -37,10 +41,10 @@ class WorkflowDetailScreen extends ConsumerWidget {
           );
         }
 
-        final tags = tagsAsync.valueOrNull ?? {};
-        final correspondents = correspondentsAsync.valueOrNull ?? {};
-        final documentTypes = documentTypesAsync.valueOrNull ?? {};
-        final storagePaths = storagePathsAsync.valueOrNull ?? {};
+        final tags = tagsAsync.valueOrNull ?? <int, Tag>{};
+        final correspondents = correspondentsAsync.valueOrNull ?? <int, Correspondent>{};
+        final documentTypes = documentTypesAsync.valueOrNull ?? <int, DocumentType>{};
+        final storagePaths = storagePathsAsync.valueOrNull ?? <int, StoragePath>{};
 
         return Scaffold(
           appBar: AppBar(
@@ -181,9 +185,9 @@ class WorkflowDetailScreen extends ConsumerWidget {
 
 class _TriggerCard extends StatelessWidget {
   final WorkflowTrigger trigger;
-  final Map<int, dynamic> tags;
-  final Map<int, dynamic> correspondents;
-  final Map<int, dynamic> documentTypes;
+  final Map<int, Tag> tags;
+  final Map<int, Correspondent> correspondents;
+  final Map<int, DocumentType> documentTypes;
 
   const _TriggerCard({
     required this.trigger,
@@ -204,6 +208,8 @@ class _TriggerCard extends StatelessWidget {
       if (trigger.match.isNotEmpty) ...[
         _InfoRow('Match', trigger.match),
         _InfoRow('Algorithm', matchingAlgorithmLabel(trigger.matchingAlgorithm)),
+        if (trigger.isInsensitive)
+          _InfoRow('Case insensitive', 'Yes'),
       ],
       if (trigger.filterFilename != null)
         _InfoRow('Filename filter', trigger.filterFilename!),
@@ -245,10 +251,10 @@ class _TriggerCard extends StatelessWidget {
 
 class _ActionCard extends StatelessWidget {
   final WorkflowAction action;
-  final Map<int, dynamic> tags;
-  final Map<int, dynamic> correspondents;
-  final Map<int, dynamic> documentTypes;
-  final Map<int, dynamic> storagePaths;
+  final Map<int, Tag> tags;
+  final Map<int, Correspondent> correspondents;
+  final Map<int, DocumentType> documentTypes;
+  final Map<int, StoragePath> storagePaths;
 
   const _ActionCard({
     required this.action,
