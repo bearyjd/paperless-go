@@ -745,6 +745,41 @@ class _CustomFieldsSection extends ConsumerWidget {
   }
 }
 
+/// Returns a display string for a custom field value.
+/// Package-visible so tests can call it directly.
+String displayCustomFieldValue(dynamic val, String type,
+    {Map<String, dynamic>? extraData}) {
+  if (val == null) return 'Not set';
+  if (type == 'boolean') return val == true ? 'Yes' : 'No';
+  if (type == 'date' && val is String && val.isNotEmpty) {
+    try {
+      return DateFormat.yMMMd().format(DateTime.parse(val));
+    } catch (_) {
+      return val;
+    }
+  }
+  if (type == 'monetary') return '\$${val.toString()}';
+  if (type == 'select') {
+    final options = extraData?['select_options'] as List<dynamic>? ?? [];
+    return _displaySelectValue(val, options);
+  }
+  return val.toString();
+}
+
+String _displaySelectValue(dynamic val, List<dynamic> options) {
+  if (val == null) return 'Not set';
+  for (final opt in options) {
+    if (opt is Map) {
+      if (opt['id'] == val || opt['id'].toString() == val.toString()) {
+        return opt['label']?.toString() ?? opt['id']?.toString() ?? '';
+      }
+    } else if (opt.toString() == val.toString()) {
+      return opt.toString();
+    }
+  }
+  return val.toString();
+}
+
 class _CustomFieldTile extends StatelessWidget {
   final int documentId;
   final String fieldName;
@@ -792,36 +827,10 @@ class _CustomFieldTile extends StatelessWidget {
   }
 
   String _displayValue(dynamic val, String type) {
-    if (val == null) return 'Not set';
-    if (type == 'boolean') return val == true ? 'Yes' : 'No';
-    if (type == 'date' && val is String && val.isNotEmpty) {
-      try {
-        return DateFormat.yMMMd().format(DateTime.parse(val));
-      } catch (_) {
-        return val;
-      }
-    }
-    if (type == 'monetary' && val != null) return '\$${val.toString()}';
-    if (type == 'select') {
-      final options = extraData?['select_options'] as List<dynamic>? ?? [];
-      return _displaySelectValue(val, options);
-    }
-    return val.toString();
+    return displayCustomFieldValue(val, type,
+        extraData: extraData);
   }
 
-  String _displaySelectValue(dynamic val, List<dynamic> options) {
-    if (val == null) return 'Not set';
-    for (final opt in options) {
-      if (opt is Map) {
-        if (opt['id'] == val || opt['id'].toString() == val.toString()) {
-          return opt['label'].toString();
-        }
-      } else if (opt.toString() == val.toString()) {
-        return opt.toString();
-      }
-    }
-    return val.toString();
-  }
 
   Future<void> _editField(BuildContext context) async {
     switch (dataType) {
@@ -882,7 +891,7 @@ class _CustomFieldTile extends StatelessWidget {
             ...options.map((opt) {
               final id = opt is Map ? opt['id'] : opt;
               final label = opt is Map
-                  ? opt['label'].toString()
+                  ? (opt['label']?.toString() ?? opt['id']?.toString() ?? '')
                   : opt.toString();
               final isSelected = value != null &&
                   (id == value || id.toString() == value.toString());
