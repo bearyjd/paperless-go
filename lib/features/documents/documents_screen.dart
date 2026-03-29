@@ -12,6 +12,7 @@ import 'bulk_action_bar.dart';
 import 'document_detail_notifier.dart';
 import 'documents_notifier.dart';
 import 'filter_bottom_sheet.dart';
+import 'saved_view_helpers.dart';
 
 class DocumentsScreen extends ConsumerStatefulWidget {
   const DocumentsScreen({super.key});
@@ -96,29 +97,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
   }
 
   void _applySavedView(SavedView view) {
-    // Convert filter rules to DocumentsFilter
-    List<int>? tagIds;
-    int? correspondentId;
-    int? documentTypeId;
-
-    for (final rule in view.filterRules) {
-      // Paperless-ngx filter rule types:
-      // 6 = has tags (tag ID)
-      // 3 = correspondent
-      // 4 = document type
-      switch (rule.ruleType) {
-        case 6:
-          tagIds ??= [];
-          final id = int.tryParse(rule.value ?? '');
-          if (id != null) tagIds.add(id);
-        case 3:
-          correspondentId = int.tryParse(rule.value ?? '');
-        case 4:
-          documentTypeId = int.tryParse(rule.value ?? '');
-      }
-    }
-
-    final ordering = view.sortReverse ? '-${view.sortField}' : view.sortField;
+    final ordering = view.sortReverse
+        ? '-${view.sortField}'
+        : view.sortField;
 
     setState(() {
       _activeSavedViewId = view.id;
@@ -126,12 +107,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     });
 
     ref.read(documentsNotifierProvider.notifier).applyFilter(
-          DocumentsFilter(
-            ordering: ordering,
-            tagIds: tagIds,
-            correspondentId: correspondentId,
-            documentTypeId: documentTypeId,
-          ),
+          filterRulesToDocumentsFilter(view.filterRules, ordering),
         );
   }
 
@@ -326,6 +302,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                               ref.read(documentsNotifierProvider.notifier)
                                   .applyFilter(DocumentsFilter(ordering: _ordering));
                             },
+                            onSave: () => _showSaveViewDialog(context, currentFilter),
                           ),
                         ),
                       SliverToBoxAdapter(
@@ -482,6 +459,91 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     }
   }
 
+  Future<void> _showSaveViewDialog(
+      BuildContext context, DocumentsFilter currentFilter) async {
+    final nameController = TextEditingController();
+    bool showOnDashboard = false;
+    bool showInSidebar = true;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Save as view'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'View name',
+                  hintText: 'e.g. Invoices 2024',
+                ),
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Show in sidebar'),
+                value: showInSidebar,
+                onChanged: (v) => setDialogState(() => showInSidebar = v),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Show on dashboard'),
+                value: showOnDashboard,
+                onChanged: (v) => setDialogState(() => showOnDashboard = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (nameController.text.trim().isEmpty) return;
+                Navigator.pop(ctx, true);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final name = nameController.text.trim();
+    final rules = documentsFilterToFilterRules(currentFilter);
+    final (sortField, sortReverse) = parseOrdering(currentFilter.ordering);
+
+    try {
+      await ref.read(paperlessApiProvider).createSavedView(
+            name: name,
+            filterRules: rules,
+            sortField: sortField,
+            sortReverse: sortReverse,
+            showOnDashboard: showOnDashboard,
+            showInSidebar: showInSidebar,
+          );
+      ref.invalidate(savedViewsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"$name" saved')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save view: $e')),
+        );
+      }
+    }
+  }
+
   void _showFilterSheet(BuildContext context, DocumentsFilter currentFilter) {
     showModalBottomSheet(
       context: context,
@@ -502,6 +564,7 @@ class _ActiveFiltersBar extends StatelessWidget {
   final Map<int, dynamic> correspondents;
   final Map<int, dynamic> docTypes;
   final VoidCallback onClear;
+  final VoidCallback onSave;
 
   const _ActiveFiltersBar({
     required this.filter,
@@ -509,6 +572,7 @@ class _ActiveFiltersBar extends StatelessWidget {
     required this.correspondents,
     required this.docTypes,
     required this.onClear,
+    required this.onSave,
   });
 
   @override
@@ -565,6 +629,11 @@ class _ActiveFiltersBar extends StatelessWidget {
                 )).toList(),
               ),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.bookmark_add_outlined),
+            tooltip: 'Save as view',
+            onPressed: onSave,
           ),
           TextButton(
             onPressed: onClear,
