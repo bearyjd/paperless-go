@@ -121,7 +121,10 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
         if (_appliedAiEdits.isNotEmpty && next.documentId != null) {
           ref
               .read(aiEditTrailProvider(next.documentId!).notifier)
-              .recordEdits(_appliedAiEdits, 'ocr_suggestion');
+              .recordEdits(_appliedAiEdits, 'ocr_suggestion')
+              .catchError((Object e) {
+                debugPrint('Failed to record AI edit trail: $e');
+              });
         }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Document uploaded successfully!')),
@@ -214,6 +217,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                       : (v) => setState(() {
                             _correspondent = v;
                             _suggestedCorrespondent = false;
+                            _appliedAiEdits.remove('correspondent');
                           }),
                 ),
               ),
@@ -250,6 +254,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                       : (v) => setState(() {
                             _documentType = v;
                             _suggestedDocType = false;
+                            _appliedAiEdits.remove('document_type');
                           }),
                 ),
               ),
@@ -278,6 +283,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                 : () async {
                     await _pickDate(context);
                     _suggestedDate = false;
+                    _appliedAiEdits.remove('created');
                   },
             trailing: _created != null
                 ? IconButton(
@@ -285,6 +291,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                     onPressed: () => setState(() {
                       _created = null;
                       _suggestedDate = false;
+                      _appliedAiEdits.remove('created');
                     }),
                   )
                 : null,
@@ -390,6 +397,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                     onDeleted: () => setState(() {
                       _selectedTags.remove(tag.id);
                       _suggestedTags = false;
+                      _appliedAiEdits.remove('tags');
                     }),
                   );
                 }).toList(),
@@ -415,6 +423,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
           setState(() {
             _selectedTags.add(tag.id);
             _suggestedTags = false;
+            _appliedAiEdits.remove('tags');
           });
           Navigator.pop(ctx);
         },
