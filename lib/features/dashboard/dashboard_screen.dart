@@ -27,7 +27,14 @@ class DashboardScreen extends ConsumerWidget {
             .read(dashboardStatisticsNotifierProvider.notifier)
             .refresh(),
         child: statsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const CustomScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ],
+          ),
           error: (e, _) => CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
