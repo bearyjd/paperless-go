@@ -9,6 +9,7 @@ import '../../shared/widgets/tag_chip.dart';
 import 'providers/metadata_suggestion_provider.dart';
 import 'processing/metadata_matcher.dart';
 import 'upload_notifier.dart';
+import '../documents/ai_edit_trail_notifier.dart';
 
 /// Metadata entry and upload screen.
 /// Receives either imagePaths (for scanned images)
@@ -34,6 +35,8 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
   bool _suggestedTags = false;
   bool _suggestedDate = false;
   bool _suggestionsApplied = false;
+  // Maps field name → applied value for AI edit trail recording
+  final Map<String, ({String? oldValue, String? newValue})> _appliedAiEdits = {};
 
   bool get _isScannedImages => widget.params.containsKey('imagePaths');
   List<String> get _imagePaths =>
@@ -56,18 +59,37 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
       if (suggestions.correspondentId != null && _correspondent == null) {
         _correspondent = suggestions.correspondentId;
         _suggestedCorrespondent = true;
+        _appliedAiEdits['correspondent'] = (
+          oldValue: null,
+          newValue: suggestions.correspondentId.toString(),
+        );
       }
       if (suggestions.documentTypeId != null && _documentType == null) {
         _documentType = suggestions.documentTypeId;
         _suggestedDocType = true;
+        _appliedAiEdits['document_type'] = (
+          oldValue: null,
+          newValue: suggestions.documentTypeId.toString(),
+        );
       }
       if (suggestions.tagIds.isNotEmpty && _selectedTags.isEmpty) {
         _selectedTags.addAll(suggestions.tagIds);
         _suggestedTags = true;
+        _appliedAiEdits['tags'] = (
+          oldValue: null,
+          newValue: suggestions.tagIds.join(', '),
+        );
       }
       if (suggestions.detectedDate != null && _created == null) {
         _created = suggestions.detectedDate;
         _suggestedDate = true;
+        _appliedAiEdits['created'] = (
+          oldValue: null,
+          newValue: suggestions.detectedDate!
+              .toIso8601String()
+              .split('T')
+              .first,
+        );
       }
     });
   }
@@ -95,6 +117,12 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
     ref.listen(uploadNotifierProvider, (prev, next) {
       if (!context.mounted) return;
       if (next.status == UploadStatus.success) {
+        // Record AI edits if suggestions were applied and we have a document ID
+        if (_appliedAiEdits.isNotEmpty && next.documentId != null) {
+          ref
+              .read(aiEditTrailProvider(next.documentId!).notifier)
+              .recordEdits(_appliedAiEdits, 'ocr_suggestion');
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Document uploaded successfully!')),
         );
