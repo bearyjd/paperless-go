@@ -29,6 +29,7 @@ import 'features/scanner/scan_review_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/scanner/scanner_screen.dart';
 import 'features/scanner/upload_screen.dart';
+import 'features/annotate/annotate_screen.dart';
 import 'features/search/similar_screen.dart';
 import 'features/trash/trash_screen.dart';
 
@@ -133,6 +134,17 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/inbox',
         builder: (_, __) => const InboxScreen(),
+      ),
+      GoRoute(
+        path: '/annotate',
+        builder: (_, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra == null) return const Scaffold(body: Center(child: Text('No data')));
+          return AnnotateScreen(
+            pdfPath: extra['pdfPath'] as String,
+            title: extra['title'] as String,
+          );
+        },
       ),
       GoRoute(
         path: '/search/similar/:id',
