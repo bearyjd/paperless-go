@@ -476,7 +476,9 @@ class PaperlessApi {
   // Workflows
 
   Future<List<Workflow>> getWorkflows() async {
-    final response = await _dio.get('api/workflows/');
+    final response = await _dio.get('api/workflows/', queryParameters: {
+      'page_size': 10000,
+    });
     final data = response.data;
     final List results =
         data is Map ? (data['results'] as List? ?? []) : (data as List);

@@ -122,7 +122,7 @@ Future<Map<int, CustomField>> customFields(Ref ref) async {
 }
 
 /// All workflows.
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<Workflow>> workflows(Ref ref) async {
   final api = ref.watch(paperlessApiProvider);
   return api.getWorkflows();
