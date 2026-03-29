@@ -30,7 +30,21 @@ class WorkflowDetailScreen extends ConsumerWidget {
       ),
       error: (err, _) => Scaffold(
         appBar: AppBar(title: const Text('Workflow')),
-        body: Center(child: Text('Error: $err')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text('Failed to load\n$err', textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton.tonal(
+                onPressed: () => ref.invalidate(workflowsProvider),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
       ),
       data: (workflows) {
         final workflow = workflows.where((w) => w.id == workflowId).firstOrNull;

@@ -24,10 +24,10 @@ class CustomFieldsScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.error_outline, size: 48),
-                const SizedBox(height: 12),
-                Text('Error: $err', textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                FilledButton(
+                const SizedBox(height: 16),
+                Text('Failed to load\n$err', textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton.tonal(
                   onPressed: () => ref.invalidate(customFieldsProvider),
                   child: const Text('Retry'),
                 ),
