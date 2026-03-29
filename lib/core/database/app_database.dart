@@ -65,6 +65,15 @@ class CachedCustomFields extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class CachedWorkflows extends Table {
+  IntColumn get id => integer()();
+  TextColumn get jsonData => text()();
+  DateTimeColumn get cachedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 class PendingUploads extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get filePath => text()();
@@ -99,6 +108,7 @@ class AiEdits extends Table {
   CachedStoragePaths,
   CachedSavedViews,
   CachedCustomFields,
+  CachedWorkflows,
   PendingUploads,
   AiEdits,
 ])
@@ -106,13 +116,16 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
         await migrator.createTable(aiEdits);
+      }
+      if (from < 3) {
+        await migrator.createTable(cachedWorkflows);
       }
     },
   );

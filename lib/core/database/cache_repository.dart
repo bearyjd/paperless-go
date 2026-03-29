@@ -8,6 +8,7 @@ import '../models/document_type.dart';
 import '../models/saved_view.dart';
 import '../models/storage_path.dart';
 import '../models/tag.dart';
+import '../models/workflow.dart';
 import 'app_database.dart';
 
 class CacheRepository {
@@ -163,6 +164,30 @@ class CacheRepository {
     });
   }
 
+  // Workflows
+
+  Future<List<Workflow>> getCachedWorkflows() async {
+    final rows = await _db.select(_db.cachedWorkflows).get();
+    return rows
+        .map((row) => Workflow.fromJson(
+            jsonDecode(row.jsonData) as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> cacheWorkflows(List<Workflow> items) async {
+    await _db.batch((batch) {
+      batch.deleteAll(_db.cachedWorkflows);
+      batch.insertAll(
+        _db.cachedWorkflows,
+        items.map((e) => CachedWorkflowsCompanion.insert(
+              id: Value(e.id),
+              jsonData: jsonEncode(e.toJson()),
+              cachedAt: DateTime.now(),
+            )),
+      );
+    });
+  }
+
   // Pending Uploads
 
   Future<void> enqueueUpload({
@@ -218,6 +243,7 @@ class CacheRepository {
       batch.deleteAll(_db.cachedStoragePaths);
       batch.deleteAll(_db.cachedSavedViews);
       batch.deleteAll(_db.cachedCustomFields);
+      batch.deleteAll(_db.cachedWorkflows);
       batch.deleteAll(_db.pendingUploads);
     });
   }

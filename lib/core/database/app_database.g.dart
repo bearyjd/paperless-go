@@ -1743,6 +1743,253 @@ class CachedCustomFieldsCompanion extends UpdateCompanion<CachedCustomField> {
   }
 }
 
+class $CachedWorkflowsTable extends CachedWorkflows
+    with TableInfo<$CachedWorkflowsTable, CachedWorkflow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedWorkflowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _jsonDataMeta = const VerificationMeta(
+    'jsonData',
+  );
+  @override
+  late final GeneratedColumn<String> jsonData = GeneratedColumn<String>(
+    'json_data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cachedAtMeta = const VerificationMeta(
+    'cachedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> cachedAt = GeneratedColumn<DateTime>(
+    'cached_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, jsonData, cachedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_workflows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CachedWorkflow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('json_data')) {
+      context.handle(
+        _jsonDataMeta,
+        jsonData.isAcceptableOrUnknown(data['json_data']!, _jsonDataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_jsonDataMeta);
+    }
+    if (data.containsKey('cached_at')) {
+      context.handle(
+        _cachedAtMeta,
+        cachedAt.isAcceptableOrUnknown(data['cached_at']!, _cachedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cachedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CachedWorkflow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedWorkflow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      jsonData: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}json_data'],
+      )!,
+      cachedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}cached_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CachedWorkflowsTable createAlias(String alias) {
+    return $CachedWorkflowsTable(attachedDatabase, alias);
+  }
+}
+
+class CachedWorkflow extends DataClass implements Insertable<CachedWorkflow> {
+  final int id;
+  final String jsonData;
+  final DateTime cachedAt;
+  const CachedWorkflow({
+    required this.id,
+    required this.jsonData,
+    required this.cachedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['json_data'] = Variable<String>(jsonData);
+    map['cached_at'] = Variable<DateTime>(cachedAt);
+    return map;
+  }
+
+  CachedWorkflowsCompanion toCompanion(bool nullToAbsent) {
+    return CachedWorkflowsCompanion(
+      id: Value(id),
+      jsonData: Value(jsonData),
+      cachedAt: Value(cachedAt),
+    );
+  }
+
+  factory CachedWorkflow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedWorkflow(
+      id: serializer.fromJson<int>(json['id']),
+      jsonData: serializer.fromJson<String>(json['jsonData']),
+      cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'jsonData': serializer.toJson<String>(jsonData),
+      'cachedAt': serializer.toJson<DateTime>(cachedAt),
+    };
+  }
+
+  CachedWorkflow copyWith({int? id, String? jsonData, DateTime? cachedAt}) =>
+      CachedWorkflow(
+        id: id ?? this.id,
+        jsonData: jsonData ?? this.jsonData,
+        cachedAt: cachedAt ?? this.cachedAt,
+      );
+  CachedWorkflow copyWithCompanion(CachedWorkflowsCompanion data) {
+    return CachedWorkflow(
+      id: data.id.present ? data.id.value : this.id,
+      jsonData: data.jsonData.present ? data.jsonData.value : this.jsonData,
+      cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedWorkflow(')
+          ..write('id: $id, ')
+          ..write('jsonData: $jsonData, ')
+          ..write('cachedAt: $cachedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, jsonData, cachedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedWorkflow &&
+          other.id == this.id &&
+          other.jsonData == this.jsonData &&
+          other.cachedAt == this.cachedAt);
+}
+
+class CachedWorkflowsCompanion extends UpdateCompanion<CachedWorkflow> {
+  final Value<int> id;
+  final Value<String> jsonData;
+  final Value<DateTime> cachedAt;
+  const CachedWorkflowsCompanion({
+    this.id = const Value.absent(),
+    this.jsonData = const Value.absent(),
+    this.cachedAt = const Value.absent(),
+  });
+  CachedWorkflowsCompanion.insert({
+    this.id = const Value.absent(),
+    required String jsonData,
+    required DateTime cachedAt,
+  }) : jsonData = Value(jsonData),
+       cachedAt = Value(cachedAt);
+  static Insertable<CachedWorkflow> custom({
+    Expression<int>? id,
+    Expression<String>? jsonData,
+    Expression<DateTime>? cachedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (jsonData != null) 'json_data': jsonData,
+      if (cachedAt != null) 'cached_at': cachedAt,
+    });
+  }
+
+  CachedWorkflowsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? jsonData,
+    Value<DateTime>? cachedAt,
+  }) {
+    return CachedWorkflowsCompanion(
+      id: id ?? this.id,
+      jsonData: jsonData ?? this.jsonData,
+      cachedAt: cachedAt ?? this.cachedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (jsonData.present) {
+      map['json_data'] = Variable<String>(jsonData.value);
+    }
+    if (cachedAt.present) {
+      map['cached_at'] = Variable<DateTime>(cachedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedWorkflowsCompanion(')
+          ..write('id: $id, ')
+          ..write('jsonData: $jsonData, ')
+          ..write('cachedAt: $cachedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $PendingUploadsTable extends PendingUploads
     with TableInfo<$PendingUploadsTable, PendingUpload> {
   @override
@@ -2880,6 +3127,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $CachedCustomFieldsTable cachedCustomFields =
       $CachedCustomFieldsTable(this);
+  late final $CachedWorkflowsTable cachedWorkflows = $CachedWorkflowsTable(
+    this,
+  );
   late final $PendingUploadsTable pendingUploads = $PendingUploadsTable(this);
   late final $AiEditsTable aiEdits = $AiEditsTable(this);
   @override
@@ -2894,6 +3144,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cachedStoragePaths,
     cachedSavedViews,
     cachedCustomFields,
+    cachedWorkflows,
     pendingUploads,
     aiEdits,
   ];
@@ -4058,6 +4309,168 @@ typedef $$CachedCustomFieldsTableProcessedTableManager =
       CachedCustomField,
       PrefetchHooks Function()
     >;
+typedef $$CachedWorkflowsTableCreateCompanionBuilder =
+    CachedWorkflowsCompanion Function({
+      Value<int> id,
+      required String jsonData,
+      required DateTime cachedAt,
+    });
+typedef $$CachedWorkflowsTableUpdateCompanionBuilder =
+    CachedWorkflowsCompanion Function({
+      Value<int> id,
+      Value<String> jsonData,
+      Value<DateTime> cachedAt,
+    });
+
+class $$CachedWorkflowsTableFilterComposer
+    extends Composer<_$AppDatabase, $CachedWorkflowsTable> {
+  $$CachedWorkflowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get jsonData => $composableBuilder(
+    column: $table.jsonData,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get cachedAt => $composableBuilder(
+    column: $table.cachedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CachedWorkflowsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CachedWorkflowsTable> {
+  $$CachedWorkflowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get jsonData => $composableBuilder(
+    column: $table.jsonData,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get cachedAt => $composableBuilder(
+    column: $table.cachedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CachedWorkflowsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CachedWorkflowsTable> {
+  $$CachedWorkflowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get jsonData =>
+      $composableBuilder(column: $table.jsonData, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get cachedAt =>
+      $composableBuilder(column: $table.cachedAt, builder: (column) => column);
+}
+
+class $$CachedWorkflowsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CachedWorkflowsTable,
+          CachedWorkflow,
+          $$CachedWorkflowsTableFilterComposer,
+          $$CachedWorkflowsTableOrderingComposer,
+          $$CachedWorkflowsTableAnnotationComposer,
+          $$CachedWorkflowsTableCreateCompanionBuilder,
+          $$CachedWorkflowsTableUpdateCompanionBuilder,
+          (
+            CachedWorkflow,
+            BaseReferences<
+              _$AppDatabase,
+              $CachedWorkflowsTable,
+              CachedWorkflow
+            >,
+          ),
+          CachedWorkflow,
+          PrefetchHooks Function()
+        > {
+  $$CachedWorkflowsTableTableManager(
+    _$AppDatabase db,
+    $CachedWorkflowsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedWorkflowsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CachedWorkflowsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CachedWorkflowsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> jsonData = const Value.absent(),
+                Value<DateTime> cachedAt = const Value.absent(),
+              }) => CachedWorkflowsCompanion(
+                id: id,
+                jsonData: jsonData,
+                cachedAt: cachedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String jsonData,
+                required DateTime cachedAt,
+              }) => CachedWorkflowsCompanion.insert(
+                id: id,
+                jsonData: jsonData,
+                cachedAt: cachedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CachedWorkflowsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CachedWorkflowsTable,
+      CachedWorkflow,
+      $$CachedWorkflowsTableFilterComposer,
+      $$CachedWorkflowsTableOrderingComposer,
+      $$CachedWorkflowsTableAnnotationComposer,
+      $$CachedWorkflowsTableCreateCompanionBuilder,
+      $$CachedWorkflowsTableUpdateCompanionBuilder,
+      (
+        CachedWorkflow,
+        BaseReferences<_$AppDatabase, $CachedWorkflowsTable, CachedWorkflow>,
+      ),
+      CachedWorkflow,
+      PrefetchHooks Function()
+    >;
 typedef $$PendingUploadsTableCreateCompanionBuilder =
     PendingUploadsCompanion Function({
       Value<int> id,
@@ -4620,6 +5033,8 @@ class $AppDatabaseManager {
       $$CachedSavedViewsTableTableManager(_db, _db.cachedSavedViews);
   $$CachedCustomFieldsTableTableManager get cachedCustomFields =>
       $$CachedCustomFieldsTableTableManager(_db, _db.cachedCustomFields);
+  $$CachedWorkflowsTableTableManager get cachedWorkflows =>
+      $$CachedWorkflowsTableTableManager(_db, _db.cachedWorkflows);
   $$PendingUploadsTableTableManager get pendingUploads =>
       $$PendingUploadsTableTableManager(_db, _db.pendingUploads);
   $$AiEditsTableTableManager get aiEdits =>
