@@ -462,85 +462,89 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
   Future<void> _showSaveViewDialog(
       BuildContext context, DocumentsFilter currentFilter) async {
     final nameController = TextEditingController();
-    bool showOnDashboard = false;
-    bool showInSidebar = true;
+    try {
+      bool showOnDashboard = false;
+      bool showInSidebar = true;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Save as view'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'View name',
-                  hintText: 'e.g. Invoices 2024',
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: const Text('Save as view'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'View name',
+                    hintText: 'e.g. Invoices 2024',
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
                 ),
-                textCapitalization: TextCapitalization.sentences,
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Show in sidebar'),
+                  value: showInSidebar,
+                  onChanged: (v) => setDialogState(() => showInSidebar = v),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Show on dashboard'),
+                  value: showOnDashboard,
+                  onChanged: (v) => setDialogState(() => showOnDashboard = v),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
               ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Show in sidebar'),
-                value: showInSidebar,
-                onChanged: (v) => setDialogState(() => showInSidebar = v),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Show on dashboard'),
-                value: showOnDashboard,
-                onChanged: (v) => setDialogState(() => showOnDashboard = v),
+              FilledButton(
+                onPressed: () {
+                  if (nameController.text.trim().isEmpty) return;
+                  Navigator.pop(ctx, true);
+                },
+                child: const Text('Save'),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (nameController.text.trim().isEmpty) return;
-                Navigator.pop(ctx, true);
-              },
-              child: const Text('Save'),
-            ),
-          ],
         ),
-      ),
-    );
+      );
 
-    if (confirmed != true || !context.mounted) return;
+      if (confirmed != true || !context.mounted) return;
 
-    final name = nameController.text.trim();
-    final rules = documentsFilterToFilterRules(currentFilter);
-    final (sortField, sortReverse) = parseOrdering(currentFilter.ordering);
+      final name = nameController.text.trim();
+      final rules = documentsFilterToFilterRules(currentFilter);
+      final (sortField, sortReverse) = parseOrdering(currentFilter.ordering);
 
-    try {
-      await ref.read(paperlessApiProvider).createSavedView(
-            name: name,
-            filterRules: rules,
-            sortField: sortField,
-            sortReverse: sortReverse,
-            showOnDashboard: showOnDashboard,
-            showInSidebar: showInSidebar,
+      try {
+        await ref.read(paperlessApiProvider).createSavedView(
+              name: name,
+              filterRules: rules,
+              sortField: sortField,
+              sortReverse: sortReverse,
+              showOnDashboard: showOnDashboard,
+              showInSidebar: showInSidebar,
+            );
+        ref.invalidate(savedViewsProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('"$name" saved')),
           );
-      ref.invalidate(savedViewsProvider);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"$name" saved')),
-        );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save view: $e')),
+          );
+        }
       }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save view: $e')),
-        );
-      }
+    } finally {
+      nameController.dispose();
     }
   }
 
