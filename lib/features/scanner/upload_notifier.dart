@@ -19,12 +19,14 @@ class UploadState {
   final String? taskId;
   final String? errorMessage;
   final double? progress;
+  final int? documentId;
 
   const UploadState({
     this.status = UploadStatus.idle,
     this.taskId,
     this.errorMessage,
     this.progress,
+    this.documentId,
   });
 
   UploadState copyWith({
@@ -32,6 +34,7 @@ class UploadState {
     String? taskId,
     String? errorMessage,
     double? progress,
+    int? documentId,
   }) {
     // When status changes, clear stale fields from the previous state
     // to prevent the UI from showing e.g. an old errorMessage after retry.
@@ -44,6 +47,7 @@ class UploadState {
           ? errorMessage
           : (errorMessage ?? this.errorMessage),
       progress: statusChanged ? progress : (progress ?? this.progress),
+      documentId: documentId ?? this.documentId,
     );
   }
 }
@@ -236,7 +240,13 @@ class UploadNotifier extends _$UploadNotifier {
 
         if (status == 'SUCCESS') {
           timer.cancel();
-          state = UploadState(status: UploadStatus.success, taskId: taskId);
+          final docIdStr = result['related_document'] as String?;
+          final docId = docIdStr != null ? int.tryParse(docIdStr) : null;
+          state = UploadState(
+            status: UploadStatus.success,
+            taskId: taskId,
+            documentId: docId,
+          );
           NotificationService.showUploadComplete(
             title: 'Document processed',
             body: 'Your document has been added to Paperless.',
