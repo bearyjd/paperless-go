@@ -51,7 +51,7 @@ debug/reports/<bug-name>.md:
   - Full text search: `/api/documents/?query=<search_term>`
   - Document actions: `/api/documents/<pk>/download/`, `/api/documents/<pk>/preview/`, `/api/documents/<pk>/thumb/`
   - Upload: `POST /api/documents/post_document/` as multipart form
-  - Bulk edit: `POST /api/bulk_edit/` with `{documents: [], method: "", parameters: {}}`
+  - Bulk edit: `POST /api/documents/bulk_edit/` with `{documents: [], method: "", parameters: {}}`
   - Custom fields: can be attached to documents, types include string, url, date, integer, float, monetary, document_link, select
 - Verify response parsing matches the actual response schema
 - Check for API version mismatches (Paperless-ngx changes field names between versions)
@@ -443,5 +443,18 @@ flutter run
 - **Pagination gotcha:** The `count` field is the total count, not the page count. Calculate pages as `(count / pageSize).ceil()`.
 - **Date fields:** `created` is `YYYY-MM-DD` (date only). Don't try to parse it as ISO 8601 datetime.
 - **Custom fields:** When updating a document with select-type custom fields, send the option `id`, not the label or index.
-- **Bulk operations:** `/api/bulk_edit/` methods: `set_correspondent`, `set_document_type`, `set_storage_path`, `add_tag`, `remove_tag`, `modify_tags`, `delete`, `redo_ocr`, `set_permissions`, `rotate`, `merge`, `split`.
-- **Task polling:** After upload, the response is just a task UUID. Poll `/api/tasks/?task_id=<uuid>` until `status` is `SUCCESS` or `FAILURE`.
+- **Bulk operations:** `/api/documents/bulk_edit/` methods: `set_correspondent`, `set_document_type`, `set_storage_path`, `add_tag`, `remove_tag`, `modify_tags`, `delete`, `redo_ocr`, `set_permissions`, `rotate`, `merge`, `split`.
+- **Task polling:** After upload, poll `/api/tasks/?task_id=<uuid>` until `status` is `SUCCESS` or `FAILURE`. Use exponential backoff.
+
+---
+
+## Code Conventions
+
+- **Files:** `snake_case.dart` — screens as `*_screen.dart`, notifiers as `*_notifier.dart`
+- **Classes/Widgets:** `PascalCase`
+- **Providers:** `@riverpod` annotation → run `build_runner build` to regenerate `.g.dart`
+- **Models:** `@freezed` + `@JsonSerializable` → generates `.freezed.dart` + `.g.dart`; never edit generated files
+- **Error handling:** `on DioException catch (e)` — never bare `catch (e)`; never catch `Error` subtypes
+- **Null safety:** prefer `?.` / `??` over `!`; reserve `!` only where null is a programming error
+- **Commits:** conventional commits — `feat:`, `fix:`, `chore:`, `docs:`, `perf:`, `refactor:`
+- **Tests:** mirror source path under `test/unit/<feature>/`, named `*_test.dart`; run `flutter test` before committing
