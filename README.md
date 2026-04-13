@@ -18,9 +18,12 @@ A modern, open-source mobile client for [Paperless-ngx](https://github.com/paper
 - **PDF viewer** — View document previews and thumbnails inline
 - **Scan & upload** — Capture documents with the camera scanner or pick files, with share-intent support from other apps
 - **Image enhancement** — Six processing presets (Auto, Receipt, B&W Text, Color Doc, Photo) with deskew, adaptive contrast, shadow removal, and denoising
+- **PDF annotation** — Draw, highlight, and annotate documents with a full canvas tool; export composited annotations back to Paperless-ngx
+- **Document templates** — Save reusable upload presets (title, tags, correspondent, document type) and apply them during upload
 - **Label management** — Create and edit tags, correspondents, document types, and storage paths
 - **Metadata editing** — Update document fields including custom fields
 - **Document notes** — Add, view, and delete notes on any document
+- **Batch OCR** — Re-run OCR on multiple documents from the bulk action bar
 - **Share links** — Generate public share links with optional expiration
 - **Bulk operations** — Tag, re-tag, delete, and more across multiple documents
 - **Saved views** — Save and reuse custom filter and sort combinations
@@ -32,8 +35,10 @@ A modern, open-source mobile client for [Paperless-ngx](https://github.com/paper
 - **AI chat** — Ask questions about your documents via Paperless-AI integration
 - **Multi-server support** — Switch between multiple Paperless-ngx instances
 - **Dark mode** — System-aware dark theme with manual override
-- **Biometric auth** — Secure access with fingerprint or face unlock
-- **Offline caching** — Browse previously loaded data without a connection
+- **Biometric auth** — App-level and per-document biometric lock (fingerprint or face unlock)
+- **Offline edit queue** — Queue metadata edits while offline; auto-syncs on reconnect with coalescing
+- **Offline caching** — Browse previously loaded data without a connection; workflows and labels cached locally
+- **Home screen widget** — Android widget showing document count with quick-launch scan and upload buttons
 - **Trash management** — View and restore deleted documents
 
 ## Requirements
@@ -71,9 +76,8 @@ flutter build apk --release
 
 ### Prerequisites
 
-- [Flutter](https://docs.flutter.dev/get-started/install) 3.9+
-- Dart 3.9+
-- Android SDK
+- [Flutter](https://docs.flutter.dev/get-started/install) (latest stable, bundling Dart 3.9.2+)
+- Android SDK (API 23+)
 
 ## Tech Stack
 
@@ -87,6 +91,9 @@ flutter build apk --release
 | Auth Storage | flutter_secure_storage |
 | PDF Viewing | pdfx |
 | Scanner | cunning_document_scanner |
+| Biometric Auth | local_auth |
+| Home Screen Widget | home_widget |
+| OCR | google_mlkit_text_recognition |
 
 ## Contributing
 
