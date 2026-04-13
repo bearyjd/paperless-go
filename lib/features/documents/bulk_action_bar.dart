@@ -78,6 +78,8 @@ class BulkActionBar extends ConsumerWidget {
               tooltip: 'More actions',
               onSelected: (action) {
                 switch (action) {
+                  case 'remove_tags':
+                    _showBulkTagRemoveDialog(context, ref);
                   case 'storage_path':
                     _showBulkStoragePathDialog(context, ref);
                   case 'merge':
@@ -89,6 +91,14 @@ class BulkActionBar extends ConsumerWidget {
                 }
               },
               itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'remove_tags',
+                  child: ListTile(
+                    leading: Icon(Icons.label_off_outlined),
+                    title: Text('Remove tags'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
                 const PopupMenuItem(
                   value: 'storage_path',
                   child: ListTile(
@@ -159,6 +169,45 @@ class BulkActionBar extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to add tags: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showBulkTagRemoveDialog(BuildContext context, WidgetRef ref) async {
+    final tagsMap = ref.read(tagsProvider).valueOrNull ?? {};
+    final allTags = tagsMap.values.toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+
+    final selected = await showDialog<Set<int>>(
+      context: context,
+      builder: (ctx) => _BulkTagPicker(
+        tags: allTags,
+        title: 'Remove Tags',
+        actionLabel: 'Remove',
+      ),
+    );
+
+    if (selected != null && selected.isNotEmpty && context.mounted) {
+      final count = selectedIds.length;
+      try {
+        final api = ref.read(paperlessApiProvider);
+        await api.bulkEdit(
+          documents: selectedIds.toList(),
+          method: 'modify_tags',
+          parameters: {'add_tags': <int>[], 'remove_tags': selected.toList()},
+        );
+        if (!context.mounted) return;
+        onClearSelection();
+        onRefresh();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tags removed from $count documents')),
+        );
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to remove tags: $e')),
           );
         }
       }
@@ -494,7 +543,14 @@ class _ActionButton extends StatelessWidget {
 
 class _BulkTagPicker extends StatefulWidget {
   final List<Tag> tags;
-  const _BulkTagPicker({required this.tags});
+  final String title;
+  final String actionLabel;
+
+  const _BulkTagPicker({
+    required this.tags,
+    this.title = 'Add Tags',
+    this.actionLabel = 'Add',
+  });
 
   @override
   State<_BulkTagPicker> createState() => _BulkTagPickerState();
@@ -511,7 +567,7 @@ class _BulkTagPickerState extends State<_BulkTagPicker> {
         .toList();
 
     return AlertDialog(
-      title: const Text('Add Tags'),
+      title: Text(widget.title),
       content: SizedBox(
         width: double.maxFinite,
         height: 400,
@@ -558,8 +614,10 @@ class _BulkTagPickerState extends State<_BulkTagPicker> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: _selected.isEmpty ? null : () => Navigator.pop(context, _selected),
-          child: Text('Add (${_selected.length})'),
+          onPressed: _selected.isEmpty
+              ? null
+              : () => Navigator.pop(context, _selected),
+          child: Text('${widget.actionLabel} (${_selected.length})'),
         ),
       ],
     );

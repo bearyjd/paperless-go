@@ -44,6 +44,29 @@ PaperlessApi _makeApi(_RecordingAdapter adapter) {
 }
 
 void main() {
+  group('PaperlessApi.bulkEdit remove_tags', () {
+    late _RecordingAdapter adapter;
+    late PaperlessApi api;
+
+    setUp(() {
+      adapter = _RecordingAdapter();
+      api = _makeApi(adapter);
+    });
+
+    test('remove_tags sends non-empty remove_tags and empty add_tags', () async {
+      await api.bulkEdit(
+        documents: [1, 2],
+        method: 'modify_tags',
+        parameters: {'add_tags': <int>[], 'remove_tags': [7]},
+      );
+
+      final data = adapter.requests.first.data as Map<String, dynamic>;
+      expect(data['method'], equals('modify_tags'));
+      expect(data['parameters']['add_tags'], isEmpty);
+      expect(data['parameters']['remove_tags'], equals([7]));
+    });
+  });
+
   group('PaperlessApi.bulkEdit URL', () {
     late _RecordingAdapter adapter;
     late PaperlessApi api;
