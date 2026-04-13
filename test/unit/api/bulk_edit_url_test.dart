@@ -1,0 +1,110 @@
+// Regression test for: batch tagging 403 error.
+//
+// Root cause: bulkEdit() was posting to 'api/bulk_edit/' but Paperless-ngx
+// registers bulk_edit as a custom action on DocumentViewSet, placing it at
+// 'api/documents/bulk_edit/'. The wrong URL caused a 403 (via Nginx Proxy
+// Manager) instead of the expected 200.
+//
+// Run: flutter test test/unit/api/bulk_edit_url_test.dart
+
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:paperless_go/core/api/paperless_api.dart';
+
+/// Records all outgoing requests without making real HTTP calls.
+class _RecordingAdapter implements HttpClientAdapter {
+  final List<RequestOptions> requests = [];
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requests.add(options);
+    return ResponseBody.fromString('', 200);
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+PaperlessApi _makeApi(_RecordingAdapter adapter) {
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: 'https://paperless.example.com/',
+      headers: {'Authorization': 'Token test-token'},
+      validateStatus: (status) => status != null && status >= 200 && status < 300,
+    ),
+  );
+  dio.httpClientAdapter = adapter;
+  return PaperlessApi(dio);
+}
+
+void main() {
+  group('PaperlessApi.bulkEdit URL', () {
+    late _RecordingAdapter adapter;
+    late PaperlessApi api;
+
+    setUp(() {
+      adapter = _RecordingAdapter();
+      api = _makeApi(adapter);
+    });
+
+    test('posts to api/documents/bulk_edit/ — not api/bulk_edit/', () async {
+      await api.bulkEdit(
+        documents: [1, 2, 3],
+        method: 'modify_tags',
+        parameters: {
+          'add_tags': [5],
+          'remove_tags': <int>[],
+        },
+      );
+
+      expect(adapter.requests, hasLength(1));
+      expect(
+        adapter.requests.first.path,
+        equals('api/documents/bulk_edit/'),
+        reason:
+            'bulk_edit is a custom action on DocumentViewSet and must be '
+            'reached at /api/documents/bulk_edit/. '
+            'Posting to /api/bulk_edit/ returns 403 via Nginx Proxy Manager.',
+      );
+    });
+
+    test('sends correct payload for modify_tags', () async {
+      await api.bulkEdit(
+        documents: [1, 2],
+        method: 'modify_tags',
+        parameters: {
+          'add_tags': [5, 6],
+          'remove_tags': [3],
+        },
+      );
+
+      final data = adapter.requests.first.data as Map<String, dynamic>;
+      expect(data['documents'], equals([1, 2]));
+      expect(data['method'], equals('modify_tags'));
+      expect(data['parameters'], equals({'add_tags': [5, 6], 'remove_tags': [3]}));
+    });
+
+    test('omits parameters key when not provided (e.g. trash)', () async {
+      await api.bulkEdit(documents: [1], method: 'trash');
+
+      final data = adapter.requests.first.data as Map<String, dynamic>;
+      expect(data.containsKey('parameters'), isFalse);
+    });
+
+    test('uses POST method', () async {
+      await api.bulkEdit(
+        documents: [1],
+        method: 'modify_tags',
+        parameters: {'add_tags': [5], 'remove_tags': <int>[]},
+      );
+
+      expect(adapter.requests.first.method, equals('POST'));
+    });
+  });
+}

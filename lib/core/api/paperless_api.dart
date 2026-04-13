@@ -121,7 +121,7 @@ class PaperlessApi {
     required String method,
     Map<String, dynamic>? parameters,
   }) async {
-    await _dio.post('api/bulk_edit/', data: {
+    await _dio.post('api/documents/bulk_edit/', data: {
       'documents': documents,
       'method': method,
       if (parameters != null) 'parameters': parameters,
