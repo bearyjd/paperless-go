@@ -1,6 +1,6 @@
 Categories:
-  - Office
-  - Utilities
+  - Internet
+  - Reading
 
 License: GPL-3.0-only
 AuthorName: bearyjd
@@ -44,25 +44,15 @@ RepoType: git
 Repo: https://github.com/bearyjd/paperless-go.git
 
 Builds:
-  - versionName: '1.0.3'
+  - versionName: 1.0.3
     versionCode: 4
     commit: v1.0.3
     output: build/app/outputs/flutter-apk/app-release.apk
     srclibs:
       - flutter@3.41.3
-    rm:
-      - ios
-      - linux
-      - macos
-      - web
-      - windows
     prebuild:
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter config --no-analytics
-      # Remove proprietary Google ML Kit dependency for F-Droid FOSS compliance.
-      # Replace ML Kit files with pure-Dart stubs that gracefully degrade:
-      # - Deskew falls back to projection-profile algorithm (pure Dart)
-      # - OCR metadata suggestions are disabled (returns empty text)
       - sed -i '/google_mlkit/d' pubspec.yaml
       - grep -q google_mlkit pubspec.yaml && exit 1 || true
       - cp lib/features/scanner/processing/mlkit_deskew_stub.dart lib/features/scanner/processing/mlkit_deskew.dart
@@ -74,25 +64,15 @@ Builds:
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter build apk --release
 
-  - versionName: '1.1.0'
+  - versionName: 1.1.0
     versionCode: 5
     commit: v1.1.0
     output: build/app/outputs/flutter-apk/app-release.apk
     srclibs:
       - flutter@3.41.3
-    rm:
-      - ios
-      - linux
-      - macos
-      - web
-      - windows
     prebuild:
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter config --no-analytics
-      # Remove proprietary Google ML Kit dependency for F-Droid FOSS compliance.
-      # Replace ML Kit files with pure-Dart stubs that gracefully degrade:
-      # - Deskew falls back to projection-profile algorithm (pure Dart)
-      # - OCR metadata suggestions are disabled (returns empty text)
       - sed -i '/google_mlkit/d' pubspec.yaml
       - grep -q google_mlkit pubspec.yaml && exit 1 || true
       - cp lib/features/scanner/processing/mlkit_deskew_stub.dart lib/features/scanner/processing/mlkit_deskew.dart
@@ -104,8 +84,8 @@ Builds:
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter build apk --release
 
-AutoUpdateMode: Version %v
+AutoUpdateMode: Version
 UpdateCheckMode: Tags
 UpdateCheckData: pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
-CurrentVersion: '1.1.0'
+CurrentVersion: 1.1.0
 CurrentVersionCode: 5
