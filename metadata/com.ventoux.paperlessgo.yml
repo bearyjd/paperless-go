@@ -63,6 +63,8 @@ Builds:
       - $$flutter$$/bin/flutter pub get
     scandelete:
       - .pub-cache
+      - lib/features/scanner/processing/mlkit_deskew.dart
+      - lib/features/scanner/processing/ocr_extractor.dart
     build:
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter build apk --release
@@ -86,6 +88,8 @@ Builds:
       - $$flutter$$/bin/flutter pub get
     scandelete:
       - .pub-cache
+      - lib/features/scanner/processing/mlkit_deskew.dart
+      - lib/features/scanner/processing/ocr_extractor.dart
     build:
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter build apk --release
