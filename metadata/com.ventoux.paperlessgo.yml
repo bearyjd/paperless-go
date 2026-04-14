@@ -63,7 +63,8 @@ Builds:
       # Replace ML Kit files with pure-Dart stubs that gracefully degrade:
       # - Deskew falls back to projection-profile algorithm (pure Dart)
       # - OCR metadata suggestions are disabled (returns empty text)
-      - sed -i '/google_mlkit_text_recognition/d' pubspec.yaml
+      - sed -i '/google_mlkit/d' pubspec.yaml
+      - grep -q google_mlkit pubspec.yaml && exit 1 || true
       - cp lib/features/scanner/processing/mlkit_deskew_stub.dart lib/features/scanner/processing/mlkit_deskew.dart
       - cp lib/features/scanner/processing/ocr_extractor_stub.dart lib/features/scanner/processing/ocr_extractor.dart
       - $$flutter$$/bin/flutter pub get
@@ -92,7 +93,8 @@ Builds:
       # Replace ML Kit files with pure-Dart stubs that gracefully degrade:
       # - Deskew falls back to projection-profile algorithm (pure Dart)
       # - OCR metadata suggestions are disabled (returns empty text)
-      - sed -i '/google_mlkit_text_recognition/d' pubspec.yaml
+      - sed -i '/google_mlkit/d' pubspec.yaml
+      - grep -q google_mlkit pubspec.yaml && exit 1 || true
       - cp lib/features/scanner/processing/mlkit_deskew_stub.dart lib/features/scanner/processing/mlkit_deskew.dart
       - cp lib/features/scanner/processing/ocr_extractor_stub.dart lib/features/scanner/processing/ocr_extractor.dart
       - $$flutter$$/bin/flutter pub get
