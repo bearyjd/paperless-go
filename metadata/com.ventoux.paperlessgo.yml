@@ -49,8 +49,11 @@ Builds:
     commit: v1.0.3
     output: build/app/outputs/flutter-apk/app-release.apk
     srclibs:
-      - flutter@3.41.3
+      - flutter@stable
     prebuild:
+      - flutterVersion=$(sed -n -E "s/.*flutter-version:\ '(.*)'/\1/p" .github/workflows/release.yml)
+      - '[[ $flutterVersion ]]'
+      - git -C $$flutter$$ checkout -f $flutterVersion
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter config --no-analytics
       - sed -i '/google_mlkit/d' pubspec.yaml
@@ -69,8 +72,11 @@ Builds:
     commit: v1.1.0
     output: build/app/outputs/flutter-apk/app-release.apk
     srclibs:
-      - flutter@3.41.3
+      - flutter@stable
     prebuild:
+      - flutterVersion=$(sed -n -E "s/.*flutter-version:\ '(.*)'/\1/p" .github/workflows/release.yml)
+      - '[[ $flutterVersion ]]'
+      - git -C $$flutter$$ checkout -f $flutterVersion
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter config --no-analytics
       - sed -i '/google_mlkit/d' pubspec.yaml
