@@ -1,0 +1,9 @@
+Major feature release:
+* Dashboard home screen with library statistics
+* Saved views: create, rename, delete, and apply filter sets
+* Workflows: view, toggle, and delete automation rules
+* Custom field management: create, rename, delete definitions
+* PDF tools: rotate, split, compress, password protect
+* PDF annotate: draw, highlight, and redact on documents
+* Offline mode: all reference data cached locally via SQLite
+* UI polish: dark mode fixes, skeleton loaders, consistent empty/error states
