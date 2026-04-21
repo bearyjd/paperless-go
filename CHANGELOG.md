@@ -149,4 +149,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolve 60+ bugs from multiple codebase audits
 
 ### Security
-- License under GPL-3.0
+- License under AGPL-3.0

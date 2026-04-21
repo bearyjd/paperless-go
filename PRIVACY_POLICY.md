@@ -69,4 +69,4 @@ https://github.com/bearyjd/paperless-go/issues
 
 ## Open Source
 
-Paperless Go is free and open source software licensed under the GNU General Public License v3.0. You can review the complete source code at https://github.com/bearyjd/paperless-go.
+Paperless Go is free and open source software licensed under the GNU Affero General Public License v3.0. You can review the complete source code at https://github.com/bearyjd/paperless-go.
