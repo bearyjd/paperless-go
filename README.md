@@ -1,114 +1,139 @@
-# Paperless Go
-
-A modern, open-source mobile client for [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) — the self-hosted document management system.
-
-![Feature Graphic](assets/feature-graphic.png)
-
-## Screenshots
+<p align="center">
+  <img src="assets/feature-graphic.png" alt="Paperless Go" width="600" />
+</p>
 
 <p align="center">
-  <img src="metadata/en-US/images/phoneScreenshots/1_document_list.png" width="250" alt="Document List" />
-  <img src="metadata/en-US/images/phoneScreenshots/2_ai_chat.png" width="250" alt="AI Chat" />
-  <img src="metadata/en-US/images/phoneScreenshots/3_scan_upload.png" width="250" alt="Scan & Upload" />
+  <strong>Your documents. Your server. Your pocket.</strong>
 </p>
+
+<p align="center">
+  <a href="https://github.com/bearyjd/paperless-go/releases/latest"><img src="https://img.shields.io/github/v/release/bearyjd/paperless-go?style=flat-square&color=17A262" alt="GitHub Release" /></a>
+  <a href="https://f-droid.org/packages/com.ventoux.paperlessgo"><img src="https://img.shields.io/f-droid/v/com.ventoux.paperlessgo?style=flat-square&color=17A262" alt="F-Droid" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/bearyjd/paperless-go?style=flat-square&color=17A262" alt="License: AGPL-3.0" /></a>
+  <a href="https://flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.41-02569B?style=flat-square&logo=flutter" alt="Flutter" /></a>
+</p>
+
+---
+
+A modern, open-source mobile client for [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) — the self-hosted document management system. Browse, search, scan, upload, and manage your entire document library from your phone.
+
+<p align="center">
+  <img src="metadata/en-US/images/phoneScreenshots/1_document_list.png" width="180" alt="Document List" />
+  &nbsp;&nbsp;
+  <img src="metadata/en-US/images/phoneScreenshots/2_scan_upload.png" width="180" alt="Scan & Upload" />
+  &nbsp;&nbsp;
+  <img src="metadata/en-US/images/phoneScreenshots/3_ai_chat.png" width="180" alt="AI Chat" />
+  &nbsp;&nbsp;
+  <img src="metadata/en-US/images/phoneScreenshots/4_login.png" width="180" alt="Login" />
+</p>
+
+## Install
+
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="60">](https://f-droid.org/packages/com.ventoux.paperlessgo)
+[<img src="https://raw.githubusercontent.com/nickmitchko/FileHost/master/artifacts/icons/get-it-on-github.png" alt="Get it on GitHub" height="60">](https://github.com/bearyjd/paperless-go/releases/latest)
+
+> **F-Droid** — Free, built without Google ML Kit (pure-Dart deskew fallback)
+> **GitHub Releases** — Includes ML Kit for better document deskew and OCR suggestions
 
 ## Features
 
-- **Document browsing** — Search, filter, and sort your entire library with full-text search and autocomplete
-- **PDF viewer** — View document previews and thumbnails inline
-- **Scan & upload** — Capture documents with the camera scanner or pick files, with share-intent support from other apps
-- **Image enhancement** — Six processing presets (Auto, Receipt, B&W Text, Color Doc, Photo) with deskew, adaptive contrast, shadow removal, and denoising
-- **PDF annotation** — Draw, highlight, and annotate documents with a full canvas tool; export composited annotations back to Paperless-ngx
-- **Document templates** — Save reusable upload presets (title, tags, correspondent, document type) and apply them during upload
-- **Label management** — Create and edit tags, correspondents, document types, and storage paths
-- **Metadata editing** — Update document fields including custom fields
-- **Document notes** — Add, view, and delete notes on any document
-- **Batch OCR** — Re-run OCR on multiple documents from the bulk action bar
-- **Share links** — Generate public share links with optional expiration
-- **Bulk operations** — Tag, re-tag, delete, and more across multiple documents
-- **Saved views** — Save and reuse custom filter and sort combinations
-- **Similar documents** — Find related documents using content similarity
-- **Advanced filtering** — Filter by tags, correspondent, document type, and date range
-- **Flexible sorting** — Sort by date created, recently added, title, or archive serial number
-- **Inbox quick-assign** — Swipe gestures to rapidly triage new documents
-- **Download & share** — Save documents to your device or share via the native share sheet
-- **AI chat** — Ask questions about your documents via Paperless-AI integration
-- **Multi-server support** — Switch between multiple Paperless-ngx instances
-- **Dark mode** — System-aware dark theme with manual override
-- **Biometric auth** — App-level and per-document biometric lock (fingerprint or face unlock)
-- **Offline edit queue** — Queue metadata edits while offline; auto-syncs on reconnect with coalescing
-- **Offline caching** — Browse previously loaded data without a connection; workflows and labels cached locally
-- **Home screen widget** — Android widget showing document count with quick-launch scan and upload buttons
-- **Trash management** — View and restore deleted documents
+### Core
+- **Full-text search** with autocomplete across your entire library
+- **Advanced filtering** by tags, correspondent, document type, date range
+- **Saved views** — reusable filter and sort combinations
+- **Similar documents** — find related documents by content
+- **PDF viewer** with inline thumbnails and previews
+
+### Capture
+- **Camera scanner** with six image presets (Auto, Receipt, B&W, Color Doc, Photo)
+- **File upload** from device storage
+- **Share intent** — send files from any app directly to Paperless
+- **Document templates** — save reusable upload presets
+
+### Edit & Organize
+- **Label management** — tags, correspondents, document types, storage paths
+- **Metadata editing** with custom fields
+- **PDF annotation** — draw, highlight, redact, export back to server
+- **Bulk operations** — tag, re-tag, delete, batch OCR, merge
+- **Inbox quick-assign** with swipe gestures
+- **Document notes** and **share links** with expiration
+
+### Intelligence
+- **AI chat** — ask questions about your documents via [Paperless-AI](https://github.com/clusterpj/paperless-ai) integration
+- **OCR metadata suggestions** — auto-suggest title, correspondent, tags from scanned text (ML Kit builds)
+
+### Mobile-First
+- **Offline caching** — SQLite-backed, browse without connection
+- **Offline edit queue** — queue changes, auto-sync on reconnect
+- **Biometric auth** — app-level and per-document fingerprint/face lock
+- **Dark mode** — system-aware with manual override
+- **Home screen widget** — document count + quick-launch scan/upload
+- **Multi-server** — switch between Paperless-ngx instances
+- **Trash management** — view and restore deleted documents
 
 ## Requirements
 
-- A running [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) instance (v2.x+)
-- An API token (generate one from your Paperless-ngx user profile)
-- Android 6.0+ (API 23+)
+- [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) v2.x+ (self-hosted)
+- Android 6.0+ (API 23)
 
 ## Getting Started
 
-1. Install the app (see [Releases](https://github.com/bearyjd/paperless-go/releases) or build from source)
-2. Enter your Paperless-ngx server URL (e.g., `https://paperless.example.com`)
-3. Log in with your username and password, or paste an API token
+1. Install from F-Droid, GitHub Releases, or build from source
+2. Enter your server URL (e.g. `https://paperless.example.com`)
+3. Log in with username/password or paste an API token
 4. Start managing your documents
 
-## Building from Source
+## Build from Source
 
 ```bash
-# Clone the repo
 git clone https://github.com/bearyjd/paperless-go.git
 cd paperless-go
-
-# Install dependencies
 flutter pub get
-
-# Generate model code
 dart run build_runner build --delete-conflicting-outputs
-
-# Run in debug mode
 flutter run
-
-# Build release APK
-flutter build apk --release
 ```
 
-### Prerequisites
+**Prerequisites:** [Flutter](https://docs.flutter.dev/get-started/install) stable (3.41+), Android SDK (API 23+)
 
-- [Flutter](https://docs.flutter.dev/get-started/install) (latest stable, bundling Dart 3.9.2+)
-- Android SDK (API 23+)
+Release build with obfuscation:
+```bash
+flutter build apk --release --obfuscate --split-debug-info=./debug-info/
+```
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Flutter |
-| State Management | Riverpod |
-| HTTP Client | Dio |
-| Navigation | GoRouter |
-| Local Database | Drift (SQLite) |
-| Auth Storage | flutter_secure_storage |
-| PDF Viewing | pdfx |
-| Scanner | cunning_document_scanner |
-| Biometric Auth | local_auth |
-| Home Screen Widget | home_widget |
-| OCR | google_mlkit_text_recognition |
+| Framework | [Flutter](https://flutter.dev) |
+| State | [Riverpod](https://riverpod.dev) |
+| HTTP | [Dio](https://pub.dev/packages/dio) |
+| Navigation | [GoRouter](https://pub.dev/packages/go_router) |
+| Database | [Drift](https://drift.simonbinder.eu) (SQLite) |
+| Auth Storage | [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage) |
+| PDF | [pdfx](https://pub.dev/packages/pdfx) |
+| Scanner | [cunning_document_scanner](https://pub.dev/packages/cunning_document_scanner) |
+| Biometrics | [local_auth](https://pub.dev/packages/local_auth) |
+| Widget | [home_widget](https://pub.dev/packages/home_widget) |
+| OCR | [google_mlkit_text_recognition](https://pub.dev/packages/google_mlkit_text_recognition) |
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
+Contributions welcome! Please open an issue first to discuss what you'd like to change.
 
 1. Fork the repo
 2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes
-4. Push to the branch and open a PR
+3. Commit your changes using [conventional commits](https://www.conventionalcommits.org/)
+4. Push and open a PR
+
+## Privacy
+
+Paperless Go does not collect, store, or transmit any user data to the developer or any third party. All data stays between your device and your Paperless-ngx server. [Full privacy policy](PRIVACY_POLICY.md).
 
 ## License
 
-This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+[GNU Affero General Public License v3.0](LICENSE) — free to use, modify, and distribute. Source must remain open.
 
 ## Acknowledgments
 
-- [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) — the document management system this app connects to
+- [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) — the document management system
 - [Paperless-AI](https://github.com/clusterpj/paperless-ai) — AI chat integration
