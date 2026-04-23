@@ -28,8 +28,11 @@ Builds:
       - $$flutter$$/bin/flutter config --no-analytics
       - sed -i '/google_mlkit/d' pubspec.yaml
       - grep -q google_mlkit pubspec.yaml && exit 1 || true
+      - sed -i '/cunning_document_scanner/d' pubspec.yaml
+      - grep -q cunning_document_scanner pubspec.yaml && exit 1 || true
       - cp lib/features/scanner/processing/mlkit_deskew_stub.dart lib/features/scanner/processing/mlkit_deskew.dart
       - cp lib/features/scanner/processing/ocr_extractor_stub.dart lib/features/scanner/processing/ocr_extractor.dart
+      - cp lib/features/scanner/document_scanner_stub.dart lib/features/scanner/document_scanner.dart
       - $$flutter$$/bin/flutter pub get
     scandelete:
       - .pub-cache

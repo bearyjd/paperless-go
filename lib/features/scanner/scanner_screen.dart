@@ -1,4 +1,4 @@
-import 'package:cunning_document_scanner/cunning_document_scanner.dart';
+import 'document_scanner.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,7 +85,7 @@ class ScannerScreen extends ConsumerWidget {
 
   Future<void> _startScan(BuildContext context) async {
     try {
-      final images = await CunningDocumentScanner.getPictures(
+      final images = await DocumentScanner.getPictures(
         isGalleryImportAllowed: true,
       );
       if (images != null && images.isNotEmpty && context.mounted) {
@@ -102,7 +102,7 @@ class ScannerScreen extends ConsumerWidget {
 
   Future<void> _startBatchScan(BuildContext context) async {
     try {
-      final images = await CunningDocumentScanner.getPictures(
+      final images = await DocumentScanner.getPictures(
         isGalleryImportAllowed: false,
       );
       if (images != null && images.isNotEmpty && context.mounted) {

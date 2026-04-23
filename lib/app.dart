@@ -1,4 +1,4 @@
-import 'package:cunning_document_scanner/cunning_document_scanner.dart';
+import 'features/scanner/document_scanner.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -434,7 +434,7 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
   Future<void> _onScan() async {
     _toggle();
     try {
-      final pictures = await CunningDocumentScanner.getPictures();
+      final pictures = await DocumentScanner.getPictures();
       if (pictures != null && pictures.isNotEmpty && mounted) {
         GoRouter.of(context).push('/scan/review', extra: pictures);
       }
@@ -450,7 +450,7 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
   Future<void> _onBatchScan() async {
     _toggle();
     try {
-      final pictures = await CunningDocumentScanner.getPictures(
+      final pictures = await DocumentScanner.getPictures(
         isGalleryImportAllowed: false,
       );
       if (pictures != null && pictures.isNotEmpty && mounted) {
