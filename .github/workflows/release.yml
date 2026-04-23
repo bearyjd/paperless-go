@@ -34,6 +34,7 @@ jobs:
           keyAlias=${{ secrets.KEY_ALIAS }}
           storeFile=../keystore.jks
           EOF
+          sed -i 's/^ *//' android/key.properties
 
       - name: Install dependencies
         run: flutter pub get
@@ -41,8 +42,13 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release --obfuscate --split-debug-info=./debug-info/
 
+      - name: Build release AAB
+        run: flutter build appbundle --release --obfuscate --split-debug-info=./debug-info-aab/
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
           generate_release_notes: true
