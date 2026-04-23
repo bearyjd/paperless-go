@@ -1,1 +1,1 @@
-A modern mobile client for Paperless-ngx
+A modern mobile client for your Paperless-ngx document management server.

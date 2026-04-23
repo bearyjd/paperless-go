@@ -20,3 +20,5 @@ Manage your documents on the go with a clean, modern interface:
 Paperless Go connects to your self-hosted Paperless-ngx server using token-based authentication. You need a running Paperless-ngx instance to use this app.
 
 Note: The F-Droid build does not include Google ML Kit (proprietary). Document deskew uses a pure-Dart algorithm and OCR-based metadata suggestions are disabled.
+
+This app is free and open source software, licensed under AGPL-3.0.
