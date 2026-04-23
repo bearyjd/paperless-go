@@ -1,7 +1,6 @@
 Categories:
   - Internet
   - Reading
-
 License: AGPL-3.0-only
 AuthorName: bearyjd
 WebSite: https://github.com/bearyjd/paperless-go
@@ -14,39 +13,9 @@ RepoType: git
 Repo: https://github.com/bearyjd/paperless-go.git
 
 Builds:
-  - versionName: 1.0.3
-    versionCode: 4
-    commit: v1.0.3
-    output: build/app/outputs/flutter-apk/app-release.apk
-    srclibs:
-      - flutter@stable
-    rm:
-      - ios
-      - linux
-      - macos
-      - web
-      - windows
-    prebuild:
-      - flutterVersion=$(sed -n -E "s/.*flutter-version:\ '(.*)'/\1/p" .github/workflows/release.yml)
-      - '[[ $flutterVersion ]]'
-      - git -C $$flutter$$ checkout -f $flutterVersion
-      - export PUB_CACHE=$(pwd)/.pub-cache
-      - $$flutter$$/bin/flutter config --no-analytics
-      - sed -i '/google_mlkit/d' pubspec.yaml
-      - grep -q google_mlkit pubspec.yaml && exit 1 || true
-      - cp lib/features/scanner/processing/mlkit_deskew_stub.dart lib/features/scanner/processing/mlkit_deskew.dart
-      - cp lib/features/scanner/processing/ocr_extractor_stub.dart lib/features/scanner/processing/ocr_extractor.dart
-      - $$flutter$$/bin/flutter pub get
-    scandelete:
-      - .pub-cache
-    build:
-      - export PUB_CACHE=$(pwd)/.pub-cache
-      - $$flutter$$/bin/flutter pub get
-      - $$flutter$$/bin/flutter build apk --release
-
   - versionName: 1.1.0
     versionCode: 5
-    commit: v1.1.0
+    commit: 80d9946a806451424503fbfb2d23342caf202dd2
     output: build/app/outputs/flutter-apk/app-release.apk
     srclibs:
       - flutter@stable
