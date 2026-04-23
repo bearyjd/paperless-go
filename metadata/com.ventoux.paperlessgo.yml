@@ -16,7 +16,7 @@ Repo: https://github.com/bearyjd/paperless-go.git
 Builds:
   - versionName: 1.1.0
     versionCode: 5
-    commit: 7240e2e64cc50b5d548d3c9fa0ad5df3f27e3bf5
+    commit: 78948b1a46b1efafe9042fdb4d40fb6b0d55666a
     output: build/app/outputs/flutter-apk/app-release.apk
     srclibs:
       - flutter@stable
