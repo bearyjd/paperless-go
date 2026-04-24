@@ -26,7 +26,7 @@ class AuthService {
       if (e.response?.statusCode == 400 || e.response?.statusCode == 401) {
         throw AuthException('Invalid username or password');
       }
-      throw AuthException('Connection failed: ${e.message}');
+      throw AuthException(_describeConnectionError(e));
     }
   }
 
@@ -41,21 +41,34 @@ class AuthService {
       if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
         throw AuthException('Invalid or expired token');
       }
-      throw AuthException('Connection failed: ${e.message}');
+      throw AuthException(_describeConnectionError(e));
     }
+  }
+
+  static String _describeConnectionError(DioException e) {
+    final status = e.response?.statusCode;
+    if (status != null) return 'Server returned HTTP $status';
+    return switch (e.type) {
+      DioExceptionType.connectionTimeout => 'Connection timed out',
+      DioExceptionType.receiveTimeout => 'Server took too long to respond',
+      DioExceptionType.connectionError =>
+        'Could not reach server: ${e.error ?? "connection refused"}',
+      _ => e.message ?? 'Connection failed (${e.type.name})',
+    };
   }
 
   /// Test connection to server (unauthenticated).
   Future<bool> testConnection(String serverUrl) async {
     try {
       final dio = DioClient.createUnauthenticated(serverUrl);
-      // A reachable Paperless-ngx server returns 200 or throws 401/403
-      await dio.get('api/');
+      await dio.get(
+        'api/',
+        options: Options(
+          followRedirects: false,
+          validateStatus: (_) => true,
+        ),
+      );
       return true;
-    } on DioException catch (e) {
-      // 401/403 means the server IS reachable (just needs auth)
-      final status = e.response?.statusCode;
-      return status == 401 || status == 403;
     } catch (_) {
       return false;
     }
