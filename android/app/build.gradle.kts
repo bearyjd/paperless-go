@@ -16,6 +16,11 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.ventoux.paperlessgo"
+
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
