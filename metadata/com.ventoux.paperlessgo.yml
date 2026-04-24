@@ -41,8 +41,35 @@ Builds:
       - $$flutter$$/bin/flutter pub get
       - $$flutter$$/bin/flutter build apk --release
 
+  - versionName: 1.1.1
+    versionCode: 6
+    commit: bb5c4f669681f35440e87204658500ba503d1126
+    output: build/app/outputs/flutter-apk/app-release.apk
+    srclibs:
+      - flutter@stable
+    prebuild:
+      - flutterVersion=$(sed -n -E "s/.*flutter-version:\ '(.*)'/\1/p" .github/workflows/release.yml)
+      - '[[ $flutterVersion ]]'
+      - git -C $$flutter$$ checkout -f $flutterVersion
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - sed -i '/google_mlkit/d' pubspec.yaml
+      - grep -q google_mlkit pubspec.yaml && exit 1 || true
+      - sed -i '/cunning_document_scanner/d' pubspec.yaml
+      - grep -q cunning_document_scanner pubspec.yaml && exit 1 || true
+      - cp lib/features/scanner/processing/mlkit_deskew_stub.dart lib/features/scanner/processing/mlkit_deskew.dart
+      - cp lib/features/scanner/processing/ocr_extractor_stub.dart lib/features/scanner/processing/ocr_extractor.dart
+      - cp lib/features/scanner/document_scanner_stub.dart lib/features/scanner/document_scanner.dart
+      - $$flutter$$/bin/flutter pub get
+    scandelete:
+      - .pub-cache
+    build:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter pub get
+      - $$flutter$$/bin/flutter build apk --release
+
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
 UpdateCheckData: pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
-CurrentVersion: 1.1.0
-CurrentVersionCode: 5
+CurrentVersion: 1.1.1
+CurrentVersionCode: 6
