@@ -1,0 +1,4 @@
+Bug fixes:
+* Fix login failing on servers behind reverse proxies (HTTP 302)
+* Fix "Connection failed: null" error message on login failure
+* Fix circular dependency crash when logging in

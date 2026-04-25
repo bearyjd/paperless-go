@@ -1,0 +1,2 @@
+Build improvements:
+* Per-architecture APKs for smaller download size on F-Droid
