@@ -14,10 +14,10 @@ RepoType: git
 Repo: https://github.com/bearyjd/paperless-go.git
 
 Builds:
-  - versionName: 1.1.0
-    versionCode: 5
-    commit: a255969209c64738720ca2003a4fd33436ee39b8
-    output: build/app/outputs/flutter-apk/app-release.apk
+  - versionName: 1.1.2
+    versionCode: 71
+    commit: cbe13106e0c2578fc631bfc0dc83c691d3bcabfa
+    output: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
     srclibs:
       - flutter@stable
     prebuild:
@@ -39,12 +39,12 @@ Builds:
     build:
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter pub get
-      - $$flutter$$/bin/flutter build apk --release
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi
 
-  - versionName: 1.1.1
-    versionCode: 6
-    commit: bb5c4f669681f35440e87204658500ba503d1126
-    output: build/app/outputs/flutter-apk/app-release.apk
+  - versionName: 1.1.2
+    versionCode: 72
+    commit: cbe13106e0c2578fc631bfc0dc83c691d3bcabfa
+    output: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
     srclibs:
       - flutter@stable
     prebuild:
@@ -66,10 +66,46 @@ Builds:
     build:
       - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter pub get
-      - $$flutter$$/bin/flutter build apk --release
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi
+
+  - versionName: 1.1.2
+    versionCode: 73
+    commit: cbe13106e0c2578fc631bfc0dc83c691d3bcabfa
+    output: build/app/outputs/flutter-apk/app-x86_64-release.apk
+    srclibs:
+      - flutter@stable
+    prebuild:
+      - flutterVersion=$(sed -n -E "s/.*flutter-version:\ '(.*)'/\1/p" .github/workflows/release.yml)
+      - '[[ $flutterVersion ]]'
+      - git -C $$flutter$$ checkout -f $flutterVersion
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - sed -i '/google_mlkit/d' pubspec.yaml
+      - grep -q google_mlkit pubspec.yaml && exit 1 || true
+      - sed -i '/cunning_document_scanner/d' pubspec.yaml
+      - grep -q cunning_document_scanner pubspec.yaml && exit 1 || true
+      - cp lib/features/scanner/processing/mlkit_deskew_stub.dart lib/features/scanner/processing/mlkit_deskew.dart
+      - cp lib/features/scanner/processing/ocr_extractor_stub.dart lib/features/scanner/processing/ocr_extractor.dart
+      - cp lib/features/scanner/document_scanner_stub.dart lib/features/scanner/document_scanner.dart
+      - $$flutter$$/bin/flutter pub get
+    scandelete:
+      - .pub-cache
+    build:
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter pub get
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi
+
+MaintainerNotes: |-
+  Flutter app with ABI splits. Version code scheme:
+  baseVersionCode * 10 + abiCode, where
+  abiCodes: armeabi-v7a=1, arm64-v8a=2, x86_64=3.
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
+VercodeOperation:
+  - '%c * 10 + 1'
+  - '%c * 10 + 2'
+  - '%c * 10 + 3'
 UpdateCheckData: pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
-CurrentVersion: 1.1.1
-CurrentVersionCode: 6
+CurrentVersion: 1.1.2
+CurrentVersionCode: 73
