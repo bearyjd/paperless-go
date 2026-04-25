@@ -21,6 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix atomic edit queue coalescing, secure biometric gate default, efficient hasPending, and widget dark mode
 
+## [1.1.2] - 2026-04-24
+
+### Changed
+- Per-architecture APKs (arm, arm64, x86_64) for smaller download size on F-Droid
+
+## [1.1.1] - 2026-04-24
+
+### Fixed
+- Fix login failing on servers behind reverse proxies (HTTP 302)
+- Fix "Connection failed: null" error message on login failure
+- Fix circular dependency crash when logging in
+
 ## [1.1.0] - 2026-03-29
 
 ### Added
