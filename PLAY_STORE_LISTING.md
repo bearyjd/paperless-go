@@ -50,7 +50,7 @@ Paperless Go is free and open source software, licensed under AGPL-3.0. View the
 
 ## Contact Details
 
-**Email:** (your support email)
+**Email:** jd@beary.us
 **Website:** https://github.com/bearyjd/paperless-go
 **Privacy policy URL:** https://github.com/bearyjd/paperless-go/blob/main/PRIVACY_POLICY.md
 

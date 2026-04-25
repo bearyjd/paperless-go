@@ -1,6 +1,6 @@
 # Privacy Policy for Paperless Go
 
-**Last updated:** February 25, 2026
+**Last updated:** April 25, 2026
 
 ## Overview
 
@@ -52,7 +52,9 @@ All permissions are used solely for the stated purposes and no data from these p
 
 ## Third-Party Services
 
-Paperless Go does not integrate with any third-party services. The only external connection is to the Paperless-ngx server that you configure and control.
+The only external connection is to the Paperless-ngx server that you configure and control.
+
+**Google ML Kit (Play Store builds only):** Builds distributed via Google Play include Google ML Kit for on-device text recognition, used to suggest document metadata during scanning. ML Kit runs entirely on your device — no images or text are sent to Google's servers. Builds distributed via F-Droid do not include ML Kit and use a pure-Dart fallback instead.
 
 ## Children's Privacy
 
