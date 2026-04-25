@@ -16,7 +16,7 @@ Repo: https://github.com/bearyjd/paperless-go.git
 Builds:
   - versionName: 1.1.2
     versionCode: 71
-    commit: cbe13106e0c2578fc631bfc0dc83c691d3bcabfa
+    commit: 38872ba58344473856fa0c358ddadb9ae2b688c3
     output: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
     srclibs:
       - flutter@stable
@@ -43,7 +43,7 @@ Builds:
 
   - versionName: 1.1.2
     versionCode: 72
-    commit: cbe13106e0c2578fc631bfc0dc83c691d3bcabfa
+    commit: 38872ba58344473856fa0c358ddadb9ae2b688c3
     output: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
     srclibs:
       - flutter@stable
@@ -70,7 +70,7 @@ Builds:
 
   - versionName: 1.1.2
     versionCode: 73
-    commit: cbe13106e0c2578fc631bfc0dc83c691d3bcabfa
+    commit: 38872ba58344473856fa0c358ddadb9ae2b688c3
     output: build/app/outputs/flutter-apk/app-x86_64-release.apk
     srclibs:
       - flutter@stable
