@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/design_tokens.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document_type.dart';
 import '../../core/models/tag.dart';
@@ -33,7 +34,7 @@ class ActiveFiltersBar extends StatelessWidget {
           correspondents[filter.correspondentId]?.name ?? '?';
       chips.add(Chip(
         label: Text('Corr: $name',
-            style: const TextStyle(fontSize: 12)),
+            style: Theme.of(context).textTheme.bodySmall),
         visualDensity: VisualDensity.compact,
       ));
     }
@@ -42,7 +43,7 @@ class ActiveFiltersBar extends StatelessWidget {
           docTypes[filter.documentTypeId]?.name ?? '?';
       chips.add(Chip(
         label: Text('Type: $name',
-            style: const TextStyle(fontSize: 12)),
+            style: Theme.of(context).textTheme.bodySmall),
         visualDensity: VisualDensity.compact,
       ));
     }
@@ -51,7 +52,7 @@ class ActiveFiltersBar extends StatelessWidget {
         final name = tags[tagId]?.name ?? '?';
         chips.add(Chip(
           label:
-              Text(name, style: const TextStyle(fontSize: 12)),
+              Text(name, style: Theme.of(context).textTheme.bodySmall),
           visualDensity: VisualDensity.compact,
         ));
       }
@@ -66,14 +67,14 @@ class ActiveFiltersBar extends StatelessWidget {
           : '...';
       chips.add(Chip(
         label: Text('Date: $from – $to',
-            style: const TextStyle(fontSize: 12)),
+            style: Theme.of(context).textTheme.bodySmall),
         visualDensity: VisualDensity.compact,
       ));
     }
 
     return Container(
       padding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.xs),
       child: Row(
         children: [
           Expanded(

@@ -10,6 +10,7 @@ import '../../core/models/saved_view.dart';
 import '../../core/models/tag.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
+import '../../core/design_tokens.dart';
 import 'active_filters_bar.dart';
 import 'bulk_action_bar.dart';
 import 'document_detail_notifier.dart';
@@ -281,7 +282,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                             height: 48,
                             child: ListView(
                               scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 6),
                               children: [
                                 for (final view in savedViewsAsync.valueOrNull!)
                                   Padding(
@@ -352,7 +353,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                         ),
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, Spacing.xs),
                           child: Text(
                             '${docsData.totalCount} documents',
                             style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -392,10 +393,10 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                               if (isSelected)
                                 Positioned.fill(
                                   child: Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    margin: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.xs),
                                     decoration: BoxDecoration(
                                       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(Radii.md),
                                       border: Border.all(
                                         color: Theme.of(context).colorScheme.primary,
                                         width: 2,

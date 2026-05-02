@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/design_tokens.dart';
+
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -22,12 +24,12 @@ class EmptyState extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Spacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 64, color: colorScheme.onSurfaceVariant),
-            const SizedBox(height: 16),
+            const SizedBox(height: Spacing.lg),
             Text(
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -36,7 +38,7 @@ class EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             if (description != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: Spacing.sm),
               Text(
                 description!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -46,7 +48,7 @@ class EmptyState extends StatelessWidget {
               ),
             ],
             if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: Spacing.xl),
               FilledButton.tonal(
                 onPressed: onAction,
                 child: Text(actionLabel!),

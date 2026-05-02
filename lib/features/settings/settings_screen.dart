@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/auth/auth_provider.dart';
 import '../../core/auth/server_profiles.dart';
+import '../../core/design_tokens.dart';
 import '../../core/services/biometric_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -439,7 +440,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.lg, Spacing.lg, Spacing.xs),
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(

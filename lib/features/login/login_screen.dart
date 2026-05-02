@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/auth/auth_service.dart';
+import '../../core/design_tokens.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -92,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(Spacing.xl),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
               child: AutofillGroup(
@@ -107,7 +108,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       size: 64,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Spacing.lg),
                     Text(
                       'Paperless Go',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -115,7 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Spacing.sm),
                     Text(
                       'Connect to your Paperless-ngx server',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -123,7 +124,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: Spacing.xxl),
 
                     // Server URL
                     TextFormField(
@@ -134,7 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         prefixIcon: const Icon(Icons.dns_outlined),
                         suffixIcon: _testing
                             ? const Padding(
-                                padding: EdgeInsets.all(12),
+                                padding: EdgeInsets.all(Spacing.md),
                                 child: SizedBox(
                                   width: 20, height: 20,
                                   child: CircularProgressIndicator(strokeWidth: 2),
@@ -180,7 +181,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // HTTP warning
                     if (_serverUrlController.text.trim().toLowerCase().startsWith('http://'))
                       Padding(
-                        padding: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.only(top: Spacing.sm),
                         child: Row(
                           children: [
                             Icon(Icons.warning_amber, size: 16, color: Theme.of(context).colorScheme.error),
@@ -188,14 +189,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             Expanded(
                               child: Text(
                                 'Insecure connection — credentials sent in plaintext',
-                                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.error),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error),
                               ),
                             ),
                           ],
                         ),
                       ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Spacing.lg),
 
                     // Token/credentials toggle
                     SwitchListTile(
@@ -204,7 +205,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onChanged: (v) => setState(() => _useTokenLogin = v),
                       contentPadding: EdgeInsets.zero,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Spacing.sm),
 
                     if (_useTokenLogin) ...[
                       TextFormField(
@@ -233,7 +234,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Spacing.lg),
                       TextFormField(
                         controller: _passwordController,
                         decoration: InputDecoration(
@@ -256,7 +257,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ],
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: Spacing.xl),
                     FilledButton(
                       onPressed: isLoading ? null : () {
                         TextInput.finishAutofillContext();

@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+import '../../core/design_tokens.dart';
 import '../../core/thumbnail_cache.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document.dart';
@@ -51,22 +53,22 @@ class DocumentCard extends StatelessWidget {
     ].join(' · ');
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.xs),
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(Radii.md),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(Spacing.md),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Thumbnail
               if (thumbnailUrl != null && authToken != null)
                 Padding(
-                  padding: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.only(right: Spacing.md),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(Radii.sm),
                     child: CachedNetworkImage(
                       imageUrl: thumbnailUrl!,
                       httpHeaders: {'Authorization': authToken!},
@@ -130,10 +132,10 @@ class DocumentCard extends StatelessWidget {
 
                     // Tags
                     if (docTags.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: Spacing.sm),
                       Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
+                        spacing: Spacing.xs,
+                        runSpacing: Spacing.xs,
                         children: [
                           ...docTags.take(_maxVisibleTags).map(
                             (tag) => ConstrainedBox(

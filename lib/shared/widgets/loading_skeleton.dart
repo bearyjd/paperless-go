@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../core/design_tokens.dart';
+
 Widget _shimmerOrStatic({
   required BuildContext context,
   required Widget child,
@@ -28,9 +30,9 @@ class DocumentCardSkeleton extends StatelessWidget {
     return _shimmerOrStatic(
       context: context,
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        margin: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.xs),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(Spacing.md),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -40,7 +42,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                 height: 64,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(Radii.sm),
                 ),
               ),
               const SizedBox(width: 12),
@@ -54,7 +56,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -64,7 +66,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                       width: 180,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -74,7 +76,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                       width: 100,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -89,7 +91,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                             width: 60,
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(Radii.md),
                             ),
                           ),
                         ),
@@ -130,14 +132,14 @@ class DashboardSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(Spacing.lg),
       children: [
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
+          crossAxisSpacing: Spacing.md,
+          mainAxisSpacing: Spacing.md,
           childAspectRatio: 1.2,
           children: List.generate(
             6,
@@ -146,9 +148,9 @@ class DashboardSkeleton extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(Radii.md),
                 ),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(Spacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -158,7 +160,7 @@ class DashboardSkeleton extends StatelessWidget {
                       height: 20,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
                     const Spacer(),
@@ -168,7 +170,7 @@ class DashboardSkeleton extends StatelessWidget {
                       width: 60,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -178,7 +180,7 @@ class DashboardSkeleton extends StatelessWidget {
                       width: 80,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
                   ],
@@ -205,7 +207,7 @@ class WorkflowsSkeleton extends StatelessWidget {
       itemBuilder: (_, __) => _shimmerOrStatic(
         context: context,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.sm),
           child: Row(
             children: [
               // Leading circle (icon area)
@@ -228,7 +230,7 @@ class WorkflowsSkeleton extends StatelessWidget {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -237,7 +239,7 @@ class WorkflowsSkeleton extends StatelessWidget {
                       width: 160,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
                   ],

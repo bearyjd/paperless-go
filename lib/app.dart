@@ -9,6 +9,7 @@ import 'core/auth/auth_provider.dart';
 import 'core/services/connectivity_service.dart';
 import 'core/services/edit_queue_processor.dart';
 import 'core/services/upload_queue_service.dart';
+import 'core/design_tokens.dart';
 import 'core/theme.dart';
 import 'features/login/lock_screen.dart';
 import 'features/upload/share_intent_handler.dart';
@@ -64,13 +65,13 @@ GoRouter router(Ref ref) {
           children: [
             Icon(Icons.error_outline, size: 64,
                 color: Theme.of(context).colorScheme.error),
-            const SizedBox(height: 16),
+            const SizedBox(height: Spacing.lg),
             Text('Page not found',
                 style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.sm),
             Text(state.uri.toString(),
                 style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 24),
+            const SizedBox(height: Spacing.xl),
             FilledButton.tonal(
               onPressed: () => GoRouter.of(context).go('/'),
               child: const Text('Go home'),
@@ -358,7 +359,7 @@ class _AppShell extends ConsumerWidget {
               leading: const Icon(Icons.cloud_off),
               backgroundColor: Theme.of(context).colorScheme.errorContainer,
               actions: const [SizedBox.shrink()],
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.sm),
             ),
           Expanded(child: child),
         ],
@@ -511,7 +512,7 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
           scale: _animation,
           alignment: Alignment.bottomRight,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: Spacing.sm),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -523,15 +524,14 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
                     onTap: _onUploadFile,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                          horizontal: Spacing.md, vertical: Spacing.sm),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text('Upload file',
-                              style: TextStyle(
-                                  color: colorScheme.onSecondaryContainer,
-                                  fontSize: 12)),
-                          const SizedBox(width: 8),
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSecondaryContainer)),
+                          const SizedBox(width: Spacing.sm),
                           Icon(Icons.upload_file,
                               size: 20,
                               color: colorScheme.onSecondaryContainer),
@@ -548,7 +548,7 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
           scale: _animation,
           alignment: Alignment.bottomRight,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: Spacing.sm),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -560,15 +560,14 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
                     onTap: _onBatchScan,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                          horizontal: Spacing.md, vertical: Spacing.sm),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text('Batch scan',
-                              style: TextStyle(
-                                  color: colorScheme.onSecondaryContainer,
-                                  fontSize: 12)),
-                          const SizedBox(width: 8),
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSecondaryContainer)),
+                          const SizedBox(width: Spacing.sm),
                           Icon(Icons.burst_mode,
                               size: 20,
                               color: colorScheme.onSecondaryContainer),
@@ -585,7 +584,7 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
           scale: _animation,
           alignment: Alignment.bottomRight,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: Spacing.sm),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -597,15 +596,14 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
                     onTap: _onScan,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                          horizontal: Spacing.md, vertical: Spacing.sm),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text('Scan',
-                              style: TextStyle(
-                                  color: colorScheme.onSecondaryContainer,
-                                  fontSize: 12)),
-                          const SizedBox(width: 8),
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSecondaryContainer)),
+                          const SizedBox(width: Spacing.sm),
                           Icon(Icons.document_scanner_outlined,
                               size: 20,
                               color: colorScheme.onSecondaryContainer),

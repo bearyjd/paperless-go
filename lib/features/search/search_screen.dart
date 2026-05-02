@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../core/design_tokens.dart';
 import '../../shared/widgets/document_card.dart';
 import 'search_notifier.dart';
 
@@ -126,7 +127,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   slivers: [
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                        padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, Spacing.xs),
                         child: Text(
                           '$totalCount result${totalCount == 1 ? '' : 's'} for "$query"',
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
