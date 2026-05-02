@@ -267,19 +267,23 @@ class _DatePickerField extends StatelessWidget {
               )
             : null,
       ),
-      child: GestureDetector(
-        onTap: () async {
-          final picked = await showDatePicker(
-            context: context,
-            initialDate: value ?? DateTime.now(),
-            firstDate: DateTime(2000),
-            lastDate: DateTime.now().add(const Duration(days: 365)),
-          );
-          if (picked != null) onPicked(picked);
-        },
-        child: Text(
-          value != null ? DateFormat.yMd().format(value!) : 'Any',
-          style: Theme.of(context).textTheme.bodyMedium,
+      child: Semantics(
+        label: 'Pick date',
+        button: true,
+        child: GestureDetector(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: value ?? DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+            );
+            if (picked != null) onPicked(picked);
+          },
+          child: Text(
+            value != null ? DateFormat.yMd().format(value!) : 'Any',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ),
       ),
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'design_tokens.dart';
+
 class AppTheme {
   static ThemeData light() {
     final colorScheme = ColorScheme.fromSeed(
@@ -20,7 +22,20 @@ class AppTheme {
 
   static ThemeData _buildTheme(ColorScheme colorScheme) {
     final baseTextTheme = ThemeData(colorScheme: colorScheme).textTheme;
-    final textTheme = GoogleFonts.interTextTheme(baseTextTheme);
+    final textTheme = GoogleFonts.interTextTheme(baseTextTheme).copyWith(
+      titleLarge: GoogleFonts.inter(
+        textStyle: baseTextTheme.titleLarge,
+        fontWeight: FontWeight.w700,
+      ),
+      titleMedium: GoogleFonts.inter(
+        textStyle: baseTextTheme.titleMedium,
+        fontWeight: FontWeight.w600,
+      ),
+      titleSmall: GoogleFonts.inter(
+        textStyle: baseTextTheme.titleSmall,
+        fontWeight: FontWeight.w600,
+      ),
+    );
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
@@ -34,13 +49,13 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(Radii.md),
           side: BorderSide(color: colorScheme.outlineVariant),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(Radii.md),
         ),
         filled: true,
       ),
@@ -48,7 +63,7 @@ class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(Radii.md),
           ),
         ),
       ),

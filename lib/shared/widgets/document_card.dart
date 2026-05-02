@@ -1,5 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../core/design_tokens.dart';
 import '../../core/thumbnail_cache.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document.dart';
@@ -50,22 +53,27 @@ class DocumentCard extends StatelessWidget {
     ].join(' · ');
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(12),
+      margin: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.xs),
+      child: Semantics(
+        label: document.title.isNotEmpty ? document.title : 'Untitled document',
+        button: true,
+        onTapHint: 'Open document',
+        onLongPressHint: 'Show actions',
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(Radii.md),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(Spacing.md),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Thumbnail
               if (thumbnailUrl != null && authToken != null)
                 Padding(
-                  padding: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.only(right: Spacing.md),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(Radii.sm),
                     child: CachedNetworkImage(
                       imageUrl: thumbnailUrl!,
                       httpHeaders: {'Authorization': authToken!},
@@ -121,7 +129,7 @@ class DocumentCard extends StatelessWidget {
 
                     const SizedBox(height: 4),
                     Text(
-                      document.created != null ? _formatDate(document.created!) : '',
+                      document.created != null ? DateFormat.yMMMd().format(document.created!) : '',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -129,10 +137,10 @@ class DocumentCard extends StatelessWidget {
 
                     // Tags
                     if (docTags.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: Spacing.sm),
                       Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
+                        spacing: Spacing.xs,
+                        runSpacing: Spacing.xs,
                         children: [
                           ...docTags.take(_maxVisibleTags).map(
                             (tag) => ConstrainedBox(
@@ -152,14 +160,8 @@ class DocumentCard extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
 }

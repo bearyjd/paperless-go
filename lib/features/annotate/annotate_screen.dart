@@ -400,14 +400,18 @@ class _ToolButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected ? Colors.white24 : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
+    return Semantics(
+      label: label,
+      button: true,
+      selected: selected,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected ? Colors.white24 : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -419,6 +423,7 @@ class _ToolButton extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -447,19 +452,24 @@ class _ColorPicker extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: _colors.map((color) {
         final selected = currentColor.toARGB32() == color.toARGB32();
-        return GestureDetector(
-          onTap: () => onColorChanged(color),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: selected
+        return Semantics(
+          label: 'Color ${_colors.indexOf(color) + 1}',
+          button: true,
+          selected: selected,
+          child: GestureDetector(
+            onTap: () => onColorChanged(color),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: selected
                   ? Border.all(color: Colors.white, width: 2)
                   : Border.all(color: Colors.white38, width: 1),
             ),
+          ),
           ),
         );
       }).toList(),
@@ -484,15 +494,20 @@ class _WidthPicker extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: _widths.map((w) {
         final selected = currentWidth == w;
-        return GestureDetector(
-          onTap: () => onWidthChanged(w),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: w + 10,
-            height: w + 10,
-            decoration: BoxDecoration(
-              color: selected ? Colors.white : Colors.white38,
-              shape: BoxShape.circle,
+        return Semantics(
+          label: 'Stroke width ${w.round()}',
+          button: true,
+          selected: selected,
+          child: GestureDetector(
+            onTap: () => onWidthChanged(w),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: w + 10,
+              height: w + 10,
+              decoration: BoxDecoration(
+                color: selected ? Colors.white : Colors.white38,
+                shape: BoxShape.circle,
+              ),
             ),
           ),
         );

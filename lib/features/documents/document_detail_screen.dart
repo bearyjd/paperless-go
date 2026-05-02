@@ -242,8 +242,11 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               // Thumbnail header
-              GestureDetector(
-                onTap: () => context.push('/documents/$documentId/preview'),
+              Semantics(
+                label: 'Preview document',
+                button: true,
+                child: GestureDetector(
+                  onTap: () => context.push('/documents/$documentId/preview'),
                 child: Container(
                   height: 200,
                   width: double.infinity,
@@ -270,6 +273,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                     ),
                   ),
                 ),
+              ),
               ),
 
               // Title (editable)

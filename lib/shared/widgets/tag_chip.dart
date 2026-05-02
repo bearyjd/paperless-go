@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../core/design_tokens.dart';
 import '../../core/models/tag.dart';
 
 class TagChip extends StatelessWidget {
@@ -13,21 +15,23 @@ class TagChip extends StatelessWidget {
         ? Colors.black87
         : Colors.white;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        tag.name,
-        style: TextStyle(
-          fontSize: 11,
-          color: fgColor,
-          fontWeight: FontWeight.w500,
+    return Semantics(
+      label: '${tag.name} tag',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(Radii.md),
         ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        child: Text(
+          tag.name,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: fgColor,
+            fontWeight: FontWeight.w500,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
     );
   }
@@ -67,18 +71,20 @@ class TagOverflowChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        '+$count',
-        style: TextStyle(
-          fontSize: 11,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w500,
+    return Semantics(
+      label: '$count more tags',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: Spacing.xs),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(Radii.md),
+        ),
+        child: Text(
+          '+$count',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );

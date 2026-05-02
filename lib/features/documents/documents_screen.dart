@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/models/correspondent.dart';
@@ -11,10 +10,13 @@ import '../../core/models/saved_view.dart';
 import '../../core/models/tag.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
+import '../../core/design_tokens.dart';
+import 'active_filters_bar.dart';
 import 'bulk_action_bar.dart';
 import 'document_detail_notifier.dart';
 import 'documents_notifier.dart';
 import 'filter_bottom_sheet.dart';
+import 'saved_view_dialogs.dart';
 import 'saved_view_helpers.dart';
 
 class DocumentsScreen extends ConsumerStatefulWidget {
@@ -233,6 +235,16 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       const SizedBox(height: 16),
                       Text('No documents found',
                           style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      Text(
+                        hasActiveFilters
+                            ? 'Try adjusting your filters'
+                            : 'Upload a document to get started',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                       if (hasActiveFilters) ...[
                         const SizedBox(height: 8),
                         TextButton(
@@ -270,14 +282,37 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                             height: 48,
                             child: ListView(
                               scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 6),
                               children: [
                                 for (final view in savedViewsAsync.valueOrNull!)
                                   Padding(
                                     padding: const EdgeInsets.only(right: 6),
                                     child: GestureDetector(
-                                      onLongPress: () =>
-                                          _showChipManagementSheet(context, view),
+                                      onLongPress: () => showChipManagementSheet(
+                                        context: context,
+                                        view: view,
+                                        onDelete: () => confirmDeleteSavedView(
+                                          context: context,
+                                          ref: ref,
+                                          view: view,
+                                          onDeactivated: _activeSavedViewId == view.id
+                                              ? () {
+                                                  setState(() =>
+                                                      _activeSavedViewId = null);
+                                                  ref
+                                                      .read(documentsNotifierProvider
+                                                          .notifier)
+                                                      .applyFilter(DocumentsFilter(
+                                                          ordering: _ordering));
+                                                }
+                                              : null,
+                                        ),
+                                        onRename: () => showRenameSavedViewDialog(
+                                          context: context,
+                                          ref: ref,
+                                          view: view,
+                                        ),
+                                      ),
                                       child: FilterChip(
                                         label: Text(view.name),
                                         selected: _activeSavedViewId == view.id,
@@ -300,7 +335,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       // Active filters bar
                       if (hasActiveFilters)
                         SliverToBoxAdapter(
-                          child: _ActiveFiltersBar(
+                          child: ActiveFiltersBar(
                             filter: currentFilter,
                             tags: tags,
                             correspondents: correspondents,
@@ -309,12 +344,16 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                               ref.read(documentsNotifierProvider.notifier)
                                   .applyFilter(DocumentsFilter(ordering: _ordering));
                             },
-                            onSave: () => _showSaveViewDialog(context, currentFilter),
+                            onSave: () => showSaveViewDialog(
+                              context: context,
+                              ref: ref,
+                              currentFilter: currentFilter,
+                            ),
                           ),
                         ),
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, Spacing.xs),
                           child: Text(
                             '${docsData.totalCount} documents',
                             style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -354,10 +393,10 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                               if (isSelected)
                                 Positioned.fill(
                                   child: Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    margin: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.xs),
                                     decoration: BoxDecoration(
                                       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(Radii.md),
                                       border: Border.all(
                                         color: Theme.of(context).colorScheme.primary,
                                         width: 2,
@@ -466,231 +505,6 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     }
   }
 
-  Future<void> _showSaveViewDialog(
-      BuildContext context, DocumentsFilter currentFilter) async {
-    final nameController = TextEditingController();
-    try {
-      bool showOnDashboard = false;
-      bool showInSidebar = true;
-
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => StatefulBuilder(
-          builder: (ctx, setDialogState) => AlertDialog(
-            title: const Text('Save as view'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    labelText: 'View name',
-                    hintText: 'e.g. Invoices 2024',
-                  ),
-                  textCapitalization: TextCapitalization.sentences,
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Show in sidebar'),
-                  value: showInSidebar,
-                  onChanged: (v) => setDialogState(() => showInSidebar = v),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Show on dashboard'),
-                  value: showOnDashboard,
-                  onChanged: (v) => setDialogState(() => showOnDashboard = v),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  if (nameController.text.trim().isEmpty) return;
-                  Navigator.pop(ctx, true);
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          ),
-        ),
-      );
-
-      if (confirmed != true || !context.mounted) return;
-
-      final name = nameController.text.trim();
-      final rules = documentsFilterToFilterRules(currentFilter);
-      final (sortField, sortReverse) = parseOrdering(currentFilter.ordering);
-
-      try {
-        await ref.read(paperlessApiProvider).createSavedView(
-              name: name,
-              filterRules: rules,
-              sortField: sortField,
-              sortReverse: sortReverse,
-              showOnDashboard: showOnDashboard,
-              showInSidebar: showInSidebar,
-            );
-        ref.invalidate(savedViewsProvider);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('"$name" saved')),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save view: $e')),
-          );
-        }
-      }
-    } finally {
-      nameController.dispose();
-    }
-  }
-
-  Future<void> _showChipManagementSheet(
-      BuildContext context, SavedView view) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      builder: (sheetCtx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Rename'),
-              onTap: () => Navigator.pop(sheetCtx, 'rename'),
-            ),
-            ListTile(
-              leading: Icon(Icons.delete_outline,
-                  color: Theme.of(sheetCtx).colorScheme.error),
-              title: Text('Delete',
-                  style: TextStyle(
-                      color: Theme.of(sheetCtx).colorScheme.error)),
-              onTap: () => Navigator.pop(sheetCtx, 'delete'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (!context.mounted) return;
-
-    if (action == 'delete') {
-      await _deleteSavedView(context, view);
-    } else if (action == 'rename') {
-      await _renameSavedView(context, view);
-    }
-  }
-
-  Future<void> _deleteSavedView(BuildContext context, SavedView view) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete view?'),
-        content: Text('Delete "${view.name}"? This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !context.mounted) return;
-
-    try {
-      await ref.read(paperlessApiProvider).deleteSavedView(view.id);
-      if (_activeSavedViewId == view.id) {
-        setState(() => _activeSavedViewId = null);
-        ref.read(documentsNotifierProvider.notifier)
-            .applyFilter(DocumentsFilter(ordering: _ordering));
-      }
-      ref.invalidate(savedViewsProvider);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"${view.name}" deleted')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _renameSavedView(BuildContext context, SavedView view) async {
-    final nameController = TextEditingController(text: view.name);
-
-    try {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Rename view'),
-          content: TextField(
-            controller: nameController,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Name'),
-            textCapitalization: TextCapitalization.sentences,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (nameController.text.trim().isEmpty) return;
-                Navigator.pop(ctx, true);
-              },
-              child: const Text('Rename'),
-            ),
-          ],
-        ),
-      );
-
-      if (confirmed != true || !context.mounted) return;
-
-      final newName = nameController.text.trim();
-      try {
-        await ref
-            .read(paperlessApiProvider)
-            .updateSavedView(view.id, name: newName);
-        ref.invalidate(savedViewsProvider);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Renamed to "$newName"')),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to rename: $e')),
-          );
-        }
-      }
-    } finally {
-      nameController.dispose();
-    }
-  }
-
   void _showFilterSheet(BuildContext context, DocumentsFilter currentFilter) {
     showModalBottomSheet(
       context: context,
@@ -700,93 +514,6 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
         onApply: (filter) {
           ref.read(documentsNotifierProvider.notifier).applyFilter(filter);
         },
-      ),
-    );
-  }
-}
-
-class _ActiveFiltersBar extends StatelessWidget {
-  final DocumentsFilter filter;
-  final Map<int, Tag> tags;
-  final Map<int, Correspondent> correspondents;
-  final Map<int, DocumentType> docTypes;
-  final VoidCallback onClear;
-  final VoidCallback onSave;
-
-  const _ActiveFiltersBar({
-    required this.filter,
-    required this.tags,
-    required this.correspondents,
-    required this.docTypes,
-    required this.onClear,
-    required this.onSave,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final chips = <Widget>[];
-
-    if (filter.correspondentId != null) {
-      final name = correspondents[filter.correspondentId]?.name ?? '?';
-      chips.add(Chip(
-        label: Text('Corr: $name', style: const TextStyle(fontSize: 12)),
-        visualDensity: VisualDensity.compact,
-      ));
-    }
-    if (filter.documentTypeId != null) {
-      final name = docTypes[filter.documentTypeId]?.name ?? '?';
-      chips.add(Chip(
-        label: Text('Type: $name', style: const TextStyle(fontSize: 12)),
-        visualDensity: VisualDensity.compact,
-      ));
-    }
-    if (filter.tagIds != null) {
-      for (final tagId in filter.tagIds!) {
-        final name = tags[tagId]?.name ?? '?';
-        chips.add(Chip(
-          label: Text(name, style: const TextStyle(fontSize: 12)),
-          visualDensity: VisualDensity.compact,
-        ));
-      }
-    }
-    if (filter.createdDateFrom != null || filter.createdDateTo != null) {
-      final from = filter.createdDateFrom != null
-          ? DateFormat.yMd().format(filter.createdDateFrom!)
-          : '...';
-      final to = filter.createdDateTo != null
-          ? DateFormat.yMd().format(filter.createdDateTo!)
-          : '...';
-      chips.add(Chip(
-        label: Text('Date: $from – $to', style: const TextStyle(fontSize: 12)),
-        visualDensity: VisualDensity.compact,
-      ));
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: chips.map((c) => Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: c,
-                )).toList(),
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.bookmark_add_outlined),
-            tooltip: 'Save as view',
-            onPressed: onSave,
-          ),
-          TextButton(
-            onPressed: onClear,
-            child: const Text('Clear'),
-          ),
-        ],
       ),
     );
   }
