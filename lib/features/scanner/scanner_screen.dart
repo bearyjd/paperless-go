@@ -168,10 +168,13 @@ class _ScanOptionCard extends StatelessWidget {
     return Material(
       color: color,
       borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
+      child: Semantics(
+        label: title,
+        button: true,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Row(
             children: [
@@ -202,6 +205,7 @@ class _ScanOptionCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

@@ -54,10 +54,15 @@ class DocumentCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.xs),
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(Radii.md),
+      child: Semantics(
+        label: document.title.isNotEmpty ? document.title : 'Untitled document',
+        button: true,
+        onTapHint: 'Open document',
+        onLongPressHint: 'Show actions',
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(Radii.md),
         child: Padding(
           padding: const EdgeInsets.all(Spacing.md),
           child: Row(
@@ -154,6 +159,7 @@ class DocumentCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

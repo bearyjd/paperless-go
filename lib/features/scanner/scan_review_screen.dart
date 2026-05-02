@@ -151,8 +151,11 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     itemCount: _pages.length,
-                    itemBuilder: (_, i) => GestureDetector(
-                      onTap: () {
+                    itemBuilder: (_, i) => Semantics(
+                      label: 'Page ${i + 1}',
+                      button: true,
+                      child: GestureDetector(
+                        onTap: () {
                         _pageController.animateToPage(
                           i,
                           duration: const Duration(milliseconds: 300),
@@ -177,6 +180,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
                         ),
                       ),
                     ),
+                  ),
                   ),
                 ),
                 const SizedBox(height: 8),

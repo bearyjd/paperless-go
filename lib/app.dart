@@ -519,7 +519,10 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
                 Material(
                   color: colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
+                  child: Semantics(
+                    label: 'Upload file',
+                    button: true,
+                    child: InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: _onUploadFile,
                     child: Padding(
@@ -539,6 +542,7 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
                       ),
                     ),
                   ),
+                  ),
                 ),
               ],
             ),
@@ -555,7 +559,10 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
                 Material(
                   color: colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
+                  child: Semantics(
+                    label: 'Batch scan',
+                    button: true,
+                    child: InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: _onBatchScan,
                     child: Padding(
@@ -575,6 +582,7 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
                       ),
                     ),
                   ),
+                  ),
                 ),
               ],
             ),
@@ -591,7 +599,10 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
                 Material(
                   color: colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
+                  child: Semantics(
+                    label: 'Scan document',
+                    button: true,
+                    child: InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: _onScan,
                     child: Padding(
@@ -610,6 +621,7 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
                         ],
                       ),
                     ),
+                  ),
                   ),
                 ),
               ],

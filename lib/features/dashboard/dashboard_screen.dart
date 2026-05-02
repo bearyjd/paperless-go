@@ -147,10 +147,13 @@ class _StatCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(Radii.md),
       ),
-      child: InkWell(
-        onTap: hasAction ? () => onTap!(context) : null,
-        borderRadius: BorderRadius.circular(Radii.md),
-        child: Padding(
+      child: Semantics(
+        label: '$label: $value',
+        button: hasAction,
+        child: InkWell(
+          onTap: hasAction ? () => onTap!(context) : null,
+          borderRadius: BorderRadius.circular(Radii.md),
+          child: Padding(
           padding: const EdgeInsets.all(Spacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,6 +188,7 @@ class _StatCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

@@ -257,8 +257,11 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 itemCount: _originalPaths.length,
-                itemBuilder: (_, i) => GestureDetector(
-                  onTap: () => _onPageChanged(i),
+                itemBuilder: (_, i) => Semantics(
+                  label: 'Page ${i + 1}',
+                  button: true,
+                  child: GestureDetector(
+                    onTap: () => _onPageChanged(i),
                   child: Container(
                     width: 48,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -295,6 +298,7 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
                       ],
                     ),
                   ),
+                ),
                 ),
               ),
             ),
