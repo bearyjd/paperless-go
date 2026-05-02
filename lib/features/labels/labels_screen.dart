@@ -6,6 +6,7 @@ import '../../core/models/correspondent.dart';
 import '../../core/models/document_type.dart';
 import '../../core/models/storage_path.dart';
 import '../../core/models/tag.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/tag_chip.dart';
 import 'labels_notifier.dart';
 
@@ -72,7 +73,11 @@ class _TagsTab extends ConsumerWidget {
 
         return Scaffold(
           body: sorted.isEmpty
-              ? const Center(child: Text('No tags'))
+              ? const EmptyState(
+                  icon: Icons.label_outline,
+                  title: 'No tags',
+                  description: 'Tags help you organize and find documents quickly',
+                )
               : ListView.builder(
                   itemCount: sorted.length,
                   itemBuilder: (_, i) {
@@ -236,7 +241,11 @@ class _CorrespondentsTab extends ConsumerWidget {
 
         return Scaffold(
           body: sorted.isEmpty
-              ? const Center(child: Text('No correspondents'))
+              ? const EmptyState(
+                  icon: Icons.person_outline,
+                  title: 'No correspondents',
+                  description: 'Track who sent or received your documents',
+                )
               : ListView.builder(
                   itemCount: sorted.length,
                   itemBuilder: (_, i) {
@@ -389,7 +398,11 @@ class _DocumentTypesTab extends ConsumerWidget {
 
         return Scaffold(
           body: sorted.isEmpty
-              ? const Center(child: Text('No document types'))
+              ? const EmptyState(
+                  icon: Icons.description_outlined,
+                  title: 'No document types',
+                  description: 'Categorize documents by type for easier filtering',
+                )
               : ListView.builder(
                   itemCount: sorted.length,
                   itemBuilder: (_, i) {
@@ -537,7 +550,11 @@ class _StoragePathsTab extends ConsumerWidget {
 
         return Scaffold(
           body: sorted.isEmpty
-              ? const Center(child: Text('No storage paths'))
+              ? const EmptyState(
+                  icon: Icons.folder_outlined,
+                  title: 'No storage paths',
+                  description: 'Control where documents are stored on disk',
+                )
               : ListView.builder(
                   itemCount: sorted.length,
                   itemBuilder: (_, i) {

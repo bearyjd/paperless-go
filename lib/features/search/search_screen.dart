@@ -110,6 +110,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         const SizedBox(height: 16),
                         Text('No results for "$query"',
                             style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Check your spelling or try different keywords',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
                   );

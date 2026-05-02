@@ -20,7 +20,20 @@ class AppTheme {
 
   static ThemeData _buildTheme(ColorScheme colorScheme) {
     final baseTextTheme = ThemeData(colorScheme: colorScheme).textTheme;
-    final textTheme = GoogleFonts.interTextTheme(baseTextTheme);
+    final textTheme = GoogleFonts.interTextTheme(baseTextTheme).copyWith(
+      titleLarge: GoogleFonts.inter(
+        textStyle: baseTextTheme.titleLarge,
+        fontWeight: FontWeight.w700,
+      ),
+      titleMedium: GoogleFonts.inter(
+        textStyle: baseTextTheme.titleMedium,
+        fontWeight: FontWeight.w600,
+      ),
+      titleSmall: GoogleFonts.inter(
+        textStyle: baseTextTheme.titleSmall,
+        fontWeight: FontWeight.w600,
+      ),
+    );
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,

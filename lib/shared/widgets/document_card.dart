@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../core/thumbnail_cache.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document.dart';
@@ -121,7 +122,7 @@ class DocumentCard extends StatelessWidget {
 
                     const SizedBox(height: 4),
                     Text(
-                      document.created != null ? _formatDate(document.created!) : '',
+                      document.created != null ? DateFormat.yMMMd().format(document.created!) : '',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -155,11 +156,4 @@ class DocumentCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
 }

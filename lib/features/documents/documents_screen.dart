@@ -233,6 +233,16 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       const SizedBox(height: 16),
                       Text('No documents found',
                           style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      Text(
+                        hasActiveFilters
+                            ? 'Try adjusting your filters'
+                            : 'Upload a document to get started',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                       if (hasActiveFilters) ...[
                         const SizedBox(height: 8),
                         TextButton(
