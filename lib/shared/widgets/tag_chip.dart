@@ -14,7 +14,7 @@ class TagChip extends StatelessWidget {
         : Colors.white;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
@@ -22,7 +22,7 @@ class TagChip extends StatelessWidget {
       child: Text(
         tag.name,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 12,
           color: fgColor,
           fontWeight: FontWeight.w500,
         ),
@@ -68,7 +68,7 @@ class TagOverflowChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
@@ -76,7 +76,7 @@ class TagOverflowChip extends StatelessWidget {
       child: Text(
         '+$count',
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 12,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w500,
         ),

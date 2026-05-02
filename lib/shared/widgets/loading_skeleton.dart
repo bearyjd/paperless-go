@@ -1,19 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+Widget _shimmerOrStatic({
+  required BuildContext context,
+  required Widget child,
+}) {
+  final colorScheme = Theme.of(context).colorScheme;
+  final baseColor = colorScheme.surfaceContainerHighest;
+  final highlightColor = colorScheme.surfaceContainerLow;
+  final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
+  if (reduceMotion) return child;
+
+  return Shimmer.fromColors(
+    baseColor: baseColor,
+    highlightColor: highlightColor,
+    child: child,
+  );
+}
+
 /// A shimmer-style loading skeleton for document card lists.
 class DocumentCardSkeleton extends StatelessWidget {
   const DocumentCardSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final baseColor = colorScheme.surfaceContainerHighest;
-    final highlightColor = colorScheme.surfaceContainerLow;
-
-    return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
+    return _shimmerOrStatic(
+      context: context,
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: Padding(
@@ -115,10 +128,6 @@ class DashboardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final baseColor = colorScheme.surfaceContainerHighest;
-    final highlightColor = colorScheme.surfaceContainerLow;
-
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
@@ -132,9 +141,8 @@ class DashboardSkeleton extends StatelessWidget {
           childAspectRatio: 1.2,
           children: List.generate(
             6,
-            (_) => Shimmer.fromColors(
-              baseColor: baseColor,
-              highlightColor: highlightColor,
+            (_) => _shimmerOrStatic(
+              context: context,
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -191,16 +199,11 @@ class WorkflowsSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final baseColor = colorScheme.surfaceContainerHighest;
-    final highlightColor = colorScheme.surfaceContainerLow;
-
     return ListView.builder(
       physics: const NeverScrollableScrollPhysics(),
       itemCount: 5,
-      itemBuilder: (_, __) => Shimmer.fromColors(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
+      itemBuilder: (_, __) => _shimmerOrStatic(
+        context: context,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/auth/auth_provider.dart';
 import '../../core/auth/server_profiles.dart';
@@ -192,10 +193,17 @@ class SettingsScreen extends ConsumerWidget {
 
           // About
           const _SectionHeader(title: 'About'),
-          const ListTile(
-            leading: Icon(Icons.info_outline),
-            title: Text('Paperless Go'),
-            subtitle: Text('v1.0.0'),
+          FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (context, snapshot) {
+              final version = snapshot.data?.version ?? '...';
+              final build = snapshot.data?.buildNumber ?? '';
+              return ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: const Text('Paperless Go'),
+                subtitle: Text('v$version${build.isNotEmpty ? '+$build' : ''}'),
+              );
+            },
           ),
         ],
       ),
