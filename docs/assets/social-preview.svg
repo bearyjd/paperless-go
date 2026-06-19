@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Paperless Go — Your documents. Your server. Your pocket.">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#0E1426"/><stop offset="0.55" stop-color="#0A0E1C"/><stop offset="1" stop-color="#070910"/></linearGradient>
+    <radialGradient id="glowA" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="17A262" stop-opacity="0.42"/><stop offset="1" stop-color="17A262" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glowB" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="8BE6B0" stop-opacity="0.5"/><stop offset="1" stop-color="8BE6B0" stop-opacity="0"/></radialGradient>
+    <pattern id="dots" width="34" height="34" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#97D5B8" opacity="0.05"/></pattern>
+  </defs>
+  <g>
+    <rect width="1280" height="640" fill="url(#bg)"/>
+    <rect width="1280" height="640" fill="url(#dots)"/>
+    <circle cx="352" cy="326" r="576" fill="url(#glowA)"/>
+    <circle cx="352" cy="114" r="288" fill="url(#glowB)"/>
+    <polygon points="187,476 352,558 352,598 187,516" fill="0A3D26"/>
+    <polygon points="517,476 352,558 352,598 517,516" fill="#072B1B"/>
+    <polygon points="352,394 517,476 352,558 187,476" fill="#36604D"/>
+    <polygon points="187,420 352,502 352,542 187,460" fill="0F5C39"/>
+    <polygon points="517,420 352,502 352,542 517,460" fill="#0A4028"/>
+    <polygon points="352,338 517,420 352,502 187,420" fill="#3A795D"/>
+    <polygon points="187,364 352,446 352,486 187,404" fill="14794D"/>
+    <polygon points="517,364 352,446 352,486 517,404" fill="#0E5536"/>
+    <polygon points="352,282 517,364 352,446 187,364" fill="#3E916D"/>
+    <polygon points="187,308 352,390 352,430 187,348" fill="17A262"/>
+    <polygon points="517,308 352,390 352,430 517,348" fill="#107145"/>
+    <polygon points="352,226 517,308 352,390 187,308" fill="#41B37E"/>
+    <polygon points="187,252 352,334 352,374 187,292" fill="3FBE7E"/>
+    <polygon points="517,252 352,334 352,374 517,292" fill="#2C8558"/>
+    <polygon points="352,170 517,252 352,334 187,252" fill="#62CA95"/>
+    <polygon points="187,196 352,278 352,318 187,236" fill="8BE6B0"/>
+    <polygon points="517,196 352,278 352,318 517,236" fill="#61A17B"/>
+    <polygon points="352,114 517,196 352,278 187,196" fill="#A0EABE"/>
+    <polygon points="352,114 517,196 352,278 187,196" fill="none" stroke="#B4EFCC" stroke-width="2" opacity="0.9"/>
+  <text x="588" y="236" font-family="'Fira Code', 'DejaVu Sans Mono', ui-monospace, monospace" font-size="24" letter-spacing="6" fill="#74C7A1">ANDROID · PAPERLESS-NGX CLIENT</text>
+  <text x="588" y="322" font-family="Cantarell, 'Segoe UI', 'Noto Sans', sans-serif" font-weight="800" font-size="84" fill="#F4F7FF">Paperless Go</text>
+  <text x="588" y="374" font-family="Cantarell, 'Segoe UI', 'Noto Sans', sans-serif" font-size="30" fill="#AEB9D6">Your documents. Your server. Your pocket.</text>
+  <rect x="588" y="402" width="652" height="2" rx="1" fill="17A262" opacity="0.40"/>
+  <text x="588" y="446" font-family="'Fira Code', 'DejaVu Sans Mono', ui-monospace, monospace" font-size="25" fill="#6E7A9C">Get it on F-Droid &amp; Google Play</text>
+  <text x="588" y="486" font-family="Cantarell, 'Segoe UI', 'Noto Sans', sans-serif" font-size="22" fill="#52607F">Scan to searchable PDF · Offline-first · Self-hosted &amp; private</text>
+  </g>
+</svg>
