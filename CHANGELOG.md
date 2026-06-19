@@ -5,22 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-- Add offline edit queue with coalescing and auto-sync on reconnect
-- Add Android home screen widget with document count and quick scan/upload buttons
-- Add document templates with Drift storage, management UI, and upload integration
-- Add per-document biometric lock with Drift storage
-- Add annotation compositing export service
-- Add batch OCR re-run to bulk action bar
-
-### Changed
-- Wire annotation compositing into save/share flow
-
-### Fixed
-- Fix atomic edit queue coalescing, secure biometric gate default, efficient hasPending, and widget dark mode
-
 ## [1.1.3] - 2026-06-19
 
 ### Fixed
@@ -74,6 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add OCR metadata suggestions for image file picker uploads
 - Add Share button to bulk document selection bar
 - Add long-press context menu with Share action on document cards
+- Add offline edit queue with coalescing and auto-sync on reconnect
+- Add Android home screen widget with document count and quick scan/upload buttons
+- Add document templates with Drift storage, management UI, and upload integration
+- Add per-document biometric lock with Drift storage
+- Add annotation compositing export service
+- Add batch OCR re-run to bulk action bar
 
 ### Changed
 - Wire DashboardScreen as home tab and move Inbox to /inbox
@@ -81,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace hardcoded colors with theme-aware alternatives for dark mode
 - Show fast preview on preset change for single-page scans
 - Read crop screen image bytes once instead of twice
+- Wire annotation compositing into save/share flow
 
 ### Fixed
 - Fix DropdownButtonFormField value and remove controller disposal
@@ -100,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix case-sensitive exact match behavior
 - Fix Android VIEW intent URI handling in router redirect
 - Fix auth guard application after VIEW intent redirect
+- Fix atomic edit queue coalescing, secure biometric gate default, efficient hasPending, and widget dark mode
 
 ## [1.0.3] - 2026-03-08
 
