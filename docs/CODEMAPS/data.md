@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-23 | Files scanned: 152 | Token estimate: ~800 -->
+<!-- Generated: 2026-06-19 | Files scanned: 160+ | Token estimate: ~800 -->
 
 # Data Layer
 

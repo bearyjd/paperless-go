@@ -1,8 +1,8 @@
-<!-- Generated: 2026-04-25 | Files scanned: 30+ | Token estimate: ~800 -->
+<!-- Generated: 2026-06-19 | Files scanned: 30+ | Token estimate: ~800 -->
 
 # Paperless Go Codemaps — Index
 
-**Last Updated:** 2026-04-25
+**Last Updated:** 2026-06-19
 
 Paperless Go is a modern Flutter client for Paperless-ngx with:
 - **State Management:** Riverpod + Notifiers

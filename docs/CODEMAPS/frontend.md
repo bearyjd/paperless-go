@@ -1,33 +1,40 @@
-<!-- Generated: 2026-04-23 | Files scanned: 152 | Token estimate: ~950 -->
+<!-- Generated: 2026-06-19 | Files scanned: 160+ | Token estimate: ~950 -->
 
 # Frontend (Screens & State)
 
 ## Screen Tree (GoRouter)
 
 ```
-/                     → DashboardScreen (190L)
-/login                → LoginScreen (285L)
-/lock                 → LockScreen (71L)
-/documents            → DocumentsScreen (793L)
-/documents/:id        → DocumentDetailScreen (1833L)
+App shell (ShellRoute — bottom nav):
+/                      → DashboardScreen (190L)
+/documents             → DocumentsScreen (793L)
+/scan                  → ScannerScreen (208L)
+/chat                  → ChatScreen (481L)
+
+Top-level routes:
+/login                 → LoginScreen (285L)
+/search                → SearchScreen (209L)
+/search/similar/:id    → SimilarScreen (94L)
+/inbox                 → InboxScreen (320L)
+/labels                → LabelsScreen (677L)
+/custom-fields         → CustomFieldsScreen (298L)
+/templates             → TemplatesScreen (231L)
+/workflows             → WorkflowsScreen (82L)
+/workflows/:id         → WorkflowDetailScreen (352L)
+/trash                 → TrashScreen (236L)
+/settings              → SettingsScreen (443L)
+/annotate              → AnnotateScreen (502L)  [extra: pdfPath, title]
+/documents/:id         → DocumentDetailScreen (1833L)
 /documents/:id/preview → DocumentPreviewScreen (86L)
-/documents/:id/annotate → AnnotateScreen (502L)
-/documents/:id/similar → SimilarScreen (94L)
-/inbox                → InboxScreen (320L)
-/search               → SearchScreen (209L)
-/labels               → LabelsScreen (677L)
-/custom-fields        → CustomFieldsScreen (298L)
-/templates            → TemplatesScreen (231L)
-/workflows            → WorkflowsScreen (82L)
-/workflows/:id        → WorkflowDetailScreen (352L)
-/trash                → TrashScreen (236L)
-/settings             → SettingsScreen (443L)
-/scanner              → ScannerScreen (208L)
-/scanner/review       → ScanReviewScreen (268L)
-/scanner/enhance      → EnhanceScreen (382L)
-/scanner/pdf-preview  → PdfPreviewScreen (233L)
-/scanner/upload       → UploadScreen (675L)
-/chat                 → ChatScreen (481L)
+/documents/:id/chat    → ChatScreen (481L)
+
+Scan pipeline (pushed routes, outside shell):
+/scan/review           → ScanReviewScreen (273L)
+/scan/enhance          → EnhanceScreen (382L)
+/scan/pdf-preview      → PdfPreviewScreen (233L)
+/scan/upload           → UploadScreen (676L)
+
+Biometric lock renders as a full-screen overlay (Stack in app.dart), not a route.
 ```
 
 ## State Management (Riverpod Notifiers)
@@ -55,15 +62,25 @@
 - `FilterBottomSheet` — documents/filter_bottom_sheet.dart (287L)
 - `CropOverlay` — scanner/widgets/crop_overlay.dart (262L)
 
-## Scanner Pipeline
+## Scan / Share-to-PDF Pipeline
 
+Entry points:
 ```
-ScannerScreen (camera capture)
-    → ScanReviewScreen (reorder/delete pages)
-    → EnhanceScreen (6 presets: Auto, Receipt, B&W, Color, Photo, Original)
-        → image_enhancer.dart (314L) — adaptive contrast, binarize, sharpen, shadow removal, deskew
+ScannerScreen "Scan"/"Batch Scan" (camera)  → /scan/review
+ScannerScreen "Upload File" (file_picker)    → /scan/upload  (direct, any file)
+Share from another app (receive_sharing_intent)
+    → upload/share_intent_handler.dart::resolveShareRoute (routes by file TYPE)
+        images (1+)            → /scan/review   (wrapped to PDF via the pipeline)
+        non-image (PDF, etc.)  → /scan/upload   (direct upload)
+```
+
+Pipeline:
+```
+/scan/review  ScanReviewScreen (reorder/rotate/crop/delete pages)
+    → /scan/enhance  EnhanceScreen (presets: Auto, Receipt, B&W, Color, Photo, Original)
+        → image_enhancer.dart (314L) — contrast, binarize, sharpen, shadow removal, deskew
         → mlkit_deskew.dart (48L) — ML Kit deskew (stub on F-Droid)
-    → PdfPreviewScreen (multi-page PDF preview)
-    → UploadScreen (metadata, tags, correspondent, template)
-        → upload_notifier.dart → PaperlessApi.uploadDocument()
+    → /scan/pdf-preview  PdfPreviewScreen — PdfGenerator.generatePdf (quality slider)
+    → /scan/upload  UploadScreen (metadata, tags, correspondent, template)
+        → upload_notifier.dart → PaperlessApi.uploadDocument() → poll /api/tasks/
 ```

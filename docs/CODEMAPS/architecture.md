@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-23 | Files scanned: 152 | Token estimate: ~900 -->
+<!-- Generated: 2026-06-19 | Files scanned: 160+ | Token estimate: ~900 -->
 
 # Architecture
 
@@ -67,7 +67,7 @@ main.dart → ProviderScope → PaperlessGoApp (app.dart)
 - **Upload**: Background queue with task polling (`/api/tasks/`)
 - **Auth**: Multi-server profiles stored in flutter_secure_storage
 - **Navigation**: GoRouter with auth redirect guard
-- **Scanner**: Camera → crop → enhance → PDF gen → upload pipeline
+- **Scanner**: Camera/shared-image → review → enhance → PDF gen → upload; shared files routed by type in `share_intent_handler.dart` (images → pipeline, other → direct)
 
 ## Entry Points
 
