@@ -21,6 +21,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix atomic edit queue coalescing, secure biometric gate default, efficient hasPending, and widget dark mode
 
+## [1.1.3] - 2026-06-19
+
+### Fixed
+- Route shared images through the scan → PDF pipeline (single and multi-page) instead of uploading the raw image
+- Fix accessibility issues and a hardcoded version string
+
+### Added
+- Screen-reader semantic labels on interactive elements
+
+### Changed
+- Warmer empty states, locale-aware dates, and refined text theme weights
+- Introduce design tokens for spacing and border radius
+
 ## [1.1.2] - 2026-04-24
 
 ### Changed
