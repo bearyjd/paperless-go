@@ -54,3 +54,8 @@ debug/
 
 # Claude Code
 .claude/
+
+# Local agent / tooling state (not project content)
+.omc/
+.reports/
+.superpowers/
