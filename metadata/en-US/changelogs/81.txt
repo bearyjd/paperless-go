@@ -1,0 +1,4 @@
+* Sharing an image now runs through the scan and PDF pipeline (single or multi-page) instead of uploading a raw image
+* Screen reader labels added to interactive elements
+* Warmer empty states, locale-aware dates, and refined typography
+* Accessibility fixes
