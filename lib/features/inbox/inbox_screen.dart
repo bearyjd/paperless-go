@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/api/api_error_mapper.dart';
+import '../../core/models/correspondent.dart';
+import '../../core/models/document_type.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
+import '../../shared/widgets/metadata_dropdown.dart';
 import '../../shared/widgets/paginated_list_view.dart';
 import 'inbox_notifier.dart';
 
@@ -264,54 +267,22 @@ class _QuickAssignSheetState extends ConsumerState<_QuickAssignSheet> {
           const SizedBox(height: 16),
 
           // Correspondent
-          InputDecorator(
-            decoration: const InputDecoration(
-              labelText: 'Correspondent',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<int?>(
-                value: _correspondentId,
-                isExpanded: true,
-                isDense: true,
-                hint: const Text('None'),
-                items: [
-                  const DropdownMenuItem<int?>(value: null, child: Text('None')),
-                  ...correspondents.values.map((c) => DropdownMenuItem<int?>(
-                    value: c.id,
-                    child: Text(c.name, overflow: TextOverflow.ellipsis),
-                  )),
-                ],
-                onChanged: (v) => setState(() => _correspondentId = v),
-              ),
-            ),
+          MetadataDropdown<Correspondent>(
+            label: 'Correspondent',
+            value: correspondents[_correspondentId],
+            items: correspondents.values.toList(),
+            displayName: (c) => c.name,
+            onChanged: (c) => setState(() => _correspondentId = c?.id),
           ),
           const SizedBox(height: 12),
 
           // Document Type
-          InputDecorator(
-            decoration: const InputDecoration(
-              labelText: 'Document Type',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<int?>(
-                value: _documentTypeId,
-                isExpanded: true,
-                isDense: true,
-                hint: const Text('None'),
-                items: [
-                  const DropdownMenuItem<int?>(value: null, child: Text('None')),
-                  ...docTypes.values.map((dt) => DropdownMenuItem<int?>(
-                    value: dt.id,
-                    child: Text(dt.name, overflow: TextOverflow.ellipsis),
-                  )),
-                ],
-                onChanged: (v) => setState(() => _documentTypeId = v),
-              ),
-            ),
+          MetadataDropdown<DocumentType>(
+            label: 'Document Type',
+            value: docTypes[_documentTypeId],
+            items: docTypes.values.toList(),
+            displayName: (dt) => dt.name,
+            onChanged: (dt) => setState(() => _documentTypeId = dt?.id),
           ),
           const SizedBox(height: 16),
 

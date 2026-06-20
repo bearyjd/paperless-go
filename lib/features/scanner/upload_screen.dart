@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../core/models/correspondent.dart';
 import '../../core/models/document_template.dart';
+import '../../core/models/document_type.dart';
 import '../../core/models/tag.dart';
 import '../../core/services/template_service.dart';
+import '../../shared/widgets/metadata_dropdown.dart';
 import '../../shared/widgets/tag_chip.dart';
 import '../../shared/widgets/tag_picker_sheet.dart';
 import 'providers/metadata_suggestion_provider.dart';
@@ -203,35 +206,19 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
           correspondentsAsync.when(
             loading: () => const LinearProgressIndicator(),
             error: (_, __) => const SizedBox.shrink(),
-            data: (correspondents) => InputDecorator(
-              decoration: InputDecoration(
-                labelText: 'Correspondent',
-                border: const OutlineInputBorder(),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                suffix: _suggestedCorrespondent ? _suggestedBadge() : null,
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int?>(
-                  value: _correspondent,
-                  isExpanded: true,
-                  isDense: true,
-                  hint: const Text('None'),
-                  items: [
-                    const DropdownMenuItem<int?>(value: null, child: Text('None')),
-                    ...correspondents.values.map((c) => DropdownMenuItem<int?>(
-                          value: c.id,
-                          child: Text(c.name, overflow: TextOverflow.ellipsis),
-                        )),
-                  ],
-                  onChanged: isUploading
-                      ? null
-                      : (v) => setState(() {
-                            _correspondent = v;
-                            _suggestedCorrespondent = false;
-                            _appliedAiEdits.remove('correspondent');
-                          }),
-                ),
-              ),
+            data: (correspondents) => MetadataDropdown<Correspondent>(
+              label: 'Correspondent',
+              value: correspondents[_correspondent],
+              items: correspondents.values.toList(),
+              displayName: (c) => c.name,
+              suffix: _suggestedCorrespondent ? _suggestedBadge() : null,
+              onChanged: isUploading
+                  ? null
+                  : (c) => setState(() {
+                        _correspondent = c?.id;
+                        _suggestedCorrespondent = false;
+                        _appliedAiEdits.remove('correspondent');
+                      }),
             ),
           ),
           const SizedBox(height: 16),
@@ -240,35 +227,19 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
           docTypesAsync.when(
             loading: () => const LinearProgressIndicator(),
             error: (_, __) => const SizedBox.shrink(),
-            data: (docTypes) => InputDecorator(
-              decoration: InputDecoration(
-                labelText: 'Document Type',
-                border: const OutlineInputBorder(),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                suffix: _suggestedDocType ? _suggestedBadge() : null,
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int?>(
-                  value: _documentType,
-                  isExpanded: true,
-                  isDense: true,
-                  hint: const Text('None'),
-                  items: [
-                    const DropdownMenuItem<int?>(value: null, child: Text('None')),
-                    ...docTypes.values.map((dt) => DropdownMenuItem<int?>(
-                          value: dt.id,
-                          child: Text(dt.name, overflow: TextOverflow.ellipsis),
-                        )),
-                  ],
-                  onChanged: isUploading
-                      ? null
-                      : (v) => setState(() {
-                            _documentType = v;
-                            _suggestedDocType = false;
-                            _appliedAiEdits.remove('document_type');
-                          }),
-                ),
-              ),
+            data: (docTypes) => MetadataDropdown<DocumentType>(
+              label: 'Document Type',
+              value: docTypes[_documentType],
+              items: docTypes.values.toList(),
+              displayName: (dt) => dt.name,
+              suffix: _suggestedDocType ? _suggestedBadge() : null,
+              onChanged: isUploading
+                  ? null
+                  : (dt) => setState(() {
+                        _documentType = dt?.id;
+                        _suggestedDocType = false;
+                        _appliedAiEdits.remove('document_type');
+                      }),
             ),
           ),
           const SizedBox(height: 16),

@@ -12,6 +12,7 @@ import '../../core/services/document_lock_service.dart';
 import '../../core/services/pdf_tools_service.dart';
 import '../../core/api/api_providers.dart';
 import '../../shared/widgets/destructive_button_style.dart';
+import '../../shared/widgets/metadata_dropdown.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/custom_field.dart';
@@ -303,7 +304,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
               const Divider(height: 32),
 
               // Correspondent
-              _MetadataDropdown<Correspondent>(
+              MetadataDropdown<Correspondent>(
                 label: 'Correspondent',
                 value: correspondent,
                 items: correspondents.values.toList(),
@@ -324,7 +325,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
               const SizedBox(height: 12),
 
               // Document Type
-              _MetadataDropdown<DocumentType>(
+              MetadataDropdown<DocumentType>(
                 label: 'Document Type',
                 value: docType,
                 items: docTypes.values.toList(),
@@ -345,7 +346,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
               const SizedBox(height: 12),
 
               // Storage Path
-              _MetadataDropdown<StoragePath>(
+              MetadataDropdown<StoragePath>(
                 label: 'Storage Path',
                 value: storagePath,
                 items: storagePaths.values.toList(),
@@ -911,58 +912,6 @@ class _EditableTile extends StatelessWidget {
           // Dialog cancelled
         }
       },
-    );
-  }
-}
-
-class _MetadataDropdown<T> extends StatelessWidget {
-  final String label;
-  final T? value;
-  final List<T> items;
-  final String Function(T) displayName;
-  final ValueChanged<T?> onChanged;
-
-  const _MetadataDropdown({
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.displayName,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Guard: if value is not in items, treat as null to avoid assertion error
-    final effectiveValue = (value != null && items.contains(value)) ? value : null;
-
-    return Row(
-      children: [
-        Expanded(
-          child: InputDecorator(
-            decoration: InputDecoration(
-              labelText: label,
-              border: const OutlineInputBorder(),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<T>(
-                value: effectiveValue,
-                isExpanded: true,
-                isDense: true,
-                hint: Text('None'),
-                items: [
-                  DropdownMenuItem<T>(value: null, child: Text('None')),
-                  ...items.map((item) => DropdownMenuItem<T>(
-                    value: item,
-                    child: Text(displayName(item), overflow: TextOverflow.ellipsis),
-                  )),
-                ],
-                onChanged: onChanged,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
