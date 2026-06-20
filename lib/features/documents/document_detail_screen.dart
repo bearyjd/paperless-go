@@ -19,6 +19,7 @@ import '../../core/models/document_type.dart';
 import '../../core/models/storage_path.dart';
 import '../../core/models/tag.dart';
 import '../../shared/widgets/tag_chip.dart';
+import '../../shared/widgets/tag_picker_sheet.dart';
 import 'ai_edit_trail_notifier.dart';
 import 'document_detail_notifier.dart';
 import 'documents_notifier.dart';
@@ -1022,74 +1023,12 @@ class _TagsSection extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => _TagPickerSheet(
+      builder: (ctx) => TagPickerSheet(
         tags: availableTags,
         onSelected: (tag) {
           ref.read(documentDetailProvider(documentId).notifier).addTag(tag.id);
           Navigator.pop(ctx);
         },
-      ),
-    );
-  }
-}
-
-class _TagPickerSheet extends StatefulWidget {
-  final List<Tag> tags;
-  final ValueChanged<Tag> onSelected;
-
-  const _TagPickerSheet({required this.tags, required this.onSelected});
-
-  @override
-  State<_TagPickerSheet> createState() => _TagPickerSheetState();
-}
-
-class _TagPickerSheetState extends State<_TagPickerSheet> {
-  String _filter = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final filtered = widget.tags
-        .where((t) => t.name.toLowerCase().contains(_filter.toLowerCase()))
-        .toList();
-
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.5,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Search tags...',
-                  prefixIcon: Icon(Icons.search),
-                ),
-                onChanged: (v) => setState(() => _filter = v),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: filtered.length,
-                itemBuilder: (_, i) {
-                  final tag = filtered[i];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      radius: 12,
-                      backgroundColor: TagChip.parseColor(tag.colour) ??
-                          Theme.of(context).colorScheme.secondaryContainer,
-                    ),
-                    title: Text(tag.name),
-                    onTap: () => widget.onSelected(tag),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
