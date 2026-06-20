@@ -20,6 +20,10 @@ class DocumentCard extends StatelessWidget {
   final String? thumbnailUrl;
   final String? authToken;
 
+  /// Optional trailing widget (e.g. an actions menu) rendered at the end of the
+  /// card. Provides a non-gesture affordance alongside swipe/long-press.
+  final Widget? trailing;
+
   static const int _maxVisibleTags = 3;
 
   const DocumentCard({
@@ -32,6 +36,7 @@ class DocumentCard extends StatelessWidget {
     this.onLongPress,
     this.thumbnailUrl,
     this.authToken,
+    this.trailing,
   });
 
   @override
@@ -156,6 +161,7 @@ class DocumentCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (trailing != null) trailing!,
             ],
           ),
         ),

@@ -64,6 +64,7 @@ class CustomFieldsScreen extends ConsumerWidget {
                       size: 20,
                       color: Theme.of(context).colorScheme.error,
                     ),
+                    tooltip: 'Delete field',
                     onPressed: () => _showDeleteDialog(context, ref, field),
                   ),
                   onTap: () => _showRenameDialog(context, ref, field),

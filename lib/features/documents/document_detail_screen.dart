@@ -553,7 +553,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
               // Content preview
               if (doc.content != null && doc.content!.isNotEmpty) ...[
                 const Divider(height: 32),
-                Text('Content', style: Theme.of(context).textTheme.titleSmall),
+                Semantics(header: true, child: Text('Content', style: Theme.of(context).textTheme.titleSmall)),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -984,7 +984,7 @@ class _TagsSection extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Text('Tags', style: Theme.of(context).textTheme.titleSmall),
+            Semantics(header: true, child: Text('Tags', style: Theme.of(context).textTheme.titleSmall)),
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.add, size: 20),
@@ -1114,8 +1114,10 @@ class _CustomFieldsSection extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Text('Custom Fields',
-                style: Theme.of(context).textTheme.titleSmall),
+            Semantics(
+                header: true,
+                child: Text('Custom Fields',
+                    style: Theme.of(context).textTheme.titleSmall)),
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.add, size: 20),
@@ -1518,7 +1520,7 @@ class _NotesSection extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Text('Notes', style: Theme.of(context).textTheme.titleSmall),
+            Semantics(header: true, child: Text('Notes', style: Theme.of(context).textTheme.titleSmall)),
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.add, size: 20),
@@ -1680,10 +1682,11 @@ class _ShareLinksSectionState extends ConsumerState<_ShareLinksSection> {
       children: [
         Row(
           children: [
-            Text('Share Links', style: Theme.of(context).textTheme.titleSmall),
+            Semantics(header: true, child: Text('Share Links', style: Theme.of(context).textTheme.titleSmall)),
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.add_link, size: 20),
+              tooltip: 'Add share link',
               onPressed: _createLink,
             ),
           ],
@@ -1720,6 +1723,7 @@ class _ShareLinksSectionState extends ConsumerState<_ShareLinksSection> {
                         style: TextStyle(fontSize: 11)),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline, size: 18),
+                  tooltip: 'Delete link',
                   onPressed: () => _deleteLink(linkId),
                 ),
                 onTap: () {
@@ -1763,9 +1767,12 @@ class _AiEditTrailSection extends ConsumerWidget {
                   color: Theme.of(context).colorScheme.tertiary,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'AI Applied at Upload',
-                  style: Theme.of(context).textTheme.titleSmall,
+                Semantics(
+                  header: true,
+                  child: Text(
+                    'AI Applied at Upload',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                 ),
               ],
             ),

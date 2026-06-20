@@ -149,6 +149,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
           ? AppBar(
               leading: IconButton(
                 icon: const Icon(Icons.close),
+                tooltip: 'Cancel selection',
                 onPressed: _clearSelection,
               ),
               title: Text('${_selectedIds.length} selected'),

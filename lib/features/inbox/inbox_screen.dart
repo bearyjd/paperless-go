@@ -35,6 +35,7 @@ class InboxScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
+            tooltip: 'Search',
             onPressed: () => context.push('/search'),
           ),
           IconButton(
@@ -174,6 +175,51 @@ class InboxScreen extends ConsumerWidget {
                           thumbnailUrl: api.thumbnailUrl(doc.id),
                           authToken: api.authToken,
                           onTap: () => context.push('/documents/${doc.id}'),
+                          // Non-swipe accessible alternative to the Dismissible
+                          // gestures (kept above for sighted users).
+                          trailing: PopupMenuButton<String>(
+                            tooltip: 'Inbox actions',
+                            onSelected: (action) async {
+                              if (action == 'assign') {
+                                _showQuickAssign(context, ref, doc.id);
+                                return;
+                              }
+                              try {
+                                await ref
+                                    .read(inboxNotifierProvider.notifier)
+                                    .removeFromInbox(doc);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Removed "${doc.title}" from inbox')),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Failed to remove: ${friendlyApiMessage(e)}')),
+                                  );
+                                }
+                              }
+                            },
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                value: 'remove',
+                                child: ListTile(
+                                  leading: Icon(Icons.done),
+                                  title: Text('Remove from inbox'),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'assign',
+                                child: ListTile(
+                                  leading: Icon(Icons.edit),
+                                  title: Text('Quick assign'),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
