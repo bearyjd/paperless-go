@@ -230,9 +230,12 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                     ),
                   ),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(value: 'delete', child: ListTile(
-                    leading: Icon(Icons.delete_outline, color: Colors.red),
-                    title: Text('Delete', style: TextStyle(color: Colors.red)),
+                  PopupMenuItem(value: 'delete', child: ListTile(
+                    leading: Icon(Icons.delete_outline,
+                        color: Theme.of(context).colorScheme.error),
+                    title: Text('Delete',
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.error)),
                     contentPadding: EdgeInsets.zero,
                   )),
                 ],
@@ -835,7 +838,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
               FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Theme.of(context).colorScheme.onError),
                 child: const Text('Move to Trash'),
               ),
             ],
