@@ -152,6 +152,9 @@ class DocumentsNotifier extends _$DocumentsNotifier {
 
       // A concurrent refresh/applyFilter replaced the list while this page was
       // in flight — discard the stale page instead of appending to a new filter.
+      // identical() relies on AsyncData(x).valueOrNull returning the same
+      // instance; do NOT weaken to == (a refresh yields an equal-by-value state
+      // and the guard would stop firing).
       if (!identical(state.valueOrNull, loadingState)) return;
       state = AsyncData(loadingState.copyWith(
         documents: [...loadingState.documents, ...response.results],

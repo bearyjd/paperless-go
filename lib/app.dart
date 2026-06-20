@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'core/auth/auth_provider.dart';
+import 'core/router/scan_route_args.dart';
 import 'core/services/connectivity_service.dart';
 import 'core/services/edit_queue_processor.dart';
 import 'core/services/upload_queue_service.dart';
@@ -190,36 +191,25 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/scan/pdf-preview',
         builder: (_, state) {
-          final extra = state.extra;
-          if (extra is! Map<String, dynamic>) {
+          final args = parsePdfPreviewArgs(state.extra);
+          if (args == null) {
             return const Scaffold(body: Center(child: Text('No images provided')));
           }
-          final rawPaths = extra['imagePaths'];
-          if (rawPaths is! List || rawPaths.isEmpty) {
-            return const Scaffold(body: Center(child: Text('No images provided')));
-          }
-          final paths = rawPaths.cast<String>();
-          final preProcessed = extra['preProcessed'] as bool? ?? false;
-          final ocrImagePath = extra['ocrImagePath'] as String?;
-          return PdfPreviewScreen(imagePaths: paths, preProcessed: preProcessed, ocrImagePath: ocrImagePath);
+          return PdfPreviewScreen(
+            imagePaths: args.imagePaths,
+            preProcessed: args.preProcessed,
+            ocrImagePath: args.ocrImagePath,
+          );
         },
       ),
       GoRoute(
         path: '/scan/upload',
         builder: (_, state) {
-          final extra = state.extra;
-          if (extra is! Map<String, dynamic>) {
+          final params = parseUploadArgs(state.extra);
+          if (params == null) {
             return const Scaffold(body: Center(child: Text('No upload data provided')));
           }
-          final filePath = extra['filePath'];
-          final filename = extra['filename'];
-          if (filePath is! String ||
-              filePath.isEmpty ||
-              filename is! String ||
-              filename.isEmpty) {
-            return const Scaffold(body: Center(child: Text('No upload data provided')));
-          }
-          return UploadScreen(params: extra);
+          return UploadScreen(params: params);
         },
       ),
       GoRoute(

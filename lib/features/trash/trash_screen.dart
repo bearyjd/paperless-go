@@ -30,6 +30,18 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
   Widget build(BuildContext context) {
     final trashState = ref.watch(trashNotifierProvider);
 
+    // Surface loadMore failures as a SnackBar (mirrors the documents screen).
+    ref.listen(trashNotifierProvider, (prev, next) {
+      final error = next.valueOrNull?.loadMoreError;
+      if (error != null && error != prev?.valueOrNull?.loadMoreError) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error)),
+          );
+        }
+      }
+    });
+
     return Scaffold(
       appBar: _isSelecting
           ? AppBar(

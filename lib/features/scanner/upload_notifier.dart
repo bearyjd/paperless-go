@@ -82,6 +82,11 @@ class UploadNotifier extends _$UploadNotifier {
     List<int>? tags,
     DateTime? created,
   }) async {
+    // A prior upload may still be polling on this keepAlive singleton. Stop it
+    // and drop its deferred temp PDF before starting a new one, otherwise the
+    // old temp file is orphaned when _pendingTempPdf is overwritten below.
+    _pollTimer?.cancel();
+    _cleanupPendingTempFile();
     state = const UploadState(status: UploadStatus.uploading);
 
     String? pdfPath;
