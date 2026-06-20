@@ -194,7 +194,11 @@ GoRouter router(Ref ref) {
           if (extra is! Map<String, dynamic>) {
             return const Scaffold(body: Center(child: Text('No images provided')));
           }
-          final paths = (extra['imagePaths'] as List<dynamic>).cast<String>();
+          final rawPaths = extra['imagePaths'];
+          if (rawPaths is! List || rawPaths.isEmpty) {
+            return const Scaffold(body: Center(child: Text('No images provided')));
+          }
+          final paths = rawPaths.cast<String>();
           final preProcessed = extra['preProcessed'] as bool? ?? false;
           final ocrImagePath = extra['ocrImagePath'] as String?;
           return PdfPreviewScreen(imagePaths: paths, preProcessed: preProcessed, ocrImagePath: ocrImagePath);
@@ -205,6 +209,14 @@ GoRouter router(Ref ref) {
         builder: (_, state) {
           final extra = state.extra;
           if (extra is! Map<String, dynamic>) {
+            return const Scaffold(body: Center(child: Text('No upload data provided')));
+          }
+          final filePath = extra['filePath'];
+          final filename = extra['filename'];
+          if (filePath is! String ||
+              filePath.isEmpty ||
+              filename is! String ||
+              filename.isEmpty) {
             return const Scaffold(body: Center(child: Text('No upload data provided')));
           }
           return UploadScreen(params: extra);

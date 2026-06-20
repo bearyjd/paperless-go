@@ -63,7 +63,8 @@ class TrashNotifier extends _$TrashNotifier {
     final current = state.valueOrNull;
     if (current == null || current.isLoadingMore || !current.hasMore) return;
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+    final loadingState = current.copyWith(isLoadingMore: true);
+    state = AsyncData(loadingState);
 
     try {
       final api = ref.read(paperlessApiProvider);
@@ -73,15 +74,18 @@ class TrashNotifier extends _$TrashNotifier {
         pageSize: _pageSize,
       );
 
-      final fresh = state.valueOrNull ?? current;
-      state = AsyncData(fresh.copyWith(
-        documents: [...fresh.documents, ...response.results],
+      // A concurrent refresh replaced the list while this page was in flight —
+      // discard the stale page instead of appending to a fresh list.
+      if (!identical(state.valueOrNull, loadingState)) return;
+      state = AsyncData(loadingState.copyWith(
+        documents: [...loadingState.documents, ...response.results],
         isLoadingMore: false,
         hasMore: response.next != null,
         currentPage: nextPage,
       ));
     } catch (e) {
-      state = AsyncData(current.copyWith(
+      if (!identical(state.valueOrNull, loadingState)) return;
+      state = AsyncData(loadingState.copyWith(
         isLoadingMore: false,
       ));
     }
