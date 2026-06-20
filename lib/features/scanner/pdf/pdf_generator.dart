@@ -30,8 +30,11 @@ class PdfGenerator {
         ));
 
     final dir = await getTemporaryDirectory();
+    // Microsecond precision + page count discriminator so two generations
+    // started in quick succession (e.g. rapid quality-slider drags) cannot
+    // collide on the same output path.
     final outputPath =
-        '${dir.path}/scan_${DateTime.now().millisecondsSinceEpoch}.pdf';
+        '${dir.path}/scan_${DateTime.now().microsecondsSinceEpoch}_${imagePaths.length}.pdf';
     await File(outputPath).writeAsBytes(pdfBytes);
     return outputPath;
   }

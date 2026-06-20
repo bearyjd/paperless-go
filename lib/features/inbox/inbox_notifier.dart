@@ -10,6 +10,7 @@ class InboxState {
   final bool isLoadingMore;
   final bool hasMore;
   final int currentPage;
+  final String? loadMoreError;
 
   const InboxState({
     this.documents = const [],
@@ -17,6 +18,7 @@ class InboxState {
     this.isLoadingMore = false,
     this.hasMore = true,
     this.currentPage = 1,
+    this.loadMoreError,
   });
 
   InboxState copyWith({
@@ -25,6 +27,8 @@ class InboxState {
     bool? isLoadingMore,
     bool? hasMore,
     int? currentPage,
+    String? loadMoreError,
+    bool clearLoadMoreError = false,
   }) {
     return InboxState(
       documents: documents ?? this.documents,
@@ -32,6 +36,8 @@ class InboxState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMore: hasMore ?? this.hasMore,
       currentPage: currentPage ?? this.currentPage,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
     );
   }
 }
@@ -75,6 +81,9 @@ class InboxNotifier extends _$InboxNotifier {
 
       // A concurrent refresh replaced the list while this page was in flight —
       // discard the stale page instead of appending to a fresh list.
+      // identical() relies on AsyncData(x).valueOrNull returning the same
+      // instance; do NOT weaken to == (a refresh yields an equal-by-value state
+      // and the guard would stop firing).
       if (!identical(state.valueOrNull, loadingState)) return;
       state = AsyncData(loadingState.copyWith(
         documents: [...loadingState.documents, ...response.results],
@@ -86,6 +95,7 @@ class InboxNotifier extends _$InboxNotifier {
       if (!identical(state.valueOrNull, loadingState)) return;
       state = AsyncData(loadingState.copyWith(
         isLoadingMore: false,
+        loadMoreError: 'Failed to load more: $e',
       ));
     }
   }

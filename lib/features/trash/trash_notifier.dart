@@ -10,6 +10,7 @@ class TrashState {
   final bool isLoadingMore;
   final bool hasMore;
   final int currentPage;
+  final String? loadMoreError;
 
   const TrashState({
     this.documents = const [],
@@ -17,6 +18,7 @@ class TrashState {
     this.isLoadingMore = false,
     this.hasMore = true,
     this.currentPage = 1,
+    this.loadMoreError,
   });
 
   TrashState copyWith({
@@ -25,6 +27,8 @@ class TrashState {
     bool? isLoadingMore,
     bool? hasMore,
     int? currentPage,
+    String? loadMoreError,
+    bool clearLoadMoreError = false,
   }) {
     return TrashState(
       documents: documents ?? this.documents,
@@ -32,6 +36,8 @@ class TrashState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMore: hasMore ?? this.hasMore,
       currentPage: currentPage ?? this.currentPage,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
     );
   }
 }
@@ -76,6 +82,9 @@ class TrashNotifier extends _$TrashNotifier {
 
       // A concurrent refresh replaced the list while this page was in flight —
       // discard the stale page instead of appending to a fresh list.
+      // identical() relies on AsyncData(x).valueOrNull returning the same
+      // instance; do NOT weaken to == (a refresh yields an equal-by-value state
+      // and the guard would stop firing).
       if (!identical(state.valueOrNull, loadingState)) return;
       state = AsyncData(loadingState.copyWith(
         documents: [...loadingState.documents, ...response.results],
@@ -87,6 +96,7 @@ class TrashNotifier extends _$TrashNotifier {
       if (!identical(state.valueOrNull, loadingState)) return;
       state = AsyncData(loadingState.copyWith(
         isLoadingMore: false,
+        loadMoreError: 'Failed to load more: $e',
       ));
     }
   }

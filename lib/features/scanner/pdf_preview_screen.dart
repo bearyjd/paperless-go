@@ -70,10 +70,14 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
       );
       if (!mounted || generation != _generation) {
         // A newer generation superseded this one — delete its orphaned output.
-        try {
-          final stale = File(path);
-          if (stale.existsSync()) stale.deleteSync();
-        } catch (_) {}
+        // Skip if it collides with the committed path (PdfGenerator names by
+        // timestamp): never delete a file a newer generation already kept.
+        if (path != _pdfPath) {
+          try {
+            final stale = File(path);
+            if (stale.existsSync()) stale.deleteSync();
+          } catch (_) {}
+        }
         return;
       }
       final file = File(path);

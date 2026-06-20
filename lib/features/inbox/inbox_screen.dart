@@ -12,6 +12,18 @@ class InboxScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final inboxState = ref.watch(inboxNotifierProvider);
+
+    // Surface loadMore failures as a SnackBar (mirrors the documents screen).
+    ref.listen(inboxNotifierProvider, (prev, next) {
+      final error = next.valueOrNull?.loadMoreError;
+      if (error != null && error != prev?.valueOrNull?.loadMoreError) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error)),
+          );
+        }
+      }
+    });
     final tagsAsync = ref.watch(tagsProvider);
     final correspondentsAsync = ref.watch(correspondentsProvider);
     final docTypesAsync = ref.watch(documentTypesProvider);
