@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 /// Maps an error (typically a [DioException]) to a short, user-friendly message.
 ///
@@ -16,6 +17,12 @@ String friendlyApiMessage(
   Object? error, {
   String fallback = 'An unexpected error occurred.',
 }) {
+  // Debug-only breadcrumb: keep the real error visible to developers without
+  // ever leaking it into the release UI. assert(...) is stripped in release.
+  assert(() {
+    if (error != null) debugPrint('API error: $error');
+    return true;
+  }());
   if (error is DioException) {
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
@@ -28,6 +35,8 @@ String friendlyApiMessage(
       case DioExceptionType.badCertificate:
         return "The server's security certificate could not be verified.";
       case DioExceptionType.cancel:
+        // Callers that cancel intentionally (navigation, a superseded request)
+        // should not render this — it's only meaningful for an unexpected cancel.
         return 'The request was cancelled.';
       case DioExceptionType.badResponse:
         return _messageForStatus(error.response?.statusCode, fallback);

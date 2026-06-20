@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:dio/dio.dart';
 
+import '../../core/api/api_error_mapper.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/database/cache_provider.dart';
 import '../../core/services/notification_service.dart';
@@ -136,7 +137,7 @@ class UploadNotifier extends _$UploadNotifier {
       if (pdfPath != null) _deleteTempFile(pdfPath);
       state = UploadState(
         status: UploadStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage: friendlyApiMessage(e),
       );
     }
   }
@@ -188,7 +189,7 @@ class UploadNotifier extends _$UploadNotifier {
       }
       state = UploadState(
         status: UploadStatus.failure,
-        errorMessage: e.toString(),
+        errorMessage: friendlyApiMessage(e),
       );
     }
   }

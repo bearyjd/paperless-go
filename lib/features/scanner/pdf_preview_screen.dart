@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'pdf/pdf_generator.dart';
-import '../../../core/api/api_error_mapper.dart';
+import '../../core/api/api_error_mapper.dart';
 
 /// Preview the generated PDF before uploading.
 /// Shows page count, file size estimate, and quality slider.
