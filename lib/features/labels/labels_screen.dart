@@ -6,6 +6,7 @@ import '../../core/models/correspondent.dart';
 import '../../core/models/document_type.dart';
 import '../../core/models/storage_path.dart';
 import '../../core/models/tag.dart';
+import '../../core/api/api_error_mapper.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/tag_chip.dart';
 import 'labels_notifier.dart';
@@ -58,7 +59,7 @@ class _TagsTab extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 48),
             const SizedBox(height: 16),
-            Text('Failed to load\n$err', textAlign: TextAlign.center),
+            Text('Failed to load\n${friendlyApiMessage(err)}', textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton.tonal(
               onPressed: () => ref.invalidate(tagsProvider),
@@ -226,7 +227,7 @@ class _CorrespondentsTab extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 48),
             const SizedBox(height: 16),
-            Text('Failed to load\n$err', textAlign: TextAlign.center),
+            Text('Failed to load\n${friendlyApiMessage(err)}', textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton.tonal(
               onPressed: () => ref.invalidate(correspondentsProvider),
@@ -383,7 +384,7 @@ class _DocumentTypesTab extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 48),
             const SizedBox(height: 16),
-            Text('Failed to load\n$err', textAlign: TextAlign.center),
+            Text('Failed to load\n${friendlyApiMessage(err)}', textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton.tonal(
               onPressed: () => ref.invalidate(documentTypesProvider),
@@ -535,7 +536,7 @@ class _StoragePathsTab extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 48),
             const SizedBox(height: 16),
-            Text('Failed to load\n$err', textAlign: TextAlign.center),
+            Text('Failed to load\n${friendlyApiMessage(err)}', textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton.tonal(
               onPressed: () => ref.invalidate(storagePathsProvider),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_providers.dart';
 import '../../core/models/saved_view.dart';
+import '../../core/api/api_error_mapper.dart';
 import 'documents_notifier.dart';
 import 'saved_view_helpers.dart';
 
@@ -94,7 +95,7 @@ Future<void> showSaveViewDialog({
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to save view: $e')),
+              content: Text('Failed to save view: ${friendlyApiMessage(e)}')),
         );
       }
     }
@@ -191,7 +192,7 @@ Future<void> confirmDeleteSavedView({
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete: $e')),
+        SnackBar(content: Text('Failed to delete: ${friendlyApiMessage(e)}')),
       );
     }
   }
@@ -254,7 +255,7 @@ Future<void> showRenameSavedViewDialog({
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to rename: $e')),
+              content: Text('Failed to rename: ${friendlyApiMessage(e)}')),
         );
       }
     }

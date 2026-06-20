@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/document_template.dart';
 import '../../core/services/template_service.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../core/api/api_error_mapper.dart';
 
 class TemplatesScreen extends ConsumerWidget {
   const TemplatesScreen({super.key});
@@ -24,7 +25,7 @@ class TemplatesScreen extends ConsumerWidget {
               children: [
                 const Icon(Icons.error_outline, size: 48),
                 const SizedBox(height: 16),
-                Text('Failed to load\n$err', textAlign: TextAlign.center),
+                Text('Failed to load\n${friendlyApiMessage(err)}', textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 FilledButton.tonal(
                   onPressed: () => ref.invalidate(templatesProvider),
@@ -125,7 +126,7 @@ class TemplatesScreen extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to create: $e')),
+                    SnackBar(content: Text('Failed to create: ${friendlyApiMessage(e)}')),
                   );
                 }
               }
@@ -174,7 +175,7 @@ class TemplatesScreen extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to rename: $e')),
+                    SnackBar(content: Text('Failed to rename: ${friendlyApiMessage(e)}')),
                   );
                 }
               }
@@ -214,7 +215,7 @@ class TemplatesScreen extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to delete: $e')),
+                    SnackBar(content: Text('Failed to delete: ${friendlyApiMessage(e)}')),
                   );
                 }
               }

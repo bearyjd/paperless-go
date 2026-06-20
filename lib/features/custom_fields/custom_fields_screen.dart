@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_providers.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../core/models/custom_field.dart';
+import '../../core/api/api_error_mapper.dart';
 import 'custom_field_helpers.dart';
 
 class CustomFieldsScreen extends ConsumerWidget {
@@ -25,7 +26,7 @@ class CustomFieldsScreen extends ConsumerWidget {
               children: [
                 const Icon(Icons.error_outline, size: 48),
                 const SizedBox(height: 16),
-                Text('Failed to load\n$err', textAlign: TextAlign.center),
+                Text('Failed to load\n${friendlyApiMessage(err)}', textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 FilledButton.tonal(
                   onPressed: () => ref.invalidate(customFieldsProvider),
@@ -187,7 +188,7 @@ class CustomFieldsScreen extends ConsumerWidget {
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to create: $e')),
+                      SnackBar(content: Text('Failed to create: ${friendlyApiMessage(e)}')),
                     );
                   }
                 }
@@ -239,7 +240,7 @@ class CustomFieldsScreen extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to rename: $e')),
+                    SnackBar(content: Text('Failed to rename: ${friendlyApiMessage(e)}')),
                   );
                 }
               }
@@ -281,7 +282,7 @@ class CustomFieldsScreen extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to delete: $e')),
+                    SnackBar(content: Text('Failed to delete: ${friendlyApiMessage(e)}')),
                   );
                 }
               }

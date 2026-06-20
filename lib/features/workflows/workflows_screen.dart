@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/api_providers.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/loading_skeleton.dart';
+import '../../core/api/api_error_mapper.dart';
 
 class WorkflowsScreen extends ConsumerWidget {
   const WorkflowsScreen({super.key});
@@ -25,7 +26,7 @@ class WorkflowsScreen extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline, size: 48),
               const SizedBox(height: 16),
-              Text('Failed to load\n$err', textAlign: TextAlign.center),
+              Text('Failed to load\n${friendlyApiMessage(err)}', textAlign: TextAlign.center),
               const SizedBox(height: 16),
               FilledButton.tonal(
                 onPressed: () => ref.invalidate(workflowsProvider),
@@ -64,7 +65,7 @@ class WorkflowsScreen extends ConsumerWidget {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to update workflow: $e')),
+                            SnackBar(content: Text('Failed to update workflow: ${friendlyApiMessage(e)}')),
                           );
                         }
                       }

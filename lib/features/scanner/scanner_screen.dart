@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/api/api_error_mapper.dart';
 
 class ScannerScreen extends ConsumerWidget {
   const ScannerScreen({super.key});
@@ -94,7 +95,7 @@ class ScannerScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Scanner error: $e')),
+          SnackBar(content: Text('Scanner error: ${friendlyApiMessage(e)}')),
         );
       }
     }
@@ -117,7 +118,7 @@ class ScannerScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Scanner error: $e')),
+          SnackBar(content: Text('Scanner error: ${friendlyApiMessage(e)}')),
         );
       }
     }
@@ -139,7 +140,7 @@ class ScannerScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File picker error: $e')),
+          SnackBar(content: Text('File picker error: ${friendlyApiMessage(e)}')),
         );
       }
     }

@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/services/pdf_renderer_channel.dart';
+import '../../core/api/api_error_mapper.dart';
 import 'annotation_export.dart';
 import 'annotation_model.dart';
 import 'annotation_painter.dart';
@@ -161,7 +162,7 @@ class _AnnotateScreenState extends State<AnnotateScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Share failed: $e')),
+          SnackBar(content: Text('Share failed: ${friendlyApiMessage(e)}')),
         );
       }
     }

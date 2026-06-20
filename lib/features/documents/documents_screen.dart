@@ -11,6 +11,7 @@ import '../../core/models/tag.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
 import '../../core/design_tokens.dart';
+import '../../core/api/api_error_mapper.dart';
 import 'active_filters_bar.dart';
 import 'bulk_action_bar.dart';
 import 'document_detail_notifier.dart';
@@ -62,7 +63,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to share: $e')),
+          SnackBar(content: Text('Failed to share: ${friendlyApiMessage(e)}')),
         );
       }
     }
@@ -211,7 +212,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   const SizedBox(height: 16),
                   Text('Failed to load documents', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  Text(err.toString(), style: Theme.of(context).textTheme.bodySmall),
+                  Text(friendlyApiMessage(err, fallback: 'Failed to load documents.'), style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 16),
                   FilledButton.tonal(
                     onPressed: () => ref.read(documentsNotifierProvider.notifier).refresh(),

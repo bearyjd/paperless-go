@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api/api_providers.dart';
+import '../../core/api/api_error_mapper.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
 import 'inbox_notifier.dart';
@@ -53,7 +54,7 @@ class InboxScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               Text('Failed to load inbox', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
-              Text(err.toString(), style: Theme.of(context).textTheme.bodySmall),
+              Text(friendlyApiMessage(err, fallback: 'Failed to load inbox.'), style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 16),
               FilledButton.tonal(
                 onPressed: () => ref.invalidate(inboxNotifierProvider),
@@ -159,7 +160,7 @@ class InboxScreen extends ConsumerWidget {
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Failed to remove: $e')),
+                                SnackBar(content: Text('Failed to remove: ${friendlyApiMessage(e)}')),
                               );
                             }
                             return false;
@@ -323,7 +324,7 @@ class _QuickAssignSheetState extends ConsumerState<_QuickAssignSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update: $e')),
+          SnackBar(content: Text('Failed to update: ${friendlyApiMessage(e)}')),
         );
         setState(() => _saving = false);
       }

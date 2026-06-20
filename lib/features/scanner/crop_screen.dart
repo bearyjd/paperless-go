@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'processing/crop_rotate.dart';
 import 'widgets/crop_overlay.dart';
+import '../../../core/api/api_error_mapper.dart';
 
 /// Fullscreen screen for cropping a single scanned page.
 /// Returns the new cropped image path on apply, or null on cancel.
@@ -59,7 +60,7 @@ class _CropScreenState extends State<CropScreen> {
       if (mounted) {
         setState(() => _isProcessing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Crop failed: $e')),
+          SnackBar(content: Text('Crop failed: ${friendlyApiMessage(e)}')),
         );
       }
     }

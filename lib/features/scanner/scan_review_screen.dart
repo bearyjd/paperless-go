@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'crop_screen.dart';
 import 'processing/crop_rotate.dart';
+import '../../../core/api/api_error_mapper.dart';
 
 /// Review scanned pages before uploading.
 class ScanReviewScreen extends StatefulWidget {
@@ -213,7 +214,7 @@ class _ScanReviewScreenState extends State<ScanReviewScreen> {
       setState(() => _isProcessing = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Rotate failed: $e')));
+      ).showSnackBar(SnackBar(content: Text('Rotate failed: ${friendlyApiMessage(e)}')));
     }
   }
 

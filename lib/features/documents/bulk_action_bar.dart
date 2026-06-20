@@ -5,6 +5,7 @@ import '../../core/models/tag.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document_type.dart';
 import '../../core/models/storage_path.dart';
+import '../../core/api/api_error_mapper.dart';
 
 /// Floating action bar shown during multi-select mode.
 class BulkActionBar extends ConsumerWidget {
@@ -168,7 +169,7 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to add tags: $e')),
+            SnackBar(content: Text('Failed to add tags: ${friendlyApiMessage(e)}')),
           );
         }
       }
@@ -207,7 +208,7 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to remove tags: $e')),
+            SnackBar(content: Text('Failed to remove tags: ${friendlyApiMessage(e)}')),
           );
         }
       }
@@ -247,7 +248,7 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to set correspondent: $e')),
+            SnackBar(content: Text('Failed to set correspondent: ${friendlyApiMessage(e)}')),
           );
         }
       }
@@ -287,7 +288,7 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to set document type: $e')),
+            SnackBar(content: Text('Failed to set document type: ${friendlyApiMessage(e)}')),
           );
         }
       }
@@ -327,7 +328,7 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to set storage path: $e')),
+            SnackBar(content: Text('Failed to set storage path: ${friendlyApiMessage(e)}')),
           );
         }
       }
@@ -374,7 +375,7 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to merge: $e')),
+            SnackBar(content: Text('Failed to merge: ${friendlyApiMessage(e)}')),
           );
         }
       }
@@ -421,7 +422,7 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to rotate: $e')),
+            SnackBar(content: Text('Failed to rotate: ${friendlyApiMessage(e)}')),
           );
         }
       }
@@ -465,7 +466,7 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to re-run OCR: $e')),
+            SnackBar(content: Text('Failed to re-run OCR: ${friendlyApiMessage(e)}')),
           );
         }
       }
@@ -510,7 +511,7 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete: $e')),
+            SnackBar(content: Text('Failed to delete: ${friendlyApiMessage(e)}')),
           );
         }
       }

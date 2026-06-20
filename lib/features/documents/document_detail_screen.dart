@@ -22,6 +22,7 @@ import 'ai_edit_trail_notifier.dart';
 import 'document_detail_notifier.dart';
 import 'documents_notifier.dart';
 import '../inbox/inbox_notifier.dart';
+import '../../core/api/api_error_mapper.dart';
 
 class DocumentDetailScreen extends ConsumerStatefulWidget {
   final int documentId;
@@ -287,7 +288,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to update title: $e')),
+                        SnackBar(content: Text('Failed to update title: ${friendlyApiMessage(e)}')),
                       );
                     }
                   }
@@ -309,7 +310,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to update: $e')),
+                        SnackBar(content: Text('Failed to update: ${friendlyApiMessage(e)}')),
                       );
                     }
                   }
@@ -330,7 +331,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to update: $e')),
+                        SnackBar(content: Text('Failed to update: ${friendlyApiMessage(e)}')),
                       );
                     }
                   }
@@ -351,7 +352,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to update: $e')),
+                        SnackBar(content: Text('Failed to update: ${friendlyApiMessage(e)}')),
                       );
                     }
                   }
@@ -379,7 +380,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to update date: $e')),
+                          SnackBar(content: Text('Failed to update date: ${friendlyApiMessage(e)}')),
                         );
                       }
                     }
@@ -505,7 +506,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to update ASN: $e')),
+                            SnackBar(content: Text('Failed to update ASN: ${friendlyApiMessage(e)}')),
                           );
                         }
                       }
@@ -611,7 +612,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
         } catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Download failed: $e')),
+              SnackBar(content: Text('Download failed: ${friendlyApiMessage(e)}')),
             );
           }
         }
@@ -624,7 +625,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
         } catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Share failed: $e')),
+              SnackBar(content: Text('Share failed: ${friendlyApiMessage(e)}')),
             );
           }
         }
@@ -653,7 +654,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
         } catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to rotate: $e')),
+              SnackBar(content: Text('Failed to rotate: ${friendlyApiMessage(e)}')),
             );
           }
         }
@@ -701,7 +702,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
           } catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to split: $e')),
+                SnackBar(content: Text('Failed to split: ${friendlyApiMessage(e)}')),
               );
             }
           }
@@ -717,7 +718,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
         } catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to load document: $e')),
+              SnackBar(content: Text('Failed to load document: ${friendlyApiMessage(e)}')),
             );
           }
         }
@@ -753,7 +754,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
           if (context.mounted) {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Compress failed: $e')),
+              SnackBar(content: Text('Compress failed: ${friendlyApiMessage(e)}')),
             );
           }
         }
@@ -820,7 +821,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
           if (context.mounted) {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Protect failed: $e')),
+              SnackBar(content: Text('Protect failed: ${friendlyApiMessage(e)}')),
             );
           }
         }
@@ -850,7 +851,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
           } catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Delete failed: $e')),
+                SnackBar(content: Text('Delete failed: ${friendlyApiMessage(e)}')),
               );
             }
           }
@@ -1166,7 +1167,7 @@ class _CustomFieldsSection extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                             content:
-                                Text('Failed to update field: $e')),
+                                Text('Failed to update field: ${friendlyApiMessage(e)}')),
                       );
                     }
                   }
@@ -1254,7 +1255,7 @@ class _CustomFieldsSection extends ConsumerWidget {
           } catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to add field: $e')),
+                SnackBar(content: Text('Failed to add field: ${friendlyApiMessage(e)}')),
               );
             }
           }
@@ -1524,7 +1525,7 @@ class _NotesSection extends ConsumerWidget {
         const SizedBox(height: 8),
         notesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Text('Failed to load notes: $err'),
+          error: (err, _) => Text('Failed to load notes: ${friendlyApiMessage(err)}'),
           data: (notes) {
             if (notes.isEmpty) {
               return Text(
@@ -1548,7 +1549,7 @@ class _NotesSection extends ConsumerWidget {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to delete note: $e')),
+                            SnackBar(content: Text('Failed to delete note: ${friendlyApiMessage(e)}')),
                           );
                         }
                       }
@@ -1593,7 +1594,7 @@ class _NotesSection extends ConsumerWidget {
             .catchError((e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to add note: $e')),
+              SnackBar(content: Text('Failed to add note: ${friendlyApiMessage(e)}')),
             );
           }
         });
@@ -1643,7 +1644,7 @@ class _ShareLinksSectionState extends ConsumerState<_ShareLinksSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create link: $e')),
+          SnackBar(content: Text('Failed to create link: ${friendlyApiMessage(e)}')),
         );
       }
     }
@@ -1662,7 +1663,7 @@ class _ShareLinksSectionState extends ConsumerState<_ShareLinksSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete link: $e')),
+          SnackBar(content: Text('Failed to delete link: ${friendlyApiMessage(e)}')),
         );
       }
     }

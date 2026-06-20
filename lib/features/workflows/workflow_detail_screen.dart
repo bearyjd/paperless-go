@@ -8,6 +8,7 @@ import '../../core/models/document_type.dart';
 import '../../core/models/storage_path.dart';
 import '../../core/models/tag.dart';
 import '../../core/models/workflow.dart';
+import '../../core/api/api_error_mapper.dart';
 import 'workflow_helpers.dart';
 
 class WorkflowDetailScreen extends ConsumerWidget {
@@ -36,7 +37,7 @@ class WorkflowDetailScreen extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline, size: 48),
               const SizedBox(height: 16),
-              Text('Failed to load\n$err', textAlign: TextAlign.center),
+              Text('Failed to load\n${friendlyApiMessage(err)}', textAlign: TextAlign.center),
               const SizedBox(height: 16),
               FilledButton.tonal(
                 onPressed: () => ref.invalidate(workflowsProvider),
@@ -190,7 +191,7 @@ class WorkflowDetailScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete workflow: $e')),
+          SnackBar(content: Text('Failed to delete workflow: ${friendlyApiMessage(e)}')),
         );
       }
     }

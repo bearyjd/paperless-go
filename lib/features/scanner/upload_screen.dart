@@ -12,6 +12,7 @@ import 'providers/metadata_suggestion_provider.dart';
 import 'processing/metadata_matcher.dart';
 import 'upload_notifier.dart';
 import '../documents/ai_edit_trail_notifier.dart';
+import '../../core/api/api_error_mapper.dart';
 
 /// Metadata entry and upload screen.
 /// Receives either imagePaths (for scanned images)
@@ -571,7 +572,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to save template: $e')),
+                    SnackBar(content: Text('Failed to save template: ${friendlyApiMessage(e)}')),
                   );
                 }
               }

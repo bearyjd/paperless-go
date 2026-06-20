@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'pdf/pdf_generator.dart';
+import '../../../core/api/api_error_mapper.dart';
 
 /// Preview the generated PDF before uploading.
 /// Shows page count, file size estimate, and quality slider.
@@ -91,7 +92,7 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
       if (!mounted || generation != _generation) return;
       setState(() => _isGenerating = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PDF generation failed: $e')),
+        SnackBar(content: Text('PDF generation failed: ${friendlyApiMessage(e)}')),
       );
     }
   }

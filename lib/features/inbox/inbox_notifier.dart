@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/models/document.dart';
+import '../../core/api/api_error_mapper.dart';
 
 part 'inbox_notifier.g.dart';
 
@@ -95,7 +96,7 @@ class InboxNotifier extends _$InboxNotifier {
       if (!identical(state.valueOrNull, loadingState)) return;
       state = AsyncData(loadingState.copyWith(
         isLoadingMore: false,
-        loadMoreError: 'Failed to load more: $e',
+        loadMoreError: 'Failed to load more: ${friendlyApiMessage(e)}',
       ));
     }
   }

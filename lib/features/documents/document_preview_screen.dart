@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../core/api/api_providers.dart';
+import '../../core/api/api_error_mapper.dart';
 
 class DocumentPreviewScreen extends ConsumerStatefulWidget {
   final int documentId;
@@ -74,7 +75,7 @@ class _DocumentPreviewScreenState extends ConsumerState<DocumentPreviewScreen> {
                 Text('Failed to load PDF',
                     style: TextStyle(color: Colors.white.withValues(alpha: 0.70))), // On forced-dark background
                 const SizedBox(height: 8),
-                Text(error.toString(),
+                Text(friendlyApiMessage(error, fallback: 'Failed to load PDF.'),
                     style: TextStyle(color: Colors.white.withValues(alpha: 0.38), fontSize: 12)), // On forced-dark background
               ],
             ),
