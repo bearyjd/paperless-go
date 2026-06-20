@@ -28,6 +28,7 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
   int? _fileSizeBytes;
   bool _isGenerating = false;
   int _currentPage = 0;
+  int _generation = 0;
   late PageController _pageController;
 
   @override
@@ -54,6 +55,10 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
   }
 
   Future<void> _generatePdf() async {
+    // Guards against concurrent generation: dragging the quality slider
+    // (onChangeEnd) can fire while the initState generation is still running.
+    // Only the newest request is allowed to commit its result.
+    final generation = ++_generation;
     setState(() => _isGenerating = true);
     _cleanupPdf();
 
@@ -63,7 +68,14 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
         jpegQuality: _quality.round(),
         preProcessed: widget.preProcessed,
       );
-      if (!mounted) return;
+      if (!mounted || generation != _generation) {
+        // A newer generation superseded this one — delete its orphaned output.
+        try {
+          final stale = File(path);
+          if (stale.existsSync()) stale.deleteSync();
+        } catch (_) {}
+        return;
+      }
       final file = File(path);
       final size = await file.length();
       setState(() {
@@ -72,7 +84,7 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
         _isGenerating = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() => _isGenerating = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('PDF generation failed: $e')),

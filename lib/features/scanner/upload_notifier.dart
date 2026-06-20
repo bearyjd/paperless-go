@@ -57,11 +57,16 @@ class UploadNotifier extends _$UploadNotifier {
   Timer? _pollTimer;
   bool _disposed = false;
 
+  /// Temp PDF generated from scanned images, kept alive until polling reaches
+  /// a terminal state so the source survives until the server confirms.
+  String? _pendingTempPdf;
+
   @override
   UploadState build() {
     _disposed = false;
     ref.onDispose(() {
       _pollTimer?.cancel();
+      _cleanupPendingTempFile();
       _disposed = true;
     });
     return const UploadState();
@@ -101,8 +106,10 @@ class UploadNotifier extends _$UploadNotifier {
         },
       );
 
-      // Clean up temp PDF after successful upload
-      _deleteTempFile(pdfPath);
+      // Defer temp PDF cleanup until polling reaches a terminal state. The
+      // bytes are already on the server, but keeping the source until the
+      // server confirms processing leaves room to retry a failed job.
+      _pendingTempPdf = pdfPath;
 
       state = UploadState(status: UploadStatus.processing, taskId: taskId);
 
@@ -225,6 +232,7 @@ class UploadNotifier extends _$UploadNotifier {
       attempts++;
       if (attempts > _maxPollAttempts) {
         timer.cancel();
+        _cleanupPendingTempFile();
         state = UploadState(
           status: UploadStatus.failure,
           taskId: taskId,
@@ -240,6 +248,7 @@ class UploadNotifier extends _$UploadNotifier {
 
         if (status == 'SUCCESS') {
           timer.cancel();
+          _cleanupPendingTempFile();
           final rawDocId = result['related_document'];
           final docId = rawDocId is int
               ? rawDocId
@@ -257,6 +266,7 @@ class UploadNotifier extends _$UploadNotifier {
           );
         } else if (status == 'FAILURE') {
           timer.cancel();
+          _cleanupPendingTempFile();
           final errorMsg =
               result['result'] as String? ?? 'Upload processing failed';
           state = UploadState(
@@ -275,6 +285,7 @@ class UploadNotifier extends _$UploadNotifier {
         // Continuing to poll would just waste 5 minutes of retries.
         if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
           timer.cancel();
+          _cleanupPendingTempFile();
           state = UploadState(
             status: UploadStatus.failure,
             taskId: taskId,
@@ -291,6 +302,7 @@ class UploadNotifier extends _$UploadNotifier {
 
   void reset() {
     _pollTimer?.cancel();
+    _cleanupPendingTempFile();
     state = const UploadState();
   }
 
@@ -320,6 +332,15 @@ class UploadNotifier extends _$UploadNotifier {
       if (file.existsSync()) file.deleteSync();
     } catch (_) {
       // Best-effort cleanup
+    }
+  }
+
+  /// Delete the deferred scanned-images temp PDF, if any, exactly once.
+  void _cleanupPendingTempFile() {
+    final path = _pendingTempPdf;
+    if (path != null) {
+      _deleteTempFile(path);
+      _pendingTempPdf = null;
     }
   }
 }

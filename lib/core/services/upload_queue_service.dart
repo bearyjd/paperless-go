@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -40,6 +41,13 @@ class UploadQueueService extends _$UploadQueueService {
       const maxRetries = 5;
       for (final upload in pending) {
         if (upload.retryCount >= maxRetries) continue;
+
+        // The source file may have been cleaned up by the OS since it was
+        // queued. Drop it rather than retrying forever against a missing path.
+        if (!File(upload.filePath).existsSync()) {
+          await cache.removePendingUpload(upload.id);
+          continue;
+        }
         try {
           List<int>? tags;
           if (upload.tagsJson != null) {
