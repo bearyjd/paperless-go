@@ -10,6 +10,7 @@ import '../../core/models/saved_view.dart';
 import '../../core/models/tag.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
+import '../../shared/widgets/paginated_list_view.dart';
 import '../../core/design_tokens.dart';
 import '../../core/api/api_error_mapper.dart';
 import 'active_filters_bar.dart';
@@ -264,19 +265,11 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
 
               final api = ref.watch(paperlessApiProvider);
 
-              return RefreshIndicator(
+              return PaginatedListView(
                 onRefresh: () => ref.read(documentsNotifierProvider.notifier).refresh(),
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification is ScrollEndNotification &&
-                        notification.metrics.pixels >=
-                            notification.metrics.maxScrollExtent - 200) {
-                      ref.read(documentsNotifierProvider.notifier).loadMore();
-                    }
-                    return false;
-                  },
-                  child: CustomScrollView(
-                    slivers: [
+                onLoadMore: () => ref.read(documentsNotifierProvider.notifier).loadMore(),
+                isLoadingMore: docsData.isLoadingMore,
+                slivers: [
                       // Saved views bar
                       if (savedViewsAsync.valueOrNull?.isNotEmpty == true)
                         SliverToBoxAdapter(
@@ -365,14 +358,8 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                         ),
                       ),
                       SliverList.builder(
-                        itemCount: docsData.documents.length + (docsData.isLoadingMore ? 1 : 0),
+                        itemCount: docsData.documents.length,
                         itemBuilder: (context, index) {
-                          if (index >= docsData.documents.length) {
-                            return const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
                           final doc = docsData.documents[index];
                           final isSelected = _selectedIds.contains(doc.id);
                           return Stack(
@@ -421,8 +408,6 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                         },
                       ),
                     ],
-                  ),
-                ),
               );
             },
           ),

@@ -5,6 +5,7 @@ import '../../core/api/api_providers.dart';
 import '../../core/api/api_error_mapper.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
+import '../../shared/widgets/paginated_list_view.dart';
 import 'inbox_notifier.dart';
 
 class InboxScreen extends ConsumerWidget {
@@ -90,19 +91,11 @@ class InboxScreen extends ConsumerWidget {
             );
           }
 
-          return RefreshIndicator(
+          return PaginatedListView(
             onRefresh: () => ref.read(inboxNotifierProvider.notifier).refresh(),
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                if (notification is ScrollEndNotification &&
-                    notification.metrics.pixels >=
-                        notification.metrics.maxScrollExtent - 200) {
-                  ref.read(inboxNotifierProvider.notifier).loadMore();
-                }
-                return false;
-              },
-              child: CustomScrollView(
-                slivers: [
+            onLoadMore: () => ref.read(inboxNotifierProvider.notifier).loadMore(),
+            isLoadingMore: inbox.isLoadingMore,
+            slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -115,14 +108,8 @@ class InboxScreen extends ConsumerWidget {
                     ),
                   ),
                   SliverList.builder(
-                    itemCount: inbox.documents.length + (inbox.isLoadingMore ? 1 : 0),
+                    itemCount: inbox.documents.length,
                     itemBuilder: (context, index) {
-                      if (index >= inbox.documents.length) {
-                        return const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
                       final doc = inbox.documents[index];
                       return Dismissible(
                         key: ValueKey(doc.id),
@@ -225,8 +212,6 @@ class InboxScreen extends ConsumerWidget {
                     },
                   ),
                 ],
-              ),
-            ),
           );
         },
       ),

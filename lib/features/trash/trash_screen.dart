@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'trash_notifier.dart';
+import '../../shared/widgets/paginated_list_view.dart';
 
 class TrashScreen extends ConsumerStatefulWidget {
   const TrashScreen({super.key});
@@ -105,26 +106,14 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
             );
           }
 
-          return RefreshIndicator(
+          return PaginatedListView(
             onRefresh: () => ref.read(trashNotifierProvider.notifier).refresh(),
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                if (notification is ScrollEndNotification &&
-                    notification.metrics.pixels >=
-                        notification.metrics.maxScrollExtent - 200) {
-                  ref.read(trashNotifierProvider.notifier).loadMore();
-                }
-                return false;
-              },
-              child: ListView.builder(
-                itemCount: data.documents.length + (data.isLoadingMore ? 1 : 0),
+            onLoadMore: () => ref.read(trashNotifierProvider.notifier).loadMore(),
+            isLoadingMore: data.isLoadingMore,
+            slivers: [
+              SliverList.builder(
+                itemCount: data.documents.length,
                 itemBuilder: (context, index) {
-                  if (index >= data.documents.length) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
                   final doc = data.documents[index];
                   final isSelected = _selectedIds.contains(doc.id);
 
@@ -177,7 +166,7 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
                   );
                 },
               ),
-            ),
+            ],
           );
         },
       ),
