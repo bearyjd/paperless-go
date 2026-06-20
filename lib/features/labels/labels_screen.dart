@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../shared/widgets/destructive_button_style.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document_type.dart';
 import '../../core/models/storage_path.dart';
@@ -203,7 +204,7 @@ class _TagsTab extends ConsumerWidget {
                 );
               }
             },
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Theme.of(context).colorScheme.onError),
+            style: destructiveButtonStyle(context),
             child: const Text('Delete'),
           ),
         ],
@@ -360,7 +361,7 @@ class _CorrespondentsTab extends ConsumerWidget {
                 );
               }
             },
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Theme.of(context).colorScheme.onError),
+            style: destructiveButtonStyle(context),
             child: const Text('Delete'),
           ),
         ],
@@ -512,7 +513,7 @@ class _DocumentTypesTab extends ConsumerWidget {
                 );
               }
             },
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Theme.of(context).colorScheme.onError),
+            style: destructiveButtonStyle(context),
             child: const Text('Delete'),
           ),
         ],
@@ -685,7 +686,7 @@ class _StoragePathsTab extends ConsumerWidget {
                 );
               }
             },
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Theme.of(context).colorScheme.onError),
+            style: destructiveButtonStyle(context),
             child: const Text('Delete'),
           ),
         ],

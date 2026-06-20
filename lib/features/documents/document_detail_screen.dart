@@ -11,6 +11,7 @@ import '../../core/services/biometric_service.dart';
 import '../../core/services/document_lock_service.dart';
 import '../../core/services/pdf_tools_service.dart';
 import '../../core/api/api_providers.dart';
+import '../../shared/widgets/destructive_button_style.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/custom_field.dart';
@@ -838,7 +839,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
               FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Theme.of(context).colorScheme.onError),
+                style: destructiveButtonStyle(context),
                 child: const Text('Move to Trash'),
               ),
             ],

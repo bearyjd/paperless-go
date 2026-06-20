@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../shared/widgets/destructive_button_style.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document_type.dart';
 import '../../core/models/storage_path.dart';
@@ -168,7 +169,7 @@ class WorkflowDetailScreen extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Theme.of(context).colorScheme.onError),
+            style: destructiveButtonStyle(context),
             child: const Text('Delete'),
           ),
         ],

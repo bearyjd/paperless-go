@@ -27,12 +27,15 @@ Iterable<File> _dartFiles(String dir) sync* {
 void main() {
   group('style guard', () {
     test('no hardcoded Colors.red outside the editor allowlist', () {
+      // \b avoids false-positives on the distinct color Colors.redAccent while
+      // still catching Colors.red, Colors.red.shade300, Colors.red,
+      final colorRe = RegExp(r'Colors\.red\b');
       final offenders = <String>[];
       for (final f in _dartFiles('lib')) {
         if (_colorAllowlist.contains(f.uri.pathSegments.last)) continue;
         final lines = f.readAsLinesSync();
         for (var i = 0; i < lines.length; i++) {
-          if (lines[i].contains('Colors.red')) {
+          if (colorRe.hasMatch(lines[i])) {
             offenders.add('${f.path}:${i + 1}');
           }
         }
@@ -46,6 +49,8 @@ void main() {
     });
 
     test('errors are not stored raw (no errorMessage: <x>.toString())', () {
+      // Guards the `.toString()` leak form specifically (the Phase 1 vector).
+      // Other forms (e.g. errorMessage: 'failed: $e') are not matched here.
       final offenders = <String>[];
       final re = RegExp(r'errorMessage:\s*\w+\.toString\(\)');
       for (final f in _dartFiles('lib')) {
