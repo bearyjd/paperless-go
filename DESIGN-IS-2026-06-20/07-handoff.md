@@ -9,7 +9,7 @@ and pushed to `origin` at handoff time.
 - The Dieter Rams **refine plan (Phases 1–6) is COMPLETE** and on `origin/main`.
 - The **rotate → stale-thumbnail bug is fixed**, unit-tested, and device-verified.
 - `main` == `origin/main` at `bcd465c`. Nothing pending on origin.
-- Only remaining track: **GitLab / F-Droid** delivery (separate remote).
+- **NEXT PRIORITY: publish to Google Play under a Ventoux *organization* account** (see "What remains" #1). Also pending: GitLab / F-Droid delivery.
 - Tests: **185 passing**. `flutter analyze`: clean.
 
 ## Git state
@@ -36,10 +36,63 @@ Docs: `9a577d2` (committed the `DESIGN-IS-2026-06-20/` audit+plan+handoff), `604
 
 ## What remains
 
-1. **GitLab / F-Droid** — none of this session's work (nor the earlier error/color work) is on `gitlab`. To ship to F-Droid: cherry-pick the relevant commits onto a branch off `gitlab/main` and fast-forward; do NOT bring the GitHub-specific `ci.yml`. (Prior cross-pick pattern produced `1fa811a` — see 06-handoff.)
-2. **F-Droid release ritual** — version bump (`pubspec.yaml` versionCode/versionName) + `metadata/en-US/changelogs/<versionCode>.txt` + git tag. Release build needs `--obfuscate --split-debug-info=./debug-info/`. Keystore: `~/keys/paperless-go/paperless-go-release.jks` (`android/key.properties` storeFile must match).
-3. **Optional / deferred** — Phase 2 spacing-token sweep (raw `16`→`Spacing.lg`, ~120 invisible edits, no guard test) + 4 font-size moves. Cosmetic-only, low value.
-4. **Phase 6 final manual pass** — largely done (device-verified Phases 3–5 + the rotate fix). Un-eyeballed: the `TagPickerSheet` sheet-open interaction and an informal Rams re-score.
+### 1. Publish to Google Play — **NEXT PRIORITY** (via a Ventoux **organization** account)
+
+Goal: get Paperless Go into the Play Store. The "annoying" closed-testing
+requirement (≈12 testers opted-in for 14 days before production) applies ONLY to
+**personal** developer accounts created after Nov 2023. **Organization accounts
+are exempt** — so route this through a Ventoux *org* account and skip it.
+
+1. **Ventoux org developer account** — needs a **D-U-N-S number** (free from Dun &
+   Bradstreet; allow days–weeks, expedite available), the $25 one-time fee, and org
+   legal name/address/website. Register as **Organization** type (NOT personal —
+   that's what grants the testing exemption) and complete identity/verification.
+2. **Check the package name** `com.ventoux.paperlessgo` is free / not burned on
+   another account. If it was ever published elsewhere you'd likely need a new
+   `applicationId`.
+3. **Build an AAB** (Play requires App Bundle, not APK). Bump `version:` in
+   `pubspec.yaml` first (currently `1.1.3+8` → e.g. `1.1.4+9`; each upload needs a
+   higher versionCode):
+   `flutter build appbundle --release --obfuscate --split-debug-info=./debug-info/`
+4. **Signing** — enroll in **Play App Signing**; the existing
+   `~/keys/paperless-go/paperless-go-release.jks` can serve as the *upload* key.
+   Consequence: the Play build is signed by Google's key → a different signature
+   than the F-Droid/sideload APK, so users can't cross-update between the two
+   without uninstalling.
+5. **"Set up your app" checklist** — store listing (icon, screenshots, feature
+   graphic, descriptions), **privacy policy URL** (required), **data safety** form
+   (self-hosted client: sends nothing to the dev; stores an API token locally and
+   talks to the user's own server), content rating, target audience, ads declaration.
+6. **App access (self-hosted gotcha — top rejection cause):** reviewers need a
+   working server. Provide a **demo Paperless-ngx URL + test credentials** in the
+   App access instructions, or clearly explain the app requires the user's own
+   self-hosted server. Skipping this bounces review.
+7. **Production release** — upload the AAB, add release notes, submit. First review
+   on a new account can take days to ~2 weeks.
+
+Caveat: Google changes these policies often — confirm the exact tester count and
+the org-account exemption wording in the Play Console (this is the read as of
+early 2026).
+
+### 2. GitLab / F-Droid
+None of this session's work (nor the earlier error/color work) is on `gitlab`. To
+ship to F-Droid: cherry-pick the relevant commits onto a branch off `gitlab/main`
+and fast-forward; do NOT bring the GitHub-specific `ci.yml`. (Prior cross-pick
+pattern produced `1fa811a` — see 06-handoff.)
+
+### 3. F-Droid release ritual
+Version bump (`pubspec.yaml`) + `metadata/en-US/changelogs/<versionCode>.txt` + git
+tag. Release build needs `--obfuscate --split-debug-info=./debug-info/`. Keystore:
+`~/keys/paperless-go/paperless-go-release.jks` (`android/key.properties` storeFile
+must match).
+
+### 4. Optional / deferred
+Phase 2 spacing-token sweep (raw `16`→`Spacing.lg`, ~120 invisible edits, no guard
+test) + 4 font-size moves. Cosmetic-only, low value.
+
+### 5. Phase 6 final manual pass
+Largely done (device-verified Phases 3–5 + the rotate fix). Un-eyeballed: the
+`TagPickerSheet` sheet-open interaction and an informal Rams re-score.
 
 ## Gotchas (read before editing)
 
