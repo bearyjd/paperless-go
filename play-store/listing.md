@@ -1,7 +1,7 @@
 # Google Play — Store Listing (ready to paste)
 
 Canonical store-listing copy for the Play Console. App: **Paperless Go** ·
-package `com.ventoux.paperlessgo` · publisher: Ventoux.
+package `com.ventouxlabs.paperlessgo` · publisher: Ventoux.
 Feature list below was verified against the codebase (every feature ships).
 
 ## Title (max 30 chars)

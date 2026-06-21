@@ -1,7 +1,7 @@
 # Google Play — Submission Checklist (v1.1.4+9)
 
 Single source of truth for the Play submission. Status as of 2026-06-21.
-App: **Paperless Go** · package `com.ventoux.paperlessgo` · versionCode **9**.
+App: **Paperless Go** · package `com.ventouxlabs.paperlessgo` · versionCode **9**.
 
 Legend: ✅ done · 🟡 ready to paste/transcribe (no work left but yours) · ⛔ blocked on you (external)
 
@@ -49,7 +49,9 @@ Legend: ✅ done · 🟡 ready to paste/transcribe (no work left but yours) · �
 ## Account / Console (external)
 - ⛔ Ventoux **Organization** developer account live (D-U-N-S, $25, identity
   verification). Org account avoids the closed-testing requirement.
-- ⛔ Confirm `com.ventoux.paperlessgo` is free / not burned on another account.
+- ✅ Package name `com.ventouxlabs.paperlessgo` (original `com.ventoux.paperlessgo`
+  was already burned on Play → switched; applicationId-only change, namespace
+  unchanged). This new name gets permanently burned on first upload.
 - ⛔ Enroll in **Play App Signing** (the release key is the *upload* key).
 - ⛔ Production release: upload AAB → fill the above → submit. First review on a
   new account: days to ~2 weeks.

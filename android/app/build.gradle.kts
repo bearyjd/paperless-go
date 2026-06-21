@@ -36,7 +36,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ventoux.paperlessgo"
+        // Play Store identity (the original com.ventoux.paperlessgo was burned on
+        // Play and can never be reused). namespace stays com.ventoux.paperlessgo —
+        // it is internal-only and decoupled from applicationId.
+        applicationId = "com.ventouxlabs.paperlessgo"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
