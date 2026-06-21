@@ -24,7 +24,6 @@ dependencies:
   flutter_secure_storage: ^9.2.4
 
   # UI
-  google_fonts: ^6.2.1
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
   flutter_markdown: ^0.7.4
@@ -95,3 +94,10 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+
+  # Inter bundled as a variable font (one file, all weights) so the app never
+  # fetches fonts from Google's CDN at runtime — see core/theme.dart.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf

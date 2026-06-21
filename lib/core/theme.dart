@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'design_tokens.dart';
 
@@ -22,19 +21,13 @@ class AppTheme {
 
   static ThemeData _buildTheme(ColorScheme colorScheme) {
     final baseTextTheme = ThemeData(colorScheme: colorScheme).textTheme;
-    final textTheme = GoogleFonts.interTextTheme(baseTextTheme).copyWith(
-      titleLarge: GoogleFonts.inter(
-        textStyle: baseTextTheme.titleLarge,
-        fontWeight: FontWeight.w700,
-      ),
-      titleMedium: GoogleFonts.inter(
-        textStyle: baseTextTheme.titleMedium,
-        fontWeight: FontWeight.w600,
-      ),
-      titleSmall: GoogleFonts.inter(
-        textStyle: baseTextTheme.titleSmall,
-        fontWeight: FontWeight.w600,
-      ),
+    // Inter is bundled as a variable font (assets/fonts/Inter-Variable.ttf);
+    // applying the family lets Flutter pick weights via the wght axis.
+    final inter = baseTextTheme.apply(fontFamily: 'Inter');
+    final textTheme = inter.copyWith(
+      titleLarge: inter.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+      titleMedium: inter.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      titleSmall: inter.titleSmall?.copyWith(fontWeight: FontWeight.w600),
     );
     return ThemeData(
       useMaterial3: true,
