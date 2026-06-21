@@ -38,14 +38,17 @@ the user's own server), declare:
 
 **Security practices**
 - Is all user data encrypted in transit? → **Yes** (HTTPS; the app talks to the
-  user's server over TLS). [Verify the app doesn't allow cleartext for prod.]
+  user's server over TLS). ✅ **Verified 2026-06-21:** the shipped release AAB has
+  no `usesCleartextTraffic` flag and no network-security config, so cleartext HTTP
+  is blocked by default on Android 9+ — the production build is HTTPS-only.
+  (Note: the login UI still offers an `http://` option that will fail at runtime;
+  tracked as a separate UX bug, not a data-safety issue.)
 - Do you provide a way to request data deletion? → Data lives on the user's own
   server; the app stores only local config/credentials, cleared on logout /
   uninstall. Answer per the form's options accordingly.
 
 ## Privacy policy
-- A privacy policy URL is **required** regardless of the answers above. It should
-  state: the app is a client for the user's self-hosted Paperless-ngx server; it
-  stores server URL + credentials locally; it sends no data to the developer or
-  third parties; contact info. Host it (e.g., project site / GitHub Pages) and
-  put the URL in both the listing and the Data safety section.
+- A privacy policy URL is **required** regardless of the answers above. ✅ Hosted:
+  **https://bearyjd.github.io/paperless-go/privacy-policy.html** (source:
+  `play-store/privacy-policy.md`). Paste this URL into both the listing and the
+  Data safety section.

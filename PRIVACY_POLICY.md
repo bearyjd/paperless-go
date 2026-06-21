@@ -1,3 +1,8 @@
+> ⚠️ **Superseded.** The canonical privacy policy is
+> [`play-store/privacy-policy.md`](play-store/privacy-policy.md), published at
+> <https://bearyjd.github.io/paperless-go/privacy-policy.html>. Use that URL on
+> the Play listing. This file is kept for reference only.
+
 # Privacy Policy for Paperless Go
 
 **Last updated:** April 25, 2026

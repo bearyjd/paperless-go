@@ -1,3 +1,8 @@
+> ⚠️ **Superseded.** The canonical, ready-to-paste listing now lives in
+> [`play-store/listing.md`](play-store/listing.md), with the full submission
+> flow in [`play-store/SUBMISSION_CHECKLIST.md`](play-store/SUBMISSION_CHECKLIST.md).
+> This file is kept for reference only.
+
 # Google Play Store Listing — Copy/Paste Reference
 
 ## App Details
