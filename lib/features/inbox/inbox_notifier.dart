@@ -105,28 +105,41 @@ class InboxNotifier extends _$InboxNotifier {
     ref.invalidateSelf();
   }
 
+  /// Document ids with a remove-from-inbox in flight. Guards against the swipe
+  /// gesture and the actions menu both firing for the same document, which would
+  /// issue a redundant API write and decrement totalCount twice.
+  final Set<int> _removing = {};
+
   /// Remove a document from inbox by removing inbox tags.
-  /// Throws on API failure so the caller can handle rollback.
+  /// Throws on API failure so the caller can handle rollback. A concurrent
+  /// remove already in flight for the same document is a no-op.
   Future<void> removeFromInbox(Document doc) async {
-    final api = ref.read(paperlessApiProvider);
-    final tagsMap = await ref.read(tagsProvider.future);
-    final inboxTagIds = tagsMap.values
-        .where((t) => t.isInboxTag)
-        .map((t) => t.id)
-        .toSet();
-    final newTags = doc.tags.where((id) => !inboxTagIds.contains(id)).toList();
+    if (!_removing.add(doc.id)) return;
+    try {
+      final api = ref.read(paperlessApiProvider);
+      final tagsMap = await ref.read(tagsProvider.future);
+      final inboxTagIds = tagsMap.values
+          .where((t) => t.isInboxTag)
+          .map((t) => t.id)
+          .toSet();
+      final newTags =
+          doc.tags.where((id) => !inboxTagIds.contains(id)).toList();
 
-    // API call first — if it fails, exception propagates to caller
-    await api.updateDocument(doc.id, {'tags': newTags});
+      // API call first — if it fails, exception propagates to caller
+      await api.updateDocument(doc.id, {'tags': newTags});
 
-    // Only update local state on success
-    final current = state.valueOrNull;
-    if (current != null) {
-      final remaining = current.documents.where((d) => d.id != doc.id).toList();
-      state = AsyncData(current.copyWith(
-        documents: remaining,
-        totalCount: (current.totalCount - 1).clamp(0, current.totalCount),
-      ));
+      // Only update local state on success
+      final current = state.valueOrNull;
+      if (current != null) {
+        final remaining =
+            current.documents.where((d) => d.id != doc.id).toList();
+        state = AsyncData(current.copyWith(
+          documents: remaining,
+          totalCount: (current.totalCount - 1).clamp(0, current.totalCount),
+        ));
+      }
+    } finally {
+      _removing.remove(doc.id);
     }
   }
 }

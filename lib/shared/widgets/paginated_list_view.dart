@@ -52,6 +52,9 @@ class PaginatedListView extends StatelessWidget {
           return false;
         },
         child: CustomScrollView(
+          // Always scrollable so pull-to-refresh works even when the content
+          // doesn't fill the viewport.
+          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             ...slivers,
             if (isLoadingMore)

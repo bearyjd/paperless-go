@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/api/api_error_mapper.dart';
 import '../../core/models/correspondent.dart';
+import '../../core/models/document.dart';
 import '../../core/models/document_type.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
@@ -140,22 +141,7 @@ class InboxScreen extends ConsumerWidget {
                             return false;
                           }
                           // Swipe right: remove from inbox
-                          try {
-                            await ref.read(inboxNotifierProvider.notifier).removeFromInbox(doc);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Removed "${doc.title}" from inbox')),
-                              );
-                            }
-                            return true;
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Failed to remove: ${friendlyApiMessage(e)}')),
-                              );
-                            }
-                            return false;
-                          }
+                          return _removeFromInbox(context, ref, doc);
                         },
                         child: DocumentCard(
                           document: doc,
@@ -174,22 +160,7 @@ class InboxScreen extends ConsumerWidget {
                                 _showQuickAssign(context, ref, doc.id);
                                 return;
                               }
-                              try {
-                                await ref
-                                    .read(inboxNotifierProvider.notifier)
-                                    .removeFromInbox(doc);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Removed "${doc.title}" from inbox')),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Failed to remove: ${friendlyApiMessage(e)}')),
-                                  );
-                                }
-                              }
+                              await _removeFromInbox(context, ref, doc);
                             },
                             itemBuilder: (_) => [
                               const PopupMenuItem(
@@ -219,6 +190,30 @@ class InboxScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  /// Remove [doc] from the inbox, surfacing success/failure as a SnackBar.
+  /// Returns true on success so the swipe path can confirm dismissal; the
+  /// actions-menu path ignores the result. The notifier guards against a
+  /// concurrent remove for the same document.
+  Future<bool> _removeFromInbox(
+      BuildContext context, WidgetRef ref, Document doc) async {
+    try {
+      await ref.read(inboxNotifierProvider.notifier).removeFromInbox(doc);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Removed "${doc.title}" from inbox')),
+        );
+      }
+      return true;
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to remove: ${friendlyApiMessage(e)}')),
+        );
+      }
+      return false;
+    }
   }
 
   void _showQuickAssign(BuildContext context, WidgetRef ref, int documentId) {
