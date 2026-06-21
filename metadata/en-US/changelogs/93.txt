@@ -1,0 +1,5 @@
+* Accessibility: screen-reader labels on icon buttons, a non-swipe menu for inbox actions, and heading semantics for section titles
+* Simpler scanning with one entry point, plus a tidier document menu and a rotate (CW/180/CCW) chooser
+* Dashboard: the Documents card now opens your library
+* Fixed a document thumbnail not refreshing after a rotate
+* Fonts are now bundled in the app, so it no longer downloads fonts at runtime
