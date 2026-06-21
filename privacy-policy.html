@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — Paperless Go</title>
+  <meta name="description" content="Privacy policy for Paperless Go, a self-hosted Paperless-ngx mobile client. No data is collected by the developer.">
+  <style>
+    :root {
+      --bg: #faf9fd;
+      --surface: #ffffff;
+      --text: #1b1b1f;
+      --muted: #45464f;
+      --accent: #4d57c0;
+      --line: #e3e1ec;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121318;
+        --surface: #1d1f25;
+        --text: #e4e1e9;
+        --muted: #c6c5d0;
+        --accent: #bdc2ff;
+        --line: #2c2e36;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: clamp(1.5rem, 2vw + 1rem, 3rem) 1.25rem 4rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: clamp(1.25rem, 3vw, 2.5rem);
+    }
+    h1 { font-size: clamp(1.6rem, 4vw, 2.1rem); line-height: 1.2; margin: 0 0 .25rem; }
+    h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; color: var(--text); }
+    .updated { color: var(--muted); font-size: .9rem; margin: 0 0 1.5rem; }
+    p, li { color: var(--muted); }
+    strong { color: var(--text); }
+    a { color: var(--accent); }
+    ul { padding-left: 1.25rem; }
+    li { margin: .35rem 0; }
+    .lead {
+      font-size: 1.05rem;
+      color: var(--text);
+      border-left: 3px solid var(--accent);
+      padding-left: 1rem;
+      margin: 1rem 0 1.5rem;
+    }
+    footer { margin-top: 2rem; font-size: .85rem; color: var(--muted); text-align: center; }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <article class="card">
+      <h1>Privacy Policy — Paperless Go</h1>
+      <p class="updated">Last updated: 21 June 2026</p>
+
+      <p>Paperless Go (&ldquo;the app&rdquo;) is a mobile client for
+      <strong>Paperless-ngx</strong>, a self-hosted document management system.
+      The app is published by Ventoux. This policy explains what the app does and
+      does not do with your data.</p>
+
+      <p class="lead">Paperless Go talks <strong>only</strong> to the
+      Paperless-ngx server <strong>you</strong> configure. It sends
+      <strong>no</strong> data to the developer or to any third party. There is no
+      analytics, no advertising, and no tracking.</p>
+
+      <h2>What the app stores</h2>
+      <ul>
+        <li><strong>Server connection details</strong> — the server URL and your
+        authentication credentials (API token or username/password) are stored
+        <strong>on your device</strong> in the operating system&rsquo;s secure
+        storage (Android Keystore-backed). They are used only to connect to your
+        server and are never transmitted to the developer.</li>
+        <li><strong>Cached content</strong> — document thumbnails and data fetched
+        from your server may be cached locally on your device to improve
+        performance.</li>
+        <li><strong>Local app data</strong> — preferences, saved views, upload
+        templates, and any pending offline edits are stored locally on your
+        device.</li>
+      </ul>
+
+      <h2>What the app sends, and where</h2>
+      <ul>
+        <li>The app communicates <strong>only</strong> with the Paperless-ngx
+        server address you enter, over an encrypted (HTTPS) connection. Your
+        documents, searches, and edits go to <strong>your</strong> server — not to
+        the developer.</li>
+        <li>Document scanning and on-device text recognition (OCR) are performed
+        <strong>on your device</strong>. Builds distributed via Google Play use
+        Google ML Kit for on-device text recognition; ML Kit runs
+        <strong>entirely on your device</strong> and sends no images or text to
+        Google or any third party. Captured images are not uploaded to the
+        developer or to any third-party service by the app.</li>
+      </ul>
+
+      <h2>What the app does NOT do</h2>
+      <ul>
+        <li>It does <strong>not</strong> collect personal data for the developer.</li>
+        <li>It does <strong>not</strong> include analytics, crash-reporting, or
+        advertising SDKs.</li>
+        <li>It does <strong>not</strong> share your data with third parties.</li>
+      </ul>
+
+      <h2>Permissions</h2>
+      <p>The app requests only the permissions needed for its features: network
+      access (to reach your server), camera (to scan documents), storage/photos
+      (to pick or save files), notifications (upload progress and completion), and
+      biometric/fingerprint (optional app-level and per-document lock). These are
+      used solely on your device and to communicate with the server you configure;
+      no data from them is sent to the developer or any third party.</p>
+
+      <h2>Data retention and deletion</h2>
+      <ul>
+        <li>Locally stored credentials and cached data are removed when you log
+        out or uninstall the app.</li>
+        <li>Your documents are stored on your own Paperless-ngx server; manage or
+        delete them there.</li>
+      </ul>
+
+      <h2>Children</h2>
+      <p>The app is a productivity tool and is not directed at children.</p>
+
+      <h2>Changes to this policy</h2>
+      <p>We may update this policy; material changes will be reflected by the
+      &ldquo;Last updated&rdquo; date above.</p>
+
+      <h2>Contact</h2>
+      <ul>
+        <li>Email: <a href="mailto:jd@beary.us">jd@beary.us</a></li>
+        <li>Project: <a href="https://github.com/bearyjd/paperless-go">github.com/bearyjd/paperless-go</a></li>
+      </ul>
+    </article>
+    <footer>
+      <a href="./">Paperless Go</a> · open source, AGPL-3.0
+    </footer>
+  </main>
+</body>
+</html>

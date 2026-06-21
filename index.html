@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paperless Go</title>
+  <meta name="description" content="Paperless Go — a modern, native mobile client for your self-hosted Paperless-ngx document server.">
+  <style>
+    :root {
+      --bg: #faf9fd; --surface: #ffffff; --text: #1b1b1f;
+      --muted: #45464f; --accent: #4d57c0; --line: #e3e1ec;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121318; --surface: #1d1f25; --text: #e4e1e9;
+        --muted: #c6c5d0; --accent: #bdc2ff; --line: #2c2e36;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+      display: grid; min-height: 100vh; place-items: center; padding: 1.5rem;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: 20px; padding: clamp(1.75rem, 4vw, 3rem);
+      max-width: 560px; text-align: center;
+    }
+    h1 { font-size: clamp(2rem, 6vw, 2.75rem); margin: .25rem 0 .5rem; }
+    p { color: var(--muted); margin: .5rem 0 1.5rem; }
+    .links { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: center; }
+    a.btn {
+      display: inline-block; text-decoration: none; font-weight: 600;
+      padding: .7rem 1.25rem; border-radius: 999px; border: 1px solid var(--line);
+      color: var(--text);
+    }
+    a.btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+    .tag { color: var(--muted); font-size: .85rem; margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Paperless Go</h1>
+    <p>A modern, native mobile client for your self-hosted
+    <strong>Paperless-ngx</strong> document server. Scan, search, organize, and
+    manage your documents on the go — your data stays between your device and your
+    own server.</p>
+    <div class="links">
+      <a class="btn primary" href="https://github.com/bearyjd/paperless-go">Source code</a>
+      <a class="btn" href="./privacy-policy.html">Privacy policy</a>
+    </div>
+    <p class="tag">Free &amp; open source · AGPL-3.0</p>
+  </main>
+</body>
+</html>
