@@ -1,3 +1,6 @@
+> ⚠️ **Superseded by [`09-handoff.md`](09-handoff.md)** — read that one. (Package name
+> changed to `com.ventouxlabs.paperlessgo`; reviewer demo is live; assets staged.)
+
 # 08 — Session Handoff (2026-06-21) — Google Play push
 
 **Self-contained cold-pickup doc. Supersedes `06-handoff.md` and `07-handoff.md`**
