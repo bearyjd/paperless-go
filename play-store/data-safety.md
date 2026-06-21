@@ -12,11 +12,9 @@ client: it talks only to the user's own Paperless-ngx server, and the developer
   `cunning_document_scanner` process on-device; they don't upload images.
 - ✅ **Credentials on-device** — `flutter_secure_storage` (Keystore-backed) holds
   the server URL + API token; not sent to the developer.
-- ⚠️ **`google_fonts`** fetches fonts from Google's CDN (fonts.gstatic.com) at
-  runtime unless bundled as assets. This downloads font files (no user PII) — not
-  "user data collection" for this form, but it is a third-party network call worth
-  knowing (and F-Droid dislikes it; consider bundling fonts as assets). Doesn't
-  change the answers below.
+- ✅ **No runtime CDN font fetch** — `google_fonts` was removed (`ed0ad3d`); Inter
+  is now bundled as a local variable-font asset. The app makes no third-party
+  network calls beyond the user's own Paperless-ngx server.
 
 ## Recommended answers
 
