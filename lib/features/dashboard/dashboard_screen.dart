@@ -89,6 +89,7 @@ class _DashboardBody extends StatelessWidget {
               icon: Icons.description_outlined,
               label: 'Documents',
               value: stats.documentsTotal.toString(),
+              onTap: (ctx) => ctx.go('/documents'),
             ),
             _StatCard(
               icon: Icons.inbox_outlined,

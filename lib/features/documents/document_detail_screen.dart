@@ -186,19 +186,9 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                     contentPadding: EdgeInsets.zero,
                   )),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(value: 'rotate_cw', child: ListTile(
+                  const PopupMenuItem(value: 'rotate', child: ListTile(
                     leading: Icon(Icons.rotate_right),
-                    title: Text('Rotate 90° CW'),
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                  const PopupMenuItem(value: 'rotate_180', child: ListTile(
-                    leading: Icon(Icons.rotate_90_degrees_cw),
-                    title: Text('Rotate 180°'),
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                  const PopupMenuItem(value: 'rotate_ccw', child: ListTile(
-                    leading: Icon(Icons.rotate_left),
-                    title: Text('Rotate 90° CCW'),
+                    title: Text('Rotate'),
                     contentPadding: EdgeInsets.zero,
                   )),
                   const PopupMenuItem(value: 'split', child: ListTile(
@@ -578,6 +568,58 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
     );
   }
 
+  Future<void> _showRotateChooser(BuildContext context, WidgetRef ref) async {
+    final degrees = await showModalBottomSheet<int>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.rotate_right),
+              title: const Text('Rotate 90° CW'),
+              onTap: () => Navigator.pop(ctx, 90),
+            ),
+            ListTile(
+              leading: const Icon(Icons.rotate_90_degrees_cw),
+              title: const Text('Rotate 180°'),
+              onTap: () => Navigator.pop(ctx, 180),
+            ),
+            ListTile(
+              leading: const Icon(Icons.rotate_left),
+              title: const Text('Rotate 90° CCW'),
+              onTap: () => Navigator.pop(ctx, 270),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (degrees == null || !context.mounted) return;
+    await _rotate(context, ref, degrees);
+  }
+
+  Future<void> _rotate(BuildContext context, WidgetRef ref, int degrees) async {
+    try {
+      await ref.read(paperlessApiProvider).bulkEdit(
+            documents: [documentId],
+            method: 'rotate',
+            parameters: {'degrees': degrees},
+          );
+      ref.invalidate(documentDetailProvider(documentId));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Rotated $degrees°')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to rotate: ${friendlyApiMessage(e)}')),
+        );
+      }
+    }
+  }
+
   Future<void> _handleAction(
     BuildContext context, WidgetRef ref, String action, String title,
   ) async {
@@ -637,33 +679,8 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
         }
       case 'more_like':
         context.push('/search/similar/$documentId');
-      case 'rotate_cw':
-      case 'rotate_180':
-      case 'rotate_ccw':
-        final degrees = switch (action) {
-          'rotate_cw' => 90,
-          'rotate_180' => 180,
-          _ => 270,
-        };
-        try {
-          await ref.read(paperlessApiProvider).bulkEdit(
-                documents: [documentId],
-                method: 'rotate',
-                parameters: {'degrees': degrees},
-              );
-          ref.invalidate(documentDetailProvider(documentId));
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Rotated $degrees°')),
-            );
-          }
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to rotate: ${friendlyApiMessage(e)}')),
-            );
-          }
-        }
+      case 'rotate':
+        await _showRotateChooser(context, ref);
       case 'split':
         final controller = TextEditingController();
         final confirmed = await showDialog<bool>(
