@@ -11,6 +11,7 @@ import '../../core/services/biometric_service.dart';
 import '../../core/services/document_lock_service.dart';
 import '../../core/services/pdf_tools_service.dart';
 import '../../core/api/api_providers.dart';
+import '../../core/api/thumbnail_cache_bust.dart';
 import '../../shared/widgets/destructive_button_style.dart';
 import '../../shared/widgets/metadata_dropdown.dart';
 import '../../core/auth/auth_provider.dart';
@@ -254,7 +255,10 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: CachedNetworkImage(
-                    imageUrl: ref.watch(paperlessApiProvider).thumbnailUrl(documentId),
+                    imageUrl: cacheBustedThumbnailUrl(
+                      ref.watch(paperlessApiProvider).thumbnailUrl(documentId),
+                      doc.modified,
+                    ),
                     httpHeaders: {'Authorization': ref.watch(paperlessApiProvider).authToken},
                     cacheManager: ThumbnailCacheManager.instance,
                     fit: BoxFit.contain,
@@ -605,6 +609,8 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
             method: 'rotate',
             parameters: {'degrees': degrees},
           );
+      // Re-fetch the document; its bumped `modified` cache-busts the preview
+      // thumbnail URL (see the imageUrl below) so the rotated image reloads.
       ref.invalidate(documentDetailProvider(documentId));
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

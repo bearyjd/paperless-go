@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/design_tokens.dart';
+import '../../core/api/thumbnail_cache_bust.dart';
 import '../../core/thumbnail_cache.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document.dart';
@@ -80,7 +81,7 @@ class DocumentCard extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(Radii.sm),
                     child: CachedNetworkImage(
-                      imageUrl: thumbnailUrl!,
+                      imageUrl: cacheBustedThumbnailUrl(thumbnailUrl!, document.modified),
                       httpHeaders: {'Authorization': authToken!},
                       cacheManager: ThumbnailCacheManager.instance,
                       width: 48,
