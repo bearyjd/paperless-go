@@ -1,3 +1,6 @@
+> ⚠️ **Superseded by [`11-handoff.md`](11-handoff.md)** — read that one. (fdroiddata MR !34430
+> now updated to `com.ventouxlabs.paperlessgo.nogoogle`.)
+
 # 10 — Session Handoff (2026-06-21) — v1.1.4 released on both tracks
 
 **Self-contained cold-pickup doc. Supersedes `09-handoff.md`** (read only this one).
