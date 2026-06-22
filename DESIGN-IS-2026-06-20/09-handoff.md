@@ -1,3 +1,6 @@
+> ⚠️ **Superseded by [`10-handoff.md`](10-handoff.md)** — read that one. (v1.1.4 is now
+> released on both GitHub *and* GitLab/F-Droid; F-Droid package is `com.ventouxlabs.paperlessgo.nogoogle`.)
+
 # 09 — Session Handoff (2026-06-21) — Play submission ready (new package + live demo)
 
 **Self-contained cold-pickup doc. Supersedes `08-handoff.md`** (read only this one).
