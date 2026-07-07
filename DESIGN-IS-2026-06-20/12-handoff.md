@@ -10,9 +10,8 @@
   cut **v1.1.5** to make it unambiguous, updated the MR, and replied.
 - **v1.1.5 released on both remotes:**
   - **Play / Google** (`origin`/GitHub, `com.ventouxlabs.paperlessgo`): `main` = `5cef662`,
-    tag `v1.1.5`. Release workflow run `28833009305` was **in progress at session end** —
-    verify it published the GitHub Release with `app-release.apk` + `app-release.aab`
-    (`gh run view 28833009305 --repo bearyjd/paperless-go`).
+    tag `v1.1.5`. Release workflow run `28833009305` **succeeded** — GitHub Release
+    v1.1.5 is published with `app-release.apk` + `app-release.aab`.
   - **F-Droid / degoogled** (`gitlab` = `selector4560/paperless-go`,
     `com.ventouxlabs.paperlessgo.nogoogle`): `gitlab/main` = `eceb0b9`, tag `v1.1.5`.
 - **NEXT (both external, not code):** (1) F-Droid maintainers test/merge !34430 — ball is
