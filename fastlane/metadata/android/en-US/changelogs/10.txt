@@ -1,0 +1,1 @@
+• Inter font is now bundled in the app — nothing is downloaded from Google at runtime
