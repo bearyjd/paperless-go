@@ -77,6 +77,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  http_mock_adapter: ^0.6.1
   build_runner: ^2.4.14
   drift_dev: ^2.22.1
   json_serializable: ^6.9.4
@@ -95,9 +96,13 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
 
-  # Inter bundled as a variable font (one file, all weights) so the app never
-  # fetches fonts from Google's CDN at runtime — see core/theme.dart.
+  # Inter and Space Grotesk bundled as variable fonts (one file each, all
+  # weights) so the app never fetches fonts from Google's CDN at runtime —
+  # a hard F-Droid requirement. See core/theme.dart.
   fonts:
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter-Variable.ttf
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-Variable.ttf
