@@ -23,7 +23,6 @@ import 'features/documents/document_detail_screen.dart';
 import 'features/documents/document_preview_screen.dart';
 import 'features/documents/documents_screen.dart';
 import 'features/inbox/inbox_screen.dart';
-import 'features/dashboard/dashboard_screen.dart';
 import 'features/login/login_screen.dart';
 import 'features/scanner/enhance_screen.dart';
 import 'features/scanner/pdf_preview_screen.dart';
@@ -54,7 +53,7 @@ GoRouter router(Ref ref) {
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: '/',
+    initialLocation: '/inbox',
     refreshListenable: refreshNotifier,
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Page not found')),
@@ -72,7 +71,7 @@ GoRouter router(Ref ref) {
                 style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: Spacing.xl),
             FilledButton.tonal(
-              onPressed: () => GoRouter.of(context).go('/'),
+              onPressed: () => GoRouter.of(context).go('/inbox'),
               child: const Text('Go home'),
             ),
           ],
@@ -95,6 +94,11 @@ GoRouter router(Ref ref) {
         return '/';
       }
 
+      // Dashboard was retired in the redesign; '/' now lands on Inbox (the
+      // highest-frequency workflow). Keeping the redirect (rather than
+      // deleting the path) preserves old deep links and widget intents.
+      if (state.uri.path == '/') return '/inbox';
+
       final authState = ref.read(authStateProvider);
       // Don't redirect while auth state is still loading from storage
       if (authState.isLoading && !authState.hasError) return null;
@@ -102,7 +106,7 @@ GoRouter router(Ref ref) {
       final isLoginRoute = state.matchedLocation == '/login';
 
       if (!isAuthenticated && !isLoginRoute) return '/login';
-      if (isAuthenticated && isLoginRoute) return '/';
+      if (isAuthenticated && isLoginRoute) return '/inbox';
       return null;
     },
     routes: [
@@ -142,10 +146,6 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/trash',
         builder: (_, __) => const TrashScreen(),
-      ),
-      GoRoute(
-        path: '/inbox',
-        builder: (_, __) => const InboxScreen(),
       ),
       GoRoute(
         path: '/annotate',
@@ -240,7 +240,7 @@ GoRouter router(Ref ref) {
       ShellRoute(
         builder: (context, state, child) => _AppShell(child: child),
         routes: [
-          GoRoute(path: '/', builder: (_, __) => const DashboardScreen()),
+          GoRoute(path: '/inbox', builder: (_, __) => const InboxScreen()),
           GoRoute(path: '/documents', builder: (_, __) => const DocumentsScreen()),
           GoRoute(path: '/scan', builder: (_, __) => const ScannerScreen()),
           GoRoute(path: '/chat', builder: (_, __) => const ChatScreen()),
@@ -332,17 +332,9 @@ class _AppShell extends ConsumerWidget {
   final Widget child;
   const _AppShell({required this.child});
 
-  static int _indexFromLocation(String location) {
-    if (location.startsWith('/documents')) return 1;
-    if (location.startsWith('/scan')) return 2;
-    if (location.startsWith('/chat')) return 3;
-    return 0;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).matchedLocation;
-    final currentIndex = _indexFromLocation(location);
     final isOnline = ref.watch(connectivityNotifierProvider);
 
     // Keep upload queue service alive
@@ -359,37 +351,140 @@ class _AppShell extends ConsumerWidget {
               leading: const Icon(Icons.cloud_off),
               backgroundColor: Theme.of(context).colorScheme.errorContainer,
               actions: const [SizedBox.shrink()],
-              padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.sm),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.lg, vertical: Spacing.sm),
             ),
           Expanded(child: child),
         ],
       ),
-      floatingActionButton: (currentIndex == 0 || currentIndex == 1)
-          ? FloatingActionButton(
-              onPressed: () => context.go('/scan'),
-              tooltip: 'Add document',
-              child: const Icon(Icons.add),
-            )
-          : null,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (index) {
-          switch (index) {
-            case 0: context.go('/');
-            case 1: context.go('/documents');
-            case 2: context.go('/scan');
-            case 3: context.go('/chat');
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.description_outlined), label: 'Docs'),
-          NavigationDestination(icon: Icon(Icons.document_scanner_outlined), label: 'Scan'),
-          NavigationDestination(icon: Icon(Icons.chat_outlined), label: 'Chat'),
-        ],
+      bottomNavigationBar: _ShellNavBar(location: location),
+    );
+  }
+}
+
+/// Redesigned bottom nav: 3 destinations (Inbox, Library, Chat) plus a
+/// raised circular accent-filled Scan button in the center — the single
+/// visually-elevated primary action of the shell.
+class _ShellNavBar extends StatelessWidget {
+  const _ShellNavBar({required this.location});
+
+  final String location;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
+    final onScan = location.startsWith('/scan');
+
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.card,
+        border: Border(top: BorderSide(color: tokens.line)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 68,
+          child: Row(
+            children: [
+              _NavItem(
+                icon: Icons.inbox_outlined,
+                selectedIcon: Icons.inbox,
+                label: 'Inbox',
+                selected: location.startsWith('/inbox'),
+                onTap: () => context.go('/inbox'),
+              ),
+              _NavItem(
+                icon: Icons.folder_outlined,
+                selectedIcon: Icons.folder,
+                label: 'Library',
+                selected: location.startsWith('/documents'),
+                onTap: () => context.go('/documents'),
+              ),
+              Expanded(
+                child: Center(
+                  child: Transform.translate(
+                    offset: const Offset(0, -12),
+                    child: Material(
+                      color: tokens.accentFill,
+                      shape: CircleBorder(
+                        side: onScan
+                            ? BorderSide(color: tokens.accentEmphasis, width: 2)
+                            : BorderSide.none,
+                      ),
+                      child: InkWell(
+                        onTap: () => context.go('/scan'),
+                        customBorder: const CircleBorder(),
+                        child: const SizedBox(
+                          width: 56,
+                          height: 56,
+                          child: Icon(
+                            Icons.document_scanner_outlined,
+                            color: Colors.white,
+                            semanticLabel: 'Scan',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              _NavItem(
+                icon: Icons.chat_bubble_outline,
+                selectedIcon: Icons.chat_bubble,
+                label: 'Chat',
+                selected: location.startsWith('/chat'),
+                onTap: () => context.go('/chat'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
+    final color = selected ? tokens.accentEmphasis : tokens.inkSoft;
+
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        child: Semantics(
+          selected: selected,
+          button: true,
+          label: label,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(selected ? selectedIcon : icon, color: color),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: Theme.of(context)
+                    .textTheme
+                    .labelMedium
+                    ?.copyWith(color: color),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
