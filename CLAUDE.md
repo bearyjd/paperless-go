@@ -171,6 +171,17 @@ User reports bug
 
 ## YOLO Mode Configuration
 
+> **⚠️ `run-paperless-fable.sh` (repo root) does NOT match this section.**
+> That script's embedded prompt targets "the Go codebase" (`go test ./...`,
+> Go-specific security checks) — this is a Flutter/Dart project, so that
+> command always fails and the script's `until` loop will retry forever
+> with `--dangerously-skip-permissions` on every cycle. Do not run it as-is.
+> See `.agent_native/agent_roadmap.md` item 3 for the fix. The
+> `debug-overnight.sh` pattern actually described below (and referenced by
+> `.claude/agents/`) is the one that matches this repo — but note
+> `scripts/debug-overnight.sh` and `debug/queue/` don't exist on disk yet
+> either (`.agent_native/agent_roadmap.md` item 4).
+
 When running overnight autonomous debug sessions, use these settings:
 
 ```bash
@@ -292,55 +303,81 @@ echo "========================================"
 
 ## Project Structure Reference
 
+> **Verified against the actual tree on 2026-07-07.** The version of this
+> section previously here described files/dirs that don't exist in this
+> repo (`api_constants.dart`, `api_exceptions.dart`, `task.dart`,
+> `paginated_response.dart`, `core/providers/`, top-level `widgets/`/`utils/`,
+> `test/integration/`). Corrected below so an agent doesn't burn turns
+> looking for them. Full detail in `docs/CODEMAPS/`.
+
 ```
 lib/
 ├── main.dart                       # App entry point
-├── app.dart                        # MaterialApp / Router setup
+├── app.dart                        # GoRouter, shell UI, auth/deep-link redirects
 │
 ├── core/
 │   ├── api/
-│   │   ├── paperless_api.dart      # Dio client, interceptors, auth
-│   │   ├── api_constants.dart      # Base URLs, endpoints, API version
-│   │   └── api_exceptions.dart     # Custom exception types
-│   ├── models/                     # Data models (json_serializable / freezed)
-│   │   ├── document.dart
-│   │   ├── tag.dart
-│   │   ├── correspondent.dart
-│   │   ├── document_type.dart
-│   │   ├── storage_path.dart
-│   │   ├── custom_field.dart
-│   │   ├── task.dart
-│   │   ├── saved_view.dart
-│   │   └── paginated_response.dart
-│   ├── providers/                  # Riverpod providers
-│   ├── router/                     # GoRouter configuration
-│   └── theme/                      # App theming
+│   │   ├── paperless_api.dart      # All Paperless-ngx endpoints (528 lines — see note below)
+│   │   ├── dio_client.dart         # Dio instance, interceptors (auth, CSRF), providers
+│   │   ├── api_error_mapper.dart   # DioException → friendly message mapping
+│   │   ├── api_providers.dart      # Riverpod providers for the API client + keepAlive lists
+│   │   └── thumbnail_cache_bust.dart
+│   ├── auth/                       # auth_provider, auth_service, secure_storage, server_profiles
+│   ├── database/                   # Drift schema, cache_repository, cache_provider
+│   ├── models/                     # One file per resource, @freezed + @JsonSerializable:
+│   │                               #   document, tag, correspondent, document_type, storage_path,
+│   │                               #   custom_field, saved_view, workflow, note, api_response
+│   │                               #   (no separate task.dart or paginated_response.dart —
+│   │                               #    pagination is handled via api_response.dart)
+│   ├── services/                   # edit_queue_service/processor, upload_queue_service,
+│   │                               #   document_lock_service, connectivity_service, template_service,
+│   │                               #   home_widget_service, notification_service, pdf_tools_service
+│   ├── router/                     # scan_route_args.dart
+│   ├── theme.dart                  # AppTheme.light()/dark(), ColorScheme.fromSeed
+│   └── design_tokens.dart          # Spacing/Radii constants (no color/type tokens yet — see AUDIT.md)
 │
-├── features/
-│   ├── documents/                  # Document list, detail, search
-│   ├── upload/                     # Document upload flow
-│   ├── tags/                       # Tag management
-│   ├── correspondents/             # Correspondent management
-│   ├── settings/                   # Server config, auth
-│   └── dashboard/                  # Home / overview
+├── features/                       # One dir per feature; providers/notifiers live beside their
+│   │                               #   screen (there is no separate core/providers/ dir)
+│   ├── documents/, inbox/, search/, labels/, trash/, templates/, workflows/,
+│   │   custom_fields/, annotate/, ai_chat/, login/, settings/, dashboard/
+│   ├── scanner/                    # Capture → crop → enhance → pdf preview → upload pipeline
+│   │   └── processing/             # Image filters (deskew, binarize, sharpen, etc.), OCR, presets
+│   └── upload/share_intent_handler.dart
 │
-├── widgets/                        # Shared UI components
-│
-└── utils/                          # Helpers, extensions
+└── shared/widgets/                 # Reusable UI (document_card, tag_chip, stamp_chip,
+                                     #   empty_state, paginated_list_view, metadata_sheet, etc.)
+                                     #   (no top-level lib/widgets/ or lib/utils/)
 
 test/
-├── unit/
-│   ├── api/                        # API client tests with mock responses
-│   ├── models/                     # Serialization round-trip tests
-│   └── providers/                  # Provider logic tests
-├── widget/                         # Widget tests
-└── integration/                    # Full flow tests
+├── unit/<feature>/                 # Mirrors lib/features/<feature>/, named *_test.dart
+│   ├── api/                        # api_error_mapper, bulk_edit_url, thumbnail_cache_bust tests
+│   │                               #   (NO API-response-mock tests yet — see .agent_native/agent_roadmap.md #2)
+│   └── style_guard_test.dart       # Enforced repo-wide rules (no raw Colors.red, no .toString() error leaks)
+├── features/scanner/                # Filter-pipeline tests, mirrors lib/features/scanner/
+├── widget/                         # Only 3 files today: empty_state, metadata_dropdown,
+│                                   #   paginated_list_view — see .agent_native/agent_roadmap.md #5
+└── (no test/integration/ or integration_test/ directory exists yet)
 
 debug/
-├── queue/                          # Bug files for overnight runs
-├── reports/                        # Generated debug reports
-└── logs/                           # Session logs
+├── reports/                        # Generated debug reports (full-codebase-audit.md, etc. exist)
+└── (debug/queue/ and debug/logs/, described in "Bug Queue" below, are NOT yet created
+    — see .agent_native/agent_roadmap.md #4)
 ```
+
+**Known gap:** `pubspec.yaml` has no HTTP-mocking dev dependency
+(`mockito` / `http_mock_adapter` / etc.), so `paperless_api.dart` and
+`dio_client.dart` — the entire HTTP surface — currently have zero
+request/response-shape test coverage. Read `.agent_native/agent_roadmap.md`
+item 2 before relying on Pass 5's "add a test that mocks the exact
+response that caused the failure" below — there is nowhere to put that
+test yet, and `test/unit/api/paperless_api_test.dart` (referenced in
+"Build & Test Commands" below) does not exist.
+
+**Structural note:** `paperless_api.dart` is a single class covering every
+resource (documents, tags, correspondents, document types, storage paths,
+saved views, custom fields, tasks, bulk-edit). It's under this repo's
+800-line file ceiling but is the natural next split point once test
+coverage exists to split it safely.
 
 ---
 
