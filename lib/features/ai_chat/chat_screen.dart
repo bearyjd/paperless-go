@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_provider.dart';
+import '../../core/design_tokens.dart';
+import '../../shared/widgets/stamp_chip.dart';
 import 'chat_notifier.dart';
 import 'chat_service.dart';
 
@@ -37,6 +39,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
     final chatState = ref.watch(chatNotifierProvider);
     final aiUrl = ref.watch(aiChatUrlProvider);
     final isConfigured = aiUrl != null && aiUrl.isNotEmpty;
@@ -89,21 +92,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ? widget.documentTitle ?? 'Document Chat'
         : 'AI Chat';
 
+    // Clear-chat and settings collapse into a single overflow menu so the
+    // input's send button remains the one obvious primary action.
+    final showClear = chatState.messages.isNotEmpty;
+    final showSettings = !_isDocumentMode;
+
     return Scaffold(
+      backgroundColor: tokens.paper,
       appBar: AppBar(
         title: Text(appBarTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
-          if (chatState.messages.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_sweep),
-              tooltip: 'Clear chat',
-              onPressed: () => ref.read(chatNotifierProvider.notifier).clearHistory(),
-            ),
-          if (!_isDocumentMode)
-            IconButton(
-              icon: const Icon(Icons.settings),
-              tooltip: 'Settings',
-              onPressed: () => context.push('/settings'),
+          if (showClear || showSettings)
+            PopupMenuButton<_ChatMenuAction>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'More',
+              onSelected: (action) {
+                switch (action) {
+                  case _ChatMenuAction.clear:
+                    ref.read(chatNotifierProvider.notifier).clearHistory();
+                  case _ChatMenuAction.settings:
+                    context.push('/settings');
+                }
+              },
+              itemBuilder: (context) => [
+                if (showClear)
+                  const PopupMenuItem(
+                    value: _ChatMenuAction.clear,
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.delete_sweep_outlined),
+                      title: Text('Clear chat'),
+                    ),
+                  ),
+                if (showSettings)
+                  const PopupMenuItem(
+                    value: _ChatMenuAction.settings,
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.settings_outlined),
+                      title: Text('Settings'),
+                    ),
+                  ),
+              ],
             ),
         ],
       ),
@@ -117,7 +147,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       : ListView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                              horizontal: Spacing.md, vertical: Spacing.sm),
                           itemCount: chatState.messages.length +
                               (chatState.isLoading &&
                                       (chatState.mode == ChatMode.rag ||
@@ -149,28 +179,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildNotConfigured(BuildContext context) {
+    final tokens = AppTokens.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Spacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.smart_toy_outlined, size: 64,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-            const SizedBox(height: 16),
+            Icon(Icons.smart_toy_outlined, size: 64, color: tokens.inkSoft),
+            const SizedBox(height: Spacing.lg),
             Text(
               'AI Chat not configured',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.sm),
             Text(
               'Set up your Paperless-AI URL in settings to start chatting about your documents.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: tokens.inkSoft),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Spacing.xl),
             FilledButton.icon(
               onPressed: () => context.push('/settings'),
               icon: const Icon(Icons.settings),
@@ -183,7 +214,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildEmptyChat(BuildContext context) {
-    final icon = _isDocumentMode ? Icons.chat : Icons.auto_awesome;
+    final tokens = AppTokens.of(context);
+    final icon = _isDocumentMode ? Icons.chat_bubble_outline : Icons.auto_awesome;
     final title = _isDocumentMode
         ? 'Ask questions about this document'
         : 'Ask about your documents';
@@ -205,31 +237,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(Spacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 64,
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
+            Icon(icon, size: 64, color: tokens.accentEmphasis),
+            const SizedBox(height: Spacing.lg),
             Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.sm),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: tokens.inkSoft),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: Spacing.xl),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: Spacing.sm,
+              runSpacing: Spacing.xs,
               alignment: WrapAlignment.center,
               children: suggestions
-                  .map((s) => _SuggestionChip(
+                  .map((s) => StampChip(
                         label: s,
-                        onTap: (text) => _sendMessage(text),
+                        onTap: () => _sendMessage(s),
                       ))
                   .toList(),
             ),
@@ -240,14 +272,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildTypingIndicator(BuildContext context) {
+    final tokens = AppTokens.of(context);
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.symmetric(vertical: Spacing.xs),
+        padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.lg, vertical: Spacing.md),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
+          color: tokens.card,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(Radii.lg),
+            topRight: Radius.circular(Radii.lg),
+            bottomLeft: Radius.circular(Radii.sm),
+            bottomRight: Radius.circular(Radii.lg),
+          ),
+          border: Border.all(color: tokens.line),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -257,15 +297,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: tokens.accentEmphasis,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: Spacing.sm),
             Text(
               'Thinking...',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: tokens.inkSoft),
             ),
           ],
         ),
@@ -274,51 +315,62 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildInputBar(BuildContext context, bool isLoading) {
+    final tokens = AppTokens.of(context);
     final hintText = _isDocumentMode
         ? 'Ask about this document...'
         : 'Ask about your documents...';
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        12,
-        8,
-        12,
-        8 + MediaQuery.of(context).padding.bottom,
+        Spacing.md,
+        Spacing.sm,
+        Spacing.md,
+        Spacing.sm + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
-        ),
+        color: tokens.paper,
+        border: Border(top: BorderSide(color: tokens.line)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
             child: TextField(
               controller: _inputController,
               focusNode: _focusNode,
               enabled: !isLoading,
+              style: TextStyle(color: tokens.ink),
               decoration: InputDecoration(
                 hintText: hintText,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                hintStyle: TextStyle(color: tokens.inkSoft),
+                filled: true,
+                fillColor: tokens.card,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(Radii.pill),
+                  borderSide: BorderSide(color: tokens.line),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(Radii.pill),
+                  borderSide: BorderSide(color: tokens.accentEmphasis),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(Radii.pill),
+                  borderSide: BorderSide(color: tokens.line),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 10),
+                    horizontal: Spacing.lg, vertical: Spacing.md),
                 isDense: true,
               ),
               textInputAction: TextInputAction.send,
               onSubmitted: isLoading ? null : (_) => _submit(),
-              maxLines: 3,
+              maxLines: 4,
               minLines: 1,
             ),
           ),
-          const SizedBox(width: 8),
-          IconButton.filled(
-            onPressed: isLoading ? null : _submit,
-            icon: const Icon(Icons.send, size: 20),
+          const SizedBox(width: Spacing.sm),
+          _SendButton(
+            enabled: !isLoading,
+            onTap: _submit,
           ),
         ],
       ),
@@ -338,6 +390,44 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
+enum _ChatMenuAction { clear, settings }
+
+/// The screen's single primary action: an accent-filled circular send button.
+class _SendButton extends StatelessWidget {
+  const _SendButton({required this.enabled, required this.onTap});
+
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
+    final onAccent = tokens.onAccent;
+    return Semantics(
+      button: true,
+      label: 'Send',
+      child: Material(
+        color: enabled
+            ? tokens.accentFill
+            : tokens.accentFill.withValues(alpha: 0.4),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: enabled ? onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.all(Spacing.md),
+            child: Icon(
+              Icons.arrow_upward,
+              size: 24,
+              color: onAccent,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final ValueChanged<int> onDocumentTap;
@@ -351,7 +441,17 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = AppTokens.of(context);
+
+    // Asymmetric radius: rounded everywhere except a flat corner on the side
+    // the bubble is anchored to (bottom-right for the user, bottom-left for
+    // the assistant).
+    final radius = BorderRadius.only(
+      topLeft: const Radius.circular(Radii.lg),
+      topRight: const Radius.circular(Radii.lg),
+      bottomLeft: Radius.circular(isUser ? Radii.lg : Radii.sm),
+      bottomRight: Radius.circular(isUser ? Radii.sm : Radii.lg),
+    );
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -359,22 +459,13 @@ class _MessageBubble extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.8,
         ),
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        margin: const EdgeInsets.symmetric(vertical: Spacing.xs),
+        padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.lg, vertical: Spacing.md),
         decoration: BoxDecoration(
-          color: isUser
-              ? colorScheme.primaryContainer
-              : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: isUser
-                ? const Radius.circular(16)
-                : const Radius.circular(4),
-            bottomRight: isUser
-                ? const Radius.circular(4)
-                : const Radius.circular(16),
-          ),
+          color: isUser ? tokens.accentSoft : tokens.card,
+          borderRadius: radius,
+          border: isUser ? null : Border.all(color: tokens.line),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,9 +473,7 @@ class _MessageBubble extends StatelessWidget {
             if (isUser)
               SelectableText(
                 message.content,
-                style: TextStyle(
-                  color: colorScheme.onPrimaryContainer,
-                ),
+                style: TextStyle(color: tokens.ink),
               )
             else
               MarkdownBody(
@@ -396,30 +485,33 @@ class _MessageBubble extends StatelessWidget {
                   }
                 },
                 styleSheet: MarkdownStyleSheet(
-                  p: TextStyle(color: colorScheme.onSurface),
+                  p: TextStyle(color: tokens.ink),
+                  a: TextStyle(color: tokens.accentEmphasis),
                   code: TextStyle(
-                    backgroundColor: colorScheme.surfaceContainerLow,
-                    color: colorScheme.onSurface,
+                    backgroundColor: tokens.paper,
+                    color: tokens.ink,
                     fontSize: 13,
                   ),
                   codeblockDecoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(8),
+                    color: tokens.paper,
+                    borderRadius: BorderRadius.circular(Radii.md),
+                    border: Border.all(color: tokens.line),
                   ),
                 ),
               ),
             // Document references
             if (message.references.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              const Divider(height: 1),
+              const SizedBox(height: Spacing.sm),
+              Divider(height: 1, color: tokens.line),
               const SizedBox(height: 6),
               Text(
                 'Referenced documents:',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(color: tokens.inkSoft),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: Spacing.xs),
               ...message.references.map((ref) => InkWell(
                     onTap: () => onDocumentTap(ref.id),
                     child: Padding(
@@ -428,13 +520,13 @@ class _MessageBubble extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.description_outlined,
-                              size: 14, color: colorScheme.primary),
-                          const SizedBox(width: 4),
+                              size: 14, color: tokens.accentEmphasis),
+                          const SizedBox(width: Spacing.xs),
                           Flexible(
                             child: Text(
                               ref.title,
                               style: TextStyle(
-                                color: colorScheme.primary,
+                                color: tokens.accentEmphasis,
                                 fontSize: 13,
                                 decoration: TextDecoration.underline,
                               ),
@@ -448,34 +540,17 @@ class _MessageBubble extends StatelessWidget {
                   )),
             ],
             // Timestamp
-            const SizedBox(height: 4),
+            const SizedBox(height: Spacing.xs),
             Text(
               DateFormat.Hm().format(message.timestamp),
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: (isUser
-                            ? colorScheme.onPrimaryContainer
-                            : colorScheme.onSurfaceVariant)
-                        .withValues(alpha: 0.6),
-                  ),
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: tokens.inkSoft),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SuggestionChip extends StatelessWidget {
-  final String label;
-  final ValueChanged<String> onTap;
-
-  const _SuggestionChip({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return ActionChip(
-      label: Text(label, style: const TextStyle(fontSize: 13)),
-      onPressed: () => onTap(label),
     );
   }
 }

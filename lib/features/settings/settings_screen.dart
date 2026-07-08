@@ -13,202 +13,244 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = AppTokens.of(context);
     final aiUrl = ref.watch(aiChatUrlProvider);
     final authState = ref.watch(authStateProvider).valueOrNull;
     final themeMode = ref.watch(themeModeNotifierProvider);
     final biometricEnabled = ref.watch(biometricLockProvider);
     final profilesState = ref.watch(serverProfilesNotifierProvider);
+    final aiUsername = ref.watch(aiChatUsernameProvider);
 
     return Scaffold(
+      backgroundColor: tokens.paper,
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
+        padding: const EdgeInsets.only(bottom: Spacing.xxl),
         children: [
-          // Account section
-          const _SectionHeader(title: 'Account'),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Server'),
-            subtitle: Text(authState?.serverUrl ?? 'Not connected'),
-          ),
-
-          // Server profiles
-          if (profilesState.profiles.length > 1)
-            ...profilesState.profiles.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final profile = entry.value;
-              final isActive = idx == profilesState.activeIndex;
-              return ListTile(
-                leading: Icon(
-                  isActive ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                  color: isActive ? Theme.of(context).colorScheme.primary : null,
-                ),
-                title: Text(profile.name.isEmpty ? profile.serverUrl : profile.name),
-                subtitle: Text(profile.serverUrl,
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
-                onTap: isActive
-                    ? null
-                    : () => ref
-                        .read(serverProfilesNotifierProvider.notifier)
-                        .switchToProfile(idx),
-                trailing: IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () => ref
-                      .read(serverProfilesNotifierProvider.notifier)
-                      .removeProfile(idx),
-                ),
-              );
-            }),
-
-          ListTile(
-            leading: const Icon(Icons.add),
-            title: const Text('Save current server as profile'),
-            onTap: () => _addProfile(context, ref),
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Sign out'),
-            onTap: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Sign out?'),
-                  content: const Text('You will need to log in again.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
+          _SettingsSection(
+            title: 'Account',
+            children: [
+              ListTile(
+                leading: Icon(Icons.dns_outlined, color: tokens.inkSoft),
+                title: const Text('Server'),
+                subtitle: Text(authState?.serverUrl ?? 'Not connected'),
+              ),
+              if (profilesState.profiles.length > 1)
+                ...profilesState.profiles.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final profile = entry.value;
+                  final isActive = idx == profilesState.activeIndex;
+                  return ListTile(
+                    leading: Icon(
+                      isActive
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: isActive ? tokens.accentEmphasis : tokens.inkSoft,
                     ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Sign out'),
+                    title: Text(
+                        profile.name.isEmpty ? profile.serverUrl : profile.name),
+                    subtitle: Text(profile.serverUrl,
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                    onTap: isActive
+                        ? null
+                        : () => ref
+                            .read(serverProfilesNotifierProvider.notifier)
+                            .switchToProfile(idx),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      tooltip: 'Remove profile',
+                      onPressed: () => ref
+                          .read(serverProfilesNotifierProvider.notifier)
+                          .removeProfile(idx),
+                    ),
+                  );
+                }),
+              ListTile(
+                leading: Icon(Icons.add, color: tokens.inkSoft),
+                title: const Text('Save current server as profile'),
+                onTap: () => _addProfile(context, ref),
+              ),
+              ListTile(
+                leading: Icon(Icons.logout, color: tokens.stamp),
+                title: Text('Sign out', style: TextStyle(color: tokens.stamp)),
+                onTap: () => _signOut(context, ref),
+              ),
+            ],
+          ),
+          _SettingsSection(
+            title: 'Appearance',
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    Spacing.lg, Spacing.md, Spacing.lg, Spacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.palette_outlined, color: tokens.inkSoft),
+                        const SizedBox(width: Spacing.lg),
+                        Text('Theme',
+                            style: Theme.of(context).textTheme.bodyLarge),
+                      ],
+                    ),
+                    const SizedBox(height: Spacing.md),
+                    SizedBox(
+                      width: double.infinity,
+                      child: SegmentedButton<ThemeMode>(
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment(
+                            value: ThemeMode.system,
+                            label: Text('System'),
+                          ),
+                          ButtonSegment(
+                            value: ThemeMode.light,
+                            label: Text('Light'),
+                          ),
+                          ButtonSegment(
+                            value: ThemeMode.dark,
+                            label: Text('Dark'),
+                          ),
+                        ],
+                        selected: {themeMode},
+                        onSelectionChanged: (selection) => ref
+                            .read(themeModeNotifierProvider.notifier)
+                            .setThemeMode(selection.first),
+                      ),
                     ),
                   ],
                 ),
-              );
-              if (confirm == true) {
-                await ref.read(authStateProvider.notifier).logout();
-              }
-            },
-          ),
-
-          const Divider(),
-
-          // Appearance
-          const _SectionHeader(title: 'Appearance'),
-          ListTile(
-            leading: const Icon(Icons.palette),
-            title: const Text('Theme'),
-            subtitle: Text(_themeModeLabel(themeMode)),
-            onTap: () => _showThemePicker(context, ref, themeMode),
-          ),
-
-          const Divider(),
-
-          // Security
-          const _SectionHeader(title: 'Security'),
-          SwitchListTile(
-            secondary: const Icon(Icons.fingerprint),
-            title: const Text('Biometric Lock'),
-            subtitle: const Text('Require authentication on app launch'),
-            value: biometricEnabled,
-            onChanged: (enabled) => _toggleBiometric(context, ref, enabled),
-          ),
-
-          const Divider(),
-
-          // AI Chat section
-          const _SectionHeader(title: 'AI Chat'),
-          ListTile(
-            leading: const Icon(Icons.smart_toy),
-            title: const Text('Paperless-AI URL'),
-            subtitle: Text(
-              aiUrl?.isNotEmpty == true ? aiUrl! : 'Not configured',
-              style: TextStyle(
-                color: aiUrl?.isNotEmpty == true
-                    ? null
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-            ),
-            trailing: const Icon(Icons.edit, size: 18),
-            onTap: () => _editAiUrl(context, ref, aiUrl),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.key),
-            title: const Text('Paperless-AI Credentials'),
-            subtitle: Text(
-              ref.watch(aiChatUsernameProvider)?.isNotEmpty == true
-                  ? 'Logged in as ${ref.watch(aiChatUsernameProvider)}'
-                  : 'Not configured (required for document chat)',
-              style: TextStyle(
-                color: ref.watch(aiChatUsernameProvider)?.isNotEmpty == true
-                    ? null
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
+          _SettingsSection(
+            title: 'Security',
+            children: [
+              SwitchListTile(
+                secondary: Icon(Icons.fingerprint, color: tokens.inkSoft),
+                title: const Text('Biometric Lock'),
+                subtitle: const Text('Require authentication on app launch'),
+                value: biometricEnabled,
+                onChanged: (enabled) => _toggleBiometric(context, ref, enabled),
               ),
-            ),
-            trailing: const Icon(Icons.edit, size: 18),
-            onTap: () => _editAiCredentials(context, ref),
+            ],
           ),
-
-          const Divider(),
-
-          // Data management
-          const _SectionHeader(title: 'Data'),
-          ListTile(
-            leading: const Icon(Icons.label_outline),
-            title: const Text('Manage Labels'),
-            subtitle: const Text('Tags, correspondents, document types'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/labels'),
+          _SettingsSection(
+            title: 'AI Chat',
+            children: [
+              ListTile(
+                leading: Icon(Icons.smart_toy_outlined, color: tokens.inkSoft),
+                title: const Text('Paperless-AI URL'),
+                subtitle: Text(
+                  aiUrl?.isNotEmpty == true ? aiUrl! : 'Not configured',
+                  style: aiUrl?.isNotEmpty == true
+                      ? null
+                      : TextStyle(color: tokens.inkSoft),
+                ),
+                trailing: const Icon(Icons.edit, size: 18),
+                onTap: () => _editAiUrl(context, ref, aiUrl),
+              ),
+              ListTile(
+                leading: Icon(Icons.key_outlined, color: tokens.inkSoft),
+                title: const Text('Paperless-AI Credentials'),
+                subtitle: Text(
+                  aiUsername?.isNotEmpty == true
+                      ? 'Logged in as $aiUsername'
+                      : 'Not configured (required for document chat)',
+                  style: aiUsername?.isNotEmpty == true
+                      ? null
+                      : TextStyle(color: tokens.inkSoft),
+                ),
+                trailing: const Icon(Icons.edit, size: 18),
+                onTap: () => _editAiCredentials(context, ref),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.route_outlined),
-            title: const Text('Workflows'),
-            subtitle: const Text('View and manage automation rules'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/workflows'),
+          _SettingsSection(
+            title: 'Data',
+            children: [
+              ListTile(
+                leading: Icon(Icons.label_outline, color: tokens.inkSoft),
+                title: const Text('Manage Labels'),
+                subtitle: const Text('Tags, correspondents, document types'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/labels'),
+              ),
+              ListTile(
+                leading: Icon(Icons.route_outlined, color: tokens.inkSoft),
+                title: const Text('Workflows'),
+                subtitle: const Text('View and manage automation rules'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/workflows'),
+              ),
+              ListTile(
+                leading: Icon(Icons.extension_outlined, color: tokens.inkSoft),
+                title: const Text('Custom Fields'),
+                subtitle: const Text('Create and manage field definitions'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/custom-fields'),
+              ),
+              ListTile(
+                leading: Icon(Icons.bookmark_outline, color: tokens.inkSoft),
+                title: const Text('Upload Templates'),
+                subtitle: const Text('Save metadata presets for quick upload'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/templates'),
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: tokens.stamp),
+                title: Text('Trash', style: TextStyle(color: tokens.stamp)),
+                subtitle: const Text('View and restore deleted documents'),
+                trailing: Icon(Icons.chevron_right, color: tokens.stamp),
+                onTap: () => context.push('/trash'),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.extension_outlined),
-            title: const Text('Custom Fields'),
-            subtitle: const Text('Create and manage field definitions'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/custom-fields'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.bookmark_outline),
-            title: const Text('Upload Templates'),
-            subtitle: const Text('Save metadata presets for quick upload'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/templates'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete_outline),
-            title: const Text('Trash'),
-            subtitle: const Text('View and restore deleted documents'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/trash'),
-          ),
-
-          const Divider(),
-
-          // About
-          const _SectionHeader(title: 'About'),
-          FutureBuilder<PackageInfo>(
-            future: PackageInfo.fromPlatform(),
-            builder: (context, snapshot) {
-              final version = snapshot.data?.version ?? '...';
-              final build = snapshot.data?.buildNumber ?? '';
-              return ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text('Paperless Go'),
-                subtitle: Text('v$version${build.isNotEmpty ? '+$build' : ''}'),
-              );
-            },
+          _SettingsSection(
+            title: 'About',
+            children: [
+              FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) {
+                  final version = snapshot.data?.version ?? '...';
+                  final build = snapshot.data?.buildNumber ?? '';
+                  return ListTile(
+                    leading: Icon(Icons.info_outline, color: tokens.inkSoft),
+                    title: const Text('Paperless Go'),
+                    subtitle:
+                        Text('v$version${build.isNotEmpty ? '+$build' : ''}'),
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text('You will need to log in again.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await ref.read(authStateProvider.notifier).logout();
+    }
   }
 
   void _addProfile(BuildContext context, WidgetRef ref) {
@@ -246,38 +288,6 @@ class SettingsScreen extends ConsumerWidget {
         });
       }
     });
-  }
-
-  String _themeModeLabel(ThemeMode mode) {
-    return switch (mode) {
-      ThemeMode.system => 'System default',
-      ThemeMode.light => 'Light',
-      ThemeMode.dark => 'Dark',
-    };
-  }
-
-  void _showThemePicker(BuildContext context, WidgetRef ref, ThemeMode current) {
-    showDialog(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('Theme'),
-        children: ThemeMode.values.map((mode) {
-          return ListTile(
-            leading: Icon(
-              mode == current ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-              color: mode == current ? Theme.of(ctx).colorScheme.primary : null,
-            ),
-            title: Text(_themeModeLabel(mode)),
-            onTap: () {
-              Navigator.pop(ctx);
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ref.read(themeModeNotifierProvider.notifier).setThemeMode(mode);
-              });
-            },
-          );
-        }).toList(),
-      ),
-    );
   }
 
   Future<void> _toggleBiometric(
@@ -433,22 +443,56 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
+/// A titled group of settings rows: a small Space Grotesk heading above a
+/// card that carries the 16dp radius and 1px line border from the design
+/// system (elevation in dark mode comes from that border, never shadows).
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({required this.title, required this.children});
+
   final String title;
-  const _SectionHeader({required this.title});
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.lg, Spacing.lg, Spacing.xs),
-      child: Semantics(
-        header: true,
-        child: Text(
-          title,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
+      padding: const EdgeInsets.fromLTRB(
+          Spacing.lg, Spacing.lg, Spacing.lg, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                Spacing.xs, 0, Spacing.xs, Spacing.sm),
+            child: Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: tokens.inkSoft,
+                    ),
+              ),
+            ),
           ),
-        ),
+          Card(
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            color: tokens.card,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Radii.lg),
+              side: BorderSide(color: tokens.line),
+            ),
+            child: Column(
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) Divider(height: 1, color: tokens.line),
+                  children[i],
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
