@@ -1,0 +1,10 @@
+[
+  {
+    "id": 900,
+    "task_id": "b3f1c2a0-1234-4abc-9def-0123456789ab",
+    "task_file_name": "electric-bill-march.pdf",
+    "status": "SUCCESS",
+    "result": "Success. New document id 42 created",
+    "related_document": "42"
+  }
+]

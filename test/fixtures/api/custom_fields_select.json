@@ -1,0 +1,20 @@
+{
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "all": [7],
+  "results": [
+    {
+      "id": 7,
+      "name": "Reimbursement Status",
+      "data_type": "select",
+      "extra_data": {
+        "select_options": [
+          {"id": 1, "label": "Not reimbursable"},
+          {"id": 2, "label": "Reimbursable"},
+          {"id": 3, "label": "Reimbursed"}
+        ]
+      }
+    }
+  ]
+}

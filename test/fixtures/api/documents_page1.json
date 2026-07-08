@@ -1,0 +1,54 @@
+{
+  "count": 2,
+  "next": "https://paperless.example.com/api/documents/?page=2&page_size=1",
+  "previous": null,
+  "all": [42, 43],
+  "results": [
+    {
+      "id": 42,
+      "title": "Electric Bill March",
+      "correspondent": 3,
+      "document_type": 1,
+      "storage_path": null,
+      "tags": [1, 4],
+      "created": "2026-03-14",
+      "modified": "2026-03-15T10:22:31.000Z",
+      "added": "2026-03-14T09:00:00.000Z",
+      "archive_serial_number": null,
+      "original_file_name": "electric-bill-march.pdf",
+      "archived_file_name": "electric-bill-march.pdf",
+      "content": "Your electricity bill for March...",
+      "custom_fields": [
+        {
+          "field": 7,
+          "value": {"id": 2, "label": "Reimbursable"}
+        }
+      ],
+      "notes": [
+        {
+          "id": 501,
+          "note": "Filed under utilities.",
+          "created": "2026-03-15T10:22:31.000Z",
+          "user": {"id": 1, "username": "jd"}
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "title": "Insurance Renewal",
+      "correspondent": null,
+      "document_type": null,
+      "storage_path": null,
+      "tags": [],
+      "created": "2026-03-10",
+      "modified": "2026-03-10T08:00:00.000Z",
+      "added": "2026-03-10T08:00:00.000Z",
+      "archive_serial_number": null,
+      "original_file_name": "insurance-renewal.pdf",
+      "archived_file_name": "insurance-renewal.pdf",
+      "content": "",
+      "custom_fields": [],
+      "notes": []
+    }
+  ]
+}
