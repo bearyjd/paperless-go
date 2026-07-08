@@ -2,25 +2,28 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/design_tokens.dart';
 import 'processing/image_enhancer.dart';
 import 'processing/presets.dart';
+import 'providers/selected_preset_provider.dart';
 
 /// Screen for enhancing scanned images with filter presets.
 /// Shows before/after comparison and allows preset selection.
-class EnhanceScreen extends StatefulWidget {
+class EnhanceScreen extends ConsumerStatefulWidget {
   final List<String> imagePaths;
   const EnhanceScreen({super.key, required this.imagePaths});
 
   @override
-  State<EnhanceScreen> createState() => _EnhanceScreenState();
+  ConsumerState<EnhanceScreen> createState() => _EnhanceScreenState();
 }
 
-class _EnhanceScreenState extends State<EnhanceScreen> {
+class _EnhanceScreenState extends ConsumerState<EnhanceScreen> {
   late List<String> _originalPaths;
   late List<String?> _enhancedPaths;
-  ProcessingPreset _selectedPreset = ProcessingPreset.auto;
+  late ProcessingPreset _selectedPreset;
   int _currentPage = 0;
   bool _isProcessing = false;
   bool _showOriginal = false;
@@ -37,6 +40,8 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
   @override
   void initState() {
     super.initState();
+    // Default to the preset chosen back on the scanner hub.
+    _selectedPreset = ref.read(selectedPresetProvider);
     _originalPaths = List.from(widget.imagePaths);
     _enhancedPaths = List.filled(_originalPaths.length, null);
     _loadOriginalPreview();
@@ -268,9 +273,9 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: i == _currentPage
-                            ? colorScheme.primary
-                            : Colors.transparent,
-                        width: 2,
+                            ? AppTokens.of(context).accentEmphasis
+                            : AppTokens.of(context).line,
+                        width: i == _currentPage ? 2 : 1,
                       ),
                       borderRadius: BorderRadius.circular(6),
                     ),
@@ -315,6 +320,7 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
   }
 
   Widget _buildImagePreview() {
+    final tokens = AppTokens.of(context);
     if (_previewOriginal == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -347,12 +353,15 @@ class _EnhanceScreenState extends State<EnhanceScreen> {
                 key: ValueKey(_showOriginal),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(16),
+                  color: tokens.ink.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(Radii.lg),
                 ),
                 child: Text(
                   _showOriginal ? 'Original' : _selectedPreset.label,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelSmall
+                      ?.copyWith(color: tokens.paper),
                 ),
               ),
             ),

@@ -4,81 +4,116 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api/api_error_mapper.dart';
+import '../../core/design_tokens.dart';
+import 'processing/presets.dart';
+import 'providers/selected_preset_provider.dart';
 
+/// Camera-first capture hub: one large primary "Scan document" action, a preset
+/// strip that seeds the whole pipeline, and quiet secondary entry points.
 class ScannerScreen extends ConsumerWidget {
   const ScannerScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = AppTokens.of(context);
+    final selectedPreset = ref.watch(selectedPresetProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Scan & Upload'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-            onPressed: () => context.push('/settings'),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 32),
-            Icon(
-              Icons.document_scanner_outlined,
-              size: 80,
-              color: colorScheme.primary,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Add a document',
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Scan a physical document or upload an existing file',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+              Spacing.xl, Spacing.lg, Spacing.xl, Spacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Add a document',
+                            style: Theme.of(context).textTheme.headlineMedium),
+                        Text(
+                          'Capture, confirm, upload',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: tokens.inkSoft),
+                        ),
+                      ],
+                    ),
                   ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 48),
-            // Scan Document
-            _ScanOptionCard(
-              icon: Icons.camera_alt,
-              title: 'Scan Document',
-              subtitle: 'Quick scan with gallery import',
-              color: colorScheme.primary,
-              onColor: colorScheme.onPrimary,
-              onTap: () => _startScan(context),
-            ),
-            const SizedBox(height: 12),
-            // Batch Scan
-            _ScanOptionCard(
-              icon: Icons.burst_mode,
-              title: 'Batch Scan',
-              subtitle: 'Scan multiple pages continuously',
-              color: colorScheme.secondaryContainer,
-              onColor: colorScheme.onSecondaryContainer,
-              onTap: () => _startBatchScan(context),
-            ),
-            const SizedBox(height: 12),
-            // Upload File
-            OutlinedButton.icon(
-              onPressed: () => _pickFile(context),
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Upload File'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                  IconButton(
+                    icon: const Icon(Icons.settings_outlined),
+                    tooltip: 'Settings',
+                    iconSize: 26,
+                    onPressed: () => context.push('/settings'),
+                  ),
+                ],
               ),
-            ),
-          ],
+
+              const Spacer(),
+
+              // Preset strip — seeds the enhance default for the whole pipeline.
+              Text(
+                'ENHANCEMENT',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: tokens.inkSoft,
+                      letterSpacing: 1.2,
+                    ),
+              ),
+              const SizedBox(height: Spacing.sm),
+              SizedBox(
+                height: 40,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: ProcessingPreset.values.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm),
+                  itemBuilder: (_, i) {
+                    final preset = ProcessingPreset.values[i];
+                    return ChoiceChip(
+                      label: Text(preset.label),
+                      selected: preset == selectedPreset,
+                      tooltip: preset.description,
+                      onSelected: (_) => ref
+                          .read(selectedPresetProvider.notifier)
+                          .state = preset,
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: Spacing.lg),
+
+              // Hero primary action.
+              _ScanHero(onTap: () => _startScan(context)),
+
+              const SizedBox(height: Spacing.lg),
+
+              // Quiet secondary actions.
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _startBatchScan(context),
+                      icon: const Icon(Icons.burst_mode_outlined, size: 18),
+                      label: const Text('Batch scan'),
+                    ),
+                  ),
+                  const SizedBox(width: Spacing.md),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _pickFile(context),
+                      icon: const Icon(Icons.upload_file_outlined, size: 18),
+                      label: const Text('Upload file'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -147,66 +182,52 @@ class ScannerScreen extends ConsumerWidget {
   }
 }
 
-class _ScanOptionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final Color onColor;
-  final VoidCallback onTap;
+/// The single large accent-filled capture action.
+class _ScanHero extends StatelessWidget {
+  const _ScanHero({required this.onTap});
 
-  const _ScanOptionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.onColor,
-    required this.onTap,
-  });
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
+    final onFill = tokens.onAccent;
+
     return Material(
-      color: color,
-      borderRadius: BorderRadius.circular(12),
+      color: tokens.accentFill,
+      borderRadius: BorderRadius.circular(Radii.lg),
       child: Semantics(
-        label: title,
+        label: 'Scan document',
         button: true,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(Radii.lg),
           onTap: onTap,
           child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Row(
-            children: [
-              Icon(icon, color: onColor, size: 28),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: onColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: onColor.withValues(alpha: 0.8),
-                          ),
-                    ),
-                  ],
+            padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.xl, vertical: Spacing.xxl),
+            child: Column(
+              children: [
+                Icon(Icons.center_focus_strong_outlined,
+                    size: 56, color: onFill),
+                const SizedBox(height: Spacing.md),
+                Text(
+                  'Scan document',
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(color: onFill),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: onColor.withValues(alpha: 0.6)),
-            ],
+                const SizedBox(height: Spacing.xs),
+                Text(
+                  'Camera or gallery import',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: onFill.withValues(alpha: 0.8),
+                      ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
