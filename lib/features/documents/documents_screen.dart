@@ -11,6 +11,7 @@ import '../../core/models/tag.dart';
 import '../../shared/widgets/document_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
 import '../../shared/widgets/paginated_list_view.dart';
+import '../../shared/widgets/stamp_chip.dart';
 import '../../core/design_tokens.dart';
 import '../../core/api/api_error_mapper.dart';
 import 'active_filters_bar.dart';
@@ -21,6 +22,14 @@ import 'filter_bottom_sheet.dart';
 import 'saved_view_dialogs.dart';
 import 'saved_view_helpers.dart';
 
+/// The Library — the app's main document browser.
+///
+/// Follows the redesign header language (big Space Grotesk title + count
+/// subtitle + a single icon action). Search lives in a full-width omnibox that
+/// opens the search screen; filters and sort live behind a single Filter pill
+/// (the sort options are a section inside the filter sheet). Saved views are a
+/// horizontal carousel of stamp chips at the top of the list, and active
+/// filters render as dismissible stamp pills below the omnibox.
 class DocumentsScreen extends ConsumerStatefulWidget {
   const DocumentsScreen({super.key});
 
@@ -33,15 +42,6 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
   final _selectedIds = <int>{};
   bool get _isSelecting => _selectedIds.isNotEmpty;
   int? _activeSavedViewId;
-
-  static const _sortOptions = {
-    '-created': 'Newest first',
-    'created': 'Oldest first',
-    '-added': 'Recently added',
-    'title': 'Title A-Z',
-    '-title': 'Title Z-A',
-    'archive_serial_number': 'ASN',
-  };
 
   void _toggleSelection(int docId) {
     setState(() {
@@ -103,6 +103,16 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     }
   }
 
+  void _applyFilter(DocumentsFilter filter) {
+    setState(() => _ordering = filter.ordering);
+    ref.read(documentsNotifierProvider.notifier).applyFilter(filter);
+  }
+
+  void _clearAllFilters() {
+    setState(() => _activeSavedViewId = null);
+    _applyFilter(DocumentsFilter(ordering: _ordering));
+  }
+
   void _applySavedView(SavedView view) {
     final ordering = view.sortReverse
         ? '-${view.sortField}'
@@ -125,6 +135,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     final correspondentsAsync = ref.watch(correspondentsProvider);
     final docTypesAsync = ref.watch(documentTypesProvider);
     final savedViewsAsync = ref.watch(savedViewsProvider);
+    final tokens = AppTokens.of(context);
 
     // Show loadMore errors as SnackBar
     ref.listen(documentsNotifierProvider, (prev, next) {
@@ -145,289 +156,257 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
         currentFilter.createdDateFrom != null ||
         currentFilter.createdDateTo != null;
 
+    final subtitle = _isSelecting
+        ? '${_selectedIds.length} selected'
+        : switch (docsState.valueOrNull?.totalCount) {
+            null => ' ',
+            0 => 'No documents',
+            1 => '1 document',
+            final n => '$n documents',
+          };
+
     return Scaffold(
-      appBar: _isSelecting
-          ? AppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.close),
-                tooltip: 'Cancel selection',
-                onPressed: _clearSelection,
-              ),
-              title: Text('${_selectedIds.length} selected'),
-            )
-          : AppBar(
-              title: const Text('Documents'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  tooltip: 'Search',
-                  onPressed: () => context.push('/search'),
-                ),
-                IconButton(
-                  icon: Badge(
-                    isLabelVisible: hasActiveFilters,
-                    child: const Icon(Icons.filter_list),
-                  ),
-                  tooltip: 'Filter',
-                  onPressed: () => _showFilterSheet(context, currentFilter),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.settings),
-                  tooltip: 'Settings',
-                  onPressed: () => context.push('/settings'),
-                ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.sort),
-                  tooltip: 'Sort',
-                  onSelected: (ordering) {
-                    setState(() => _ordering = ordering);
-                    ref.read(documentsNotifierProvider.notifier)
-                        .applyFilter(currentFilter.copyWith(ordering: ordering));
-                  },
-                  itemBuilder: (_) => _sortOptions.entries.map((e) {
-                    return PopupMenuItem(
-                      value: e.key,
-                      child: Row(
-                        children: [
-                          if (e.key == _ordering)
-                            const Icon(Icons.check, size: 18)
-                          else
-                            const SizedBox(width: 18),
-                          const SizedBox(width: 8),
-                          Text(e.value),
-                        ],
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header — Library title + count subtitle + single icon action.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      Spacing.xl, Spacing.lg, Spacing.md, Spacing.sm),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Library',
+                                style: Theme.of(context).textTheme.headlineMedium),
+                            Text(
+                              subtitle,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: tokens.inkSoft),
+                            ),
+                          ],
+                        ),
                       ),
-                    );
-                  }).toList(),
+                      _isSelecting
+                          ? IconButton(
+                              icon: const Icon(Icons.close),
+                              tooltip: 'Cancel selection',
+                              iconSize: 26,
+                              onPressed: _clearSelection,
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.settings_outlined),
+                              tooltip: 'Settings',
+                              iconSize: 26,
+                              onPressed: () => context.push('/settings'),
+                            ),
+                    ],
+                  ),
+                ),
+                // Omnibox + Filter pill.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      Spacing.xl, 0, Spacing.xl, Spacing.sm),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _Omnibox(
+                          onTap: () => context.push('/search'),
+                        ),
+                      ),
+                      const SizedBox(width: Spacing.sm),
+                      _FilterPill(
+                        active: hasActiveFilters,
+                        onTap: () => _showFilterSheet(context, currentFilter),
+                      ),
+                    ],
+                  ),
+                ),
+                // Active filters — dismissible stamp pills, only when set.
+                if (hasActiveFilters)
+                  ActiveFiltersBar(
+                    filter: currentFilter,
+                    tags: tagsAsync.valueOrNull ?? const {},
+                    correspondents: correspondentsAsync.valueOrNull ?? const {},
+                    docTypes: docTypesAsync.valueOrNull ?? const {},
+                    onChanged: (f) {
+                      setState(() => _activeSavedViewId = null);
+                      _applyFilter(f);
+                    },
+                    onClear: _clearAllFilters,
+                    onSave: () => showSaveViewDialog(
+                      context: context,
+                      ref: ref,
+                      currentFilter: currentFilter,
+                    ),
+                  ),
+                Expanded(
+                  child: docsState.when(
+                    loading: () => const DocumentListSkeleton(),
+                    error: (err, _) => _ErrorView(
+                      message: friendlyApiMessage(err,
+                          fallback: 'Failed to load documents.'),
+                      onRetry: () =>
+                          ref.read(documentsNotifierProvider.notifier).refresh(),
+                    ),
+                    data: (docsData) {
+                      final tags = tagsAsync.valueOrNull ?? <int, Tag>{};
+                      final correspondents =
+                          correspondentsAsync.valueOrNull ?? <int, Correspondent>{};
+                      final docTypes =
+                          docTypesAsync.valueOrNull ?? <int, DocumentType>{};
+                      final savedViews = savedViewsAsync.valueOrNull ?? const [];
+
+                      if (docsData.documents.isEmpty) {
+                        return _EmptyLibrary(
+                          hasActiveFilters: hasActiveFilters,
+                          onClearFilters: _clearAllFilters,
+                        );
+                      }
+
+                      final api = ref.watch(paperlessApiProvider);
+
+                      return PaginatedListView(
+                        onRefresh: () =>
+                            ref.read(documentsNotifierProvider.notifier).refresh(),
+                        onLoadMore: () =>
+                            ref.read(documentsNotifierProvider.notifier).loadMore(),
+                        isLoadingMore: docsData.isLoadingMore,
+                        slivers: [
+                          // Saved views carousel.
+                          if (savedViews.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: SizedBox(
+                                height: 56,
+                                child: ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Spacing.lg),
+                                  children: [
+                                    for (final view in savedViews)
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: Spacing.sm),
+                                        child: _SavedViewChip(
+                                          view: view,
+                                          selected: _activeSavedViewId == view.id,
+                                          onTap: () {
+                                            if (_activeSavedViewId == view.id) {
+                                              _clearAllFilters();
+                                            } else {
+                                              _applySavedView(view);
+                                            }
+                                          },
+                                          onManage: () => showChipManagementSheet(
+                                            context: context,
+                                            view: view,
+                                            onDelete: () => confirmDeleteSavedView(
+                                              context: context,
+                                              ref: ref,
+                                              view: view,
+                                              onDeactivated:
+                                                  _activeSavedViewId == view.id
+                                                      ? _clearAllFilters
+                                                      : null,
+                                            ),
+                                            onRename: () => showRenameSavedViewDialog(
+                                              context: context,
+                                              ref: ref,
+                                              view: view,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          SliverList.builder(
+                            itemCount: docsData.documents.length,
+                            itemBuilder: (context, index) {
+                              final doc = docsData.documents[index];
+                              final isSelected = _selectedIds.contains(doc.id);
+                              return Stack(
+                                key: ValueKey(doc.id),
+                                children: [
+                                  DocumentCard(
+                                    document: doc,
+                                    tags: tags,
+                                    correspondents: correspondents,
+                                    documentTypes: docTypes,
+                                    thumbnailUrl: api.thumbnailUrl(doc.id),
+                                    authToken: api.authToken,
+                                    onTap: _isSelecting
+                                        ? () => _toggleSelection(doc.id)
+                                        : () => context.push('/documents/${doc.id}'),
+                                    onLongPress: _isSelecting
+                                        ? () => _toggleSelection(doc.id)
+                                        : () =>
+                                            _showDocumentContextMenu(context, ref, doc),
+                                  ),
+                                  if (isSelected)
+                                    Positioned.fill(
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(
+                                            horizontal: Spacing.lg,
+                                            vertical: Spacing.xs),
+                                        decoration: BoxDecoration(
+                                          color: tokens.accentSoft.withValues(alpha: 0.6),
+                                          borderRadius:
+                                              BorderRadius.circular(Radii.lg),
+                                          border: Border.all(
+                                            color: tokens.accentEmphasis,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: Align(
+                                          alignment: Alignment.topRight,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(Spacing.sm),
+                                            child: Icon(
+                                              Icons.check_circle,
+                                              color: tokens.accentEmphasis,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
-      body: Stack(
-        children: [
-          docsState.when(
-            loading: () => const DocumentListSkeleton(),
-            error: (err, _) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.cloud_off, size: 48, color: Theme.of(context).colorScheme.error),
-                  const SizedBox(height: 16),
-                  Text('Failed to load documents', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Text(friendlyApiMessage(err, fallback: 'Failed to load documents.'), style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 16),
-                  FilledButton.tonal(
-                    onPressed: () => ref.read(documentsNotifierProvider.notifier).refresh(),
-                    child: const Text('Retry'),
+            // Floating bulk action bar.
+            if (_isSelecting)
+              Positioned(
+                bottom: Spacing.xl,
+                left: Spacing.lg,
+                right: Spacing.lg,
+                child: Center(
+                  child: BulkActionBar(
+                    selectedIds: _selectedIds,
+                    onClearSelection: _clearSelection,
+                    onRefresh: () =>
+                        ref.read(documentsNotifierProvider.notifier).refresh(),
+                    onShare: () => _shareSelected(context, ref),
                   ),
-                ],
-              ),
-            ),
-            data: (docsData) {
-              final tags = tagsAsync.valueOrNull ?? <int, Tag>{};
-              final correspondents = correspondentsAsync.valueOrNull ?? <int, Correspondent>{};
-              final docTypes = docTypesAsync.valueOrNull ?? <int, DocumentType>{};
-
-              if (docsData.documents.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.description_outlined, size: 64,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      const SizedBox(height: 16),
-                      Text('No documents found',
-                          style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      Text(
-                        hasActiveFilters
-                            ? 'Try adjusting your filters'
-                            : 'Upload a document to get started',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (hasActiveFilters) ...[
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () {
-                            ref.read(documentsNotifierProvider.notifier)
-                                .applyFilter(const DocumentsFilter());
-                          },
-                          child: const Text('Clear filters'),
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              }
-
-              final api = ref.watch(paperlessApiProvider);
-
-              return PaginatedListView(
-                onRefresh: () => ref.read(documentsNotifierProvider.notifier).refresh(),
-                onLoadMore: () => ref.read(documentsNotifierProvider.notifier).loadMore(),
-                isLoadingMore: docsData.isLoadingMore,
-                slivers: [
-                      // Saved views bar
-                      if (savedViewsAsync.valueOrNull?.isNotEmpty == true)
-                        SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: 48,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 6),
-                              children: [
-                                for (final view in savedViewsAsync.valueOrNull!)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 6),
-                                    child: GestureDetector(
-                                      onLongPress: () => showChipManagementSheet(
-                                        context: context,
-                                        view: view,
-                                        onDelete: () => confirmDeleteSavedView(
-                                          context: context,
-                                          ref: ref,
-                                          view: view,
-                                          onDeactivated: _activeSavedViewId == view.id
-                                              ? () {
-                                                  setState(() =>
-                                                      _activeSavedViewId = null);
-                                                  ref
-                                                      .read(documentsNotifierProvider
-                                                          .notifier)
-                                                      .applyFilter(DocumentsFilter(
-                                                          ordering: _ordering));
-                                                }
-                                              : null,
-                                        ),
-                                        onRename: () => showRenameSavedViewDialog(
-                                          context: context,
-                                          ref: ref,
-                                          view: view,
-                                        ),
-                                      ),
-                                      child: FilterChip(
-                                        label: Text(view.name),
-                                        selected: _activeSavedViewId == view.id,
-                                        onSelected: (_) {
-                                          if (_activeSavedViewId == view.id) {
-                                            setState(() => _activeSavedViewId = null);
-                                            ref.read(documentsNotifierProvider.notifier)
-                                                .applyFilter(DocumentsFilter(ordering: _ordering));
-                                          } else {
-                                            _applySavedView(view);
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      // Active filters bar
-                      if (hasActiveFilters)
-                        SliverToBoxAdapter(
-                          child: ActiveFiltersBar(
-                            filter: currentFilter,
-                            tags: tags,
-                            correspondents: correspondents,
-                            docTypes: docTypes,
-                            onClear: () {
-                              ref.read(documentsNotifierProvider.notifier)
-                                  .applyFilter(DocumentsFilter(ordering: _ordering));
-                            },
-                            onSave: () => showSaveViewDialog(
-                              context: context,
-                              ref: ref,
-                              currentFilter: currentFilter,
-                            ),
-                          ),
-                        ),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, Spacing.xs),
-                          child: Text(
-                            '${docsData.totalCount} documents',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SliverList.builder(
-                        itemCount: docsData.documents.length,
-                        itemBuilder: (context, index) {
-                          final doc = docsData.documents[index];
-                          final isSelected = _selectedIds.contains(doc.id);
-                          return Stack(
-                            key: ValueKey(doc.id),
-                            children: [
-                              DocumentCard(
-                                document: doc,
-                                tags: tags,
-                                correspondents: correspondents,
-                                documentTypes: docTypes,
-                                thumbnailUrl: api.thumbnailUrl(doc.id),
-                                authToken: api.authToken,
-                                onTap: _isSelecting
-                                    ? () => _toggleSelection(doc.id)
-                                    : () => context.push('/documents/${doc.id}'),
-                                onLongPress: _isSelecting
-                                    ? () => _toggleSelection(doc.id)
-                                    : () => _showDocumentContextMenu(context, ref, doc),
-                              ),
-                              if (isSelected)
-                                Positioned.fill(
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.xs),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(Radii.md),
-                                      border: Border.all(
-                                        color: Theme.of(context).colorScheme.primary,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Align(
-                                      alignment: Alignment.topRight,
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: Icon(
-                                          Icons.check_circle,
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-              );
-            },
-          ),
-          // Floating bulk action bar
-          if (_isSelecting)
-            Positioned(
-              bottom: 80,
-              left: 16,
-              right: 16,
-              child: Center(
-                child: BulkActionBar(
-                  selectedIds: _selectedIds,
-                  onClearSelection: _clearSelection,
-                  onRefresh: () =>
-                      ref.read(documentsNotifierProvider.notifier).refresh(),
-                  onShare: () => _shareSelected(context, ref),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -499,8 +478,211 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       builder: (_) => FilterBottomSheet(
         currentFilter: currentFilter,
         onApply: (filter) {
-          ref.read(documentsNotifierProvider.notifier).applyFilter(filter);
+          setState(() => _activeSavedViewId = null);
+          _applyFilter(filter);
         },
+      ),
+    );
+  }
+}
+
+/// Full-width pill that reads as a search field but opens the search screen.
+class _Omnibox extends StatelessWidget {
+  const _Omnibox({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
+    return Material(
+      color: tokens.card,
+      shape: StadiumBorder(side: BorderSide(color: tokens.line)),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.lg, vertical: 14),
+          child: Row(
+            children: [
+              Icon(Icons.search, size: 20, color: tokens.inkSoft),
+              const SizedBox(width: Spacing.sm),
+              Text(
+                'Search documents',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: tokens.inkSoft),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Single Filter pill; a badge dot appears when filters are active.
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({required this.active, required this.onTap});
+
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
+    return Material(
+      color: active ? tokens.accentSoft : tokens.card,
+      shape: StadiumBorder(
+        side: BorderSide(color: active ? tokens.accentEmphasis : tokens.line),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.lg, vertical: 14),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.tune,
+                  size: 20,
+                  color: active ? tokens.accentEmphasis : tokens.inkSoft),
+              const SizedBox(width: Spacing.xs),
+              Text(
+                'Filter',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: active ? tokens.accentEmphasis : tokens.ink,
+                    ),
+              ),
+              if (active) ...[
+                const SizedBox(width: Spacing.xs),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: tokens.accentEmphasis,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Saved-view chip in the carousel. Selected = accent stamp; unselected =
+/// muted stamp. Long-press opens rename/delete.
+class _SavedViewChip extends StatelessWidget {
+  const _SavedViewChip({
+    required this.view,
+    required this.selected,
+    required this.onTap,
+    required this.onManage,
+  });
+
+  final SavedView view;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onManage;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
+    return GestureDetector(
+      onLongPress: onManage,
+      child: StampChip(
+        label: view.name,
+        icon: selected ? Icons.check : Icons.bookmark_border,
+        rotated: false,
+        tint: selected ? null : tokens.inkSoft,
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _EmptyLibrary extends StatelessWidget {
+  const _EmptyLibrary({
+    required this.hasActiveFilters,
+    required this.onClearFilters,
+  });
+
+  final bool hasActiveFilters;
+  final VoidCallback onClearFilters;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          StampChip(
+            label: hasActiveFilters ? 'NO MATCHES' : 'EMPTY',
+            rotated: true,
+          ),
+          const SizedBox(height: Spacing.lg),
+          Text(
+            hasActiveFilters ? 'No documents found' : 'Nothing here yet',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: Spacing.xs),
+          Text(
+            hasActiveFilters
+                ? 'Try adjusting your filters'
+                : 'Upload a document to get started',
+            textAlign: TextAlign.center,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: tokens.inkSoft),
+          ),
+          if (hasActiveFilters) ...[
+            const SizedBox(height: Spacing.lg),
+            TextButton(
+              onPressed: onClearFilters,
+              child: const Text('Clear filters'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(Spacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off,
+                size: 48, color: Theme.of(context).colorScheme.error),
+            const SizedBox(height: Spacing.lg),
+            Text('Failed to load documents',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: Spacing.sm),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: Spacing.lg),
+            FilledButton.tonal(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
       ),
     );
   }

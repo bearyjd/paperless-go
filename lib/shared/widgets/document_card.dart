@@ -56,6 +56,7 @@ class DocumentCard extends StatelessWidget {
     final subtitle = [
       if (correspondent != null) correspondent.name,
       if (docType != null) docType.name,
+      if (document.created != null) DateFormat.yMMMd().format(document.created!),
     ].join(' · ');
 
     return Card(
@@ -68,7 +69,7 @@ class DocumentCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           onLongPress: onLongPress,
-          borderRadius: BorderRadius.circular(Radii.md),
+          borderRadius: BorderRadius.circular(Radii.lg),
         child: Padding(
           padding: const EdgeInsets.all(Spacing.md),
           child: Row(
@@ -122,7 +123,7 @@ class DocumentCard extends StatelessWidget {
                     ),
 
                     if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: Spacing.xs),
                       Text(
                         subtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -132,14 +133,6 @@ class DocumentCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-
-                    const SizedBox(height: 4),
-                    Text(
-                      document.created != null ? DateFormat.yMMMd().format(document.created!) : '',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
 
                     // Tags
                     if (docTags.isNotEmpty) ...[

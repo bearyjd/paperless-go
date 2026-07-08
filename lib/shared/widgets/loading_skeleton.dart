@@ -27,6 +27,7 @@ class DocumentCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
     return _shimmerOrStatic(
       context: context,
       child: Card(
@@ -41,7 +42,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                 width: 48,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: tokens.line,
                   borderRadius: BorderRadius.circular(Radii.sm),
                 ),
               ),
@@ -55,7 +56,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                       height: 16,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: tokens.line,
                         borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
@@ -65,7 +66,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                       height: 12,
                       width: 180,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: tokens.line,
                         borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
@@ -75,7 +76,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                       height: 12,
                       width: 100,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: tokens.line,
                         borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
@@ -90,7 +91,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                             height: 24,
                             width: 60,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: tokens.line,
                               borderRadius: BorderRadius.circular(Radii.md),
                             ),
                           ),
@@ -130,6 +131,7 @@ class DashboardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(Spacing.lg),
@@ -147,7 +149,7 @@ class DashboardSkeleton extends StatelessWidget {
               context: context,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: tokens.line,
                   borderRadius: BorderRadius.circular(Radii.md),
                 ),
                 padding: const EdgeInsets.all(Spacing.lg),
@@ -159,7 +161,7 @@ class DashboardSkeleton extends StatelessWidget {
                       width: 20,
                       height: 20,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: tokens.line,
                         borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
@@ -169,7 +171,7 @@ class DashboardSkeleton extends StatelessWidget {
                       height: 28,
                       width: 60,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: tokens.line,
                         borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
@@ -179,7 +181,7 @@ class DashboardSkeleton extends StatelessWidget {
                       height: 12,
                       width: 80,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: tokens.line,
                         borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
@@ -201,6 +203,7 @@ class WorkflowsSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
     return ListView.builder(
       physics: const NeverScrollableScrollPhysics(),
       itemCount: 5,
@@ -214,8 +217,8 @@ class WorkflowsSkeleton extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: tokens.line,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -229,7 +232,7 @@ class WorkflowsSkeleton extends StatelessWidget {
                       height: 14,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: tokens.line,
                         borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
@@ -238,7 +241,7 @@ class WorkflowsSkeleton extends StatelessWidget {
                       height: 12,
                       width: 160,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: tokens.line,
                         borderRadius: BorderRadius.circular(Radii.sm),
                       ),
                     ),
@@ -251,7 +254,7 @@ class WorkflowsSkeleton extends StatelessWidget {
                 width: 48,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: tokens.line,
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),

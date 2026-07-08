@@ -5,13 +5,19 @@ import '../../core/design_tokens.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document_type.dart';
 import '../../core/models/tag.dart';
+import '../../shared/widgets/stamp_chip.dart';
 import 'documents_notifier.dart';
 
+/// The active-filter strip: one dismissible stamp pill per applied filter,
+/// shown only when at least one filter is set. Dismissing a pill emits a
+/// reduced [DocumentsFilter] via [onChanged]; trailing actions save the current
+/// filter as a view or clear everything.
 class ActiveFiltersBar extends StatelessWidget {
   final DocumentsFilter filter;
   final Map<int, Tag> tags;
   final Map<int, Correspondent> correspondents;
   final Map<int, DocumentType> docTypes;
+  final ValueChanged<DocumentsFilter> onChanged;
   final VoidCallback onClear;
   final VoidCallback onSave;
 
@@ -21,78 +27,87 @@ class ActiveFiltersBar extends StatelessWidget {
     required this.tags,
     required this.correspondents,
     required this.docTypes,
+    required this.onChanged,
     required this.onClear,
     required this.onSave,
   });
 
   @override
   Widget build(BuildContext context) {
-    final chips = <Widget>[];
+    final tokens = AppTokens.of(context);
+    final pills = <Widget>[];
 
     if (filter.correspondentId != null) {
-      final name =
-          correspondents[filter.correspondentId]?.name ?? '?';
-      chips.add(Chip(
-        label: Text('Corr: $name',
-            style: Theme.of(context).textTheme.bodySmall),
-        visualDensity: VisualDensity.compact,
+      final name = correspondents[filter.correspondentId]?.name ?? '?';
+      pills.add(StampChip(
+        label: name,
+        icon: Icons.person_outline,
+        rotated: false,
+        onDeleted: () => onChanged(filter.copyWith(clearCorrespondent: true)),
       ));
     }
     if (filter.documentTypeId != null) {
-      final name =
-          docTypes[filter.documentTypeId]?.name ?? '?';
-      chips.add(Chip(
-        label: Text('Type: $name',
-            style: Theme.of(context).textTheme.bodySmall),
-        visualDensity: VisualDensity.compact,
+      final name = docTypes[filter.documentTypeId]?.name ?? '?';
+      pills.add(StampChip(
+        label: name,
+        icon: Icons.category_outlined,
+        rotated: false,
+        onDeleted: () => onChanged(filter.copyWith(clearDocumentType: true)),
       ));
     }
     if (filter.tagIds != null) {
       for (final tagId in filter.tagIds!) {
         final name = tags[tagId]?.name ?? '?';
-        chips.add(Chip(
-          label:
-              Text(name, style: Theme.of(context).textTheme.bodySmall),
-          visualDensity: VisualDensity.compact,
+        final remaining = filter.tagIds!.where((id) => id != tagId).toList();
+        pills.add(StampChip(
+          label: name,
+          icon: Icons.sell_outlined,
+          rotated: false,
+          onDeleted: () => onChanged(filter.copyWith(
+            tagIds: remaining.isEmpty ? null : remaining,
+            clearTags: remaining.isEmpty,
+          )),
         ));
       }
     }
-    if (filter.createdDateFrom != null ||
-        filter.createdDateTo != null) {
+    if (filter.createdDateFrom != null || filter.createdDateTo != null) {
       final from = filter.createdDateFrom != null
           ? DateFormat.yMd().format(filter.createdDateFrom!)
-          : '...';
+          : '…';
       final to = filter.createdDateTo != null
           ? DateFormat.yMd().format(filter.createdDateTo!)
-          : '...';
-      chips.add(Chip(
-        label: Text('Date: $from – $to',
-            style: Theme.of(context).textTheme.bodySmall),
-        visualDensity: VisualDensity.compact,
+          : '…';
+      pills.add(StampChip(
+        label: '$from – $to',
+        icon: Icons.event_outlined,
+        rotated: false,
+        onDeleted: () => onChanged(filter.copyWith(clearDateRange: true)),
       ));
     }
 
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.xs),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          Spacing.xl, 0, Spacing.md, Spacing.sm),
       child: Row(
         children: [
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: chips
-                    .map((c) => Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: c,
-                        ))
-                    .toList(),
+                children: [
+                  for (final pill in pills)
+                    Padding(
+                      padding: const EdgeInsets.only(right: Spacing.sm),
+                      child: pill,
+                    ),
+                ],
               ),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.bookmark_add_outlined),
             tooltip: 'Save as view',
+            color: tokens.accentEmphasis,
             onPressed: onSave,
           ),
           TextButton(

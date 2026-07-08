@@ -64,31 +64,54 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         suggestions.isNotEmpty &&
         searchState is SearchIdle;
 
+    final tokens = AppTokens.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: TextField(
-          controller: _searchController,
-          focusNode: _focusNode,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Search documents...',
-            border: InputBorder.none,
-          ),
-          textInputAction: TextInputAction.search,
-          onSubmitted: _performSearch,
-        ),
-        actions: [
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                _searchController.clear();
-                ref.read(searchNotifierProvider.notifier).clear();
-                ref.read(autocompleteNotifierProvider.notifier).clear();
-                _focusNode.requestFocus();
-              },
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.only(right: Spacing.lg),
+          child: TextField(
+            controller: _searchController,
+            focusNode: _focusNode,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Search documents…',
+              isDense: true,
+              filled: true,
+              fillColor: tokens.card,
+              prefixIcon: Icon(Icons.search, size: 20, color: tokens.inkSoft),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      tooltip: 'Clear',
+                      onPressed: () {
+                        _searchController.clear();
+                        ref.read(searchNotifierProvider.notifier).clear();
+                        ref.read(autocompleteNotifierProvider.notifier).clear();
+                        _focusNode.requestFocus();
+                      },
+                    )
+                  : null,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: Spacing.sm),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(Radii.pill),
+                borderSide: BorderSide(color: tokens.line),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(Radii.pill),
+                borderSide: BorderSide(color: tokens.line),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(Radii.pill),
+                borderSide: BorderSide(color: tokens.accentEmphasis, width: 2),
+              ),
             ),
-        ],
+            textInputAction: TextInputAction.search,
+            onSubmitted: _performSearch,
+          ),
+        ),
       ),
       body: showSuggestions
           ? _buildSuggestions(suggestions)

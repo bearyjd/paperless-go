@@ -18,10 +18,10 @@ class TagChip extends StatelessWidget {
     return Semantics(
       label: '${tag.name} tag',
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: 3),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(Radii.md),
+          borderRadius: BorderRadius.circular(Radii.pill),
         ),
         child: Text(
           tag.name,
@@ -74,10 +74,10 @@ class TagOverflowChip extends StatelessWidget {
     return Semantics(
       label: '$count more tags',
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: Spacing.xs),
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: 3),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(Radii.md),
+          borderRadius: BorderRadius.circular(Radii.pill),
         ),
         child: Text(
           '+$count',

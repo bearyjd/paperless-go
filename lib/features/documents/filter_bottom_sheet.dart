@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../core/design_tokens.dart';
 import '../../shared/widgets/tag_chip.dart';
 import 'documents_notifier.dart';
 
@@ -26,6 +27,16 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late List<int> _tagIds;
   late DateTime? _dateFrom;
   late DateTime? _dateTo;
+  late String _ordering;
+
+  static const _sortOptions = {
+    '-created': 'Newest first',
+    'created': 'Oldest first',
+    '-added': 'Recently added',
+    'title': 'Title A-Z',
+    '-title': 'Title Z-A',
+    'archive_serial_number': 'ASN',
+  };
 
   @override
   void initState() {
@@ -35,6 +46,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     _tagIds = List.from(widget.currentFilter.tagIds ?? []);
     _dateFrom = widget.currentFilter.createdDateFrom;
     _dateTo = widget.currentFilter.createdDateTo;
+    _ordering = widget.currentFilter.ordering;
   }
 
   bool get _hasFilters =>
@@ -95,6 +107,23 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               controller: scrollController,
               padding: const EdgeInsets.all(16),
               children: [
+                // Sort
+                Text('Sort by', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: Spacing.sm,
+                  runSpacing: Spacing.xs,
+                  children: _sortOptions.entries.map((e) {
+                    return ChoiceChip(
+                      label: Text(e.value),
+                      selected: _ordering == e.key,
+                      onSelected: (_) => setState(() => _ordering = e.key),
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 20),
+
                 // Correspondent
                 Text('Correspondent', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 8),
@@ -217,6 +246,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               child: FilledButton(
                 onPressed: () {
                   widget.onApply(widget.currentFilter.copyWith(
+                    ordering: _ordering,
                     correspondentId: _correspondentId,
                     documentTypeId: _documentTypeId,
                     tagIds: _tagIds.isEmpty ? null : _tagIds,

@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/api/api_providers.dart';
+import '../../core/design_tokens.dart';
 import '../../core/models/document.dart';
 import '../../shared/widgets/document_card.dart';
+import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/loading_skeleton.dart';
 
 part 'similar_screen.g.dart';
 
@@ -34,21 +37,26 @@ class SimilarScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Similar Documents')),
       body: similarAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const DocumentListSkeleton(),
         error: (err, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 48,
-                  color: Theme.of(context).colorScheme.error),
-              const SizedBox(height: 16),
-              Text('Failed to find similar documents'),
-              const SizedBox(height: 16),
-              FilledButton.tonal(
-                onPressed: () => ref.invalidate(similarDocumentsProvider(documentId)),
-                child: const Text('Retry'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(Spacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, size: 48,
+                    color: Theme.of(context).colorScheme.error),
+                const SizedBox(height: Spacing.lg),
+                Text('Failed to find similar documents',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: Spacing.lg),
+                FilledButton.tonal(
+                  onPressed: () =>
+                      ref.invalidate(similarDocumentsProvider(documentId)),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
           ),
         ),
         data: (documents) {
@@ -57,17 +65,10 @@ class SimilarScreen extends ConsumerWidget {
           final docTypes = docTypesAsync.valueOrNull ?? {};
 
           if (documents.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.find_in_page, size: 64,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  const SizedBox(height: 16),
-                  Text('No similar documents found',
-                      style: Theme.of(context).textTheme.titleMedium),
-                ],
-              ),
+            return const EmptyState(
+              icon: Icons.find_in_page_outlined,
+              title: 'No similar documents found',
+              description: 'Nothing in your library resembles this document yet.',
             );
           }
 

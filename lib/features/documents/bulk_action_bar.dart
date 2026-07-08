@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_providers.dart';
+import '../../core/design_tokens.dart';
 import '../../core/models/tag.dart';
 import '../../core/models/correspondent.dart';
 import '../../core/models/document_type.dart';
@@ -25,13 +26,17 @@ class BulkActionBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final tokens = AppTokens.of(context);
 
     return Material(
-      elevation: 6,
-      borderRadius: BorderRadius.circular(16),
-      color: colorScheme.primaryContainer,
+      elevation: 0,
+      color: tokens.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.lg),
+        side: BorderSide(color: tokens.line),
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -41,13 +46,12 @@ class BulkActionBar extends ConsumerWidget {
               onPressed: onClearSelection,
             ),
             Text(
-              '${selectedIds.length} selected',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onPrimaryContainer,
-              ),
+              '${selectedIds.length}',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: tokens.ink,
+                  ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: Spacing.xs),
             _ActionButton(
               icon: Icons.label_outline,
               tooltip: 'Add tags',
@@ -75,7 +79,7 @@ class BulkActionBar extends ConsumerWidget {
               color: colorScheme.error,
             ),
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, color: colorScheme.onPrimaryContainer),
+              icon: Icon(Icons.more_vert, color: tokens.inkSoft),
               tooltip: 'More actions',
               onSelected: (action) {
                 switch (action) {
