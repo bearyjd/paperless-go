@@ -7,6 +7,7 @@ import '../../core/auth/auth_provider.dart';
 import '../../core/auth/server_profiles.dart';
 import '../../core/design_tokens.dart';
 import '../../core/services/biometric_service.dart';
+import '../ai_chat/chat_notifier.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -157,7 +158,7 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: Text(
                   aiUsername?.isNotEmpty == true
                       ? 'Logged in as $aiUsername'
-                      : 'Not configured (required for document chat)',
+                      : 'Not configured (required for chat)',
                   style: aiUsername?.isNotEmpty == true
                       ? null
                       : TextStyle(color: tokens.inkSoft),
@@ -320,64 +321,107 @@ class SettingsScreen extends ConsumerWidget {
     final passwordController = TextEditingController(
       text: ref.read(aiChatPasswordProvider) ?? '',
     );
+    var verifying = false;
+    String? verifyError;
     showDialog<(String, String)>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Paperless-AI Credentials'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Enter your Paperless-AI login credentials. Required for document chat.',
-              style: Theme.of(ctx).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 12),
-            AutofillGroup(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: usernameController,
-                    autofocus: true,
-                    autofillHints: const [AutofillHints.username],
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    autofillHints: const [AutofillHints.password],
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ],
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Paperless-AI Credentials'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter your Paperless-AI login credentials. Required for chat.',
+                style: Theme.of(ctx).textTheme.bodySmall,
               ),
+              const SizedBox(height: 12),
+              AutofillGroup(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: usernameController,
+                      autofocus: true,
+                      autofillHints: const [AutofillHints.username],
+                      decoration: const InputDecoration(
+                        labelText: 'Username',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: passwordController,
+                      obscureText: true,
+                      autofillHints: const [AutofillHints.password],
+                      decoration: const InputDecoration(
+                        labelText: 'Password',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (verifyError != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  verifyError!,
+                  style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(ctx).colorScheme.error,
+                      ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: verifying ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: verifying
+                  ? null
+                  : () async {
+                      final username = usernameController.text.trim();
+                      final password = passwordController.text;
+                      final service = ref.read(chatServiceProvider);
+                      if (service == null) {
+                        setState(() => verifyError =
+                            'Set the Paperless-AI URL first.');
+                        return;
+                      }
+                      setState(() {
+                        verifying = true;
+                        verifyError = null;
+                      });
+                      try {
+                        await service.login(username, password);
+                        if (!ctx.mounted) return;
+                        // Verified — capture values before popping;
+                        // controllers are disposed after the exit animation.
+                        Navigator.pop(ctx, (username, password));
+                      } on Exception catch (e) {
+                        if (!ctx.mounted) return;
+                        setState(() {
+                          verifying = false;
+                          verifyError = e
+                              .toString()
+                              .replaceFirst('Exception: ', '');
+                        });
+                      }
+                    },
+              child: verifying
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Verify & save'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              // Capture values before popping — controllers will be
-              // disposed after the dialog route animation completes.
-              Navigator.pop(ctx, (
-                usernameController.text.trim(),
-                passwordController.text,
-              ));
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     ).then((result) {
       if (result != null) {
@@ -386,6 +430,11 @@ class SettingsScreen extends ConsumerWidget {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.read(aiChatUsernameProvider.notifier).set(result.$1);
           ref.read(aiChatPasswordProvider.notifier).set(result.$2);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Credentials verified')),
+            );
+          }
         });
       }
       // Do NOT dispose controllers here — the dialog exit animation is
