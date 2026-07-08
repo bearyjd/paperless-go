@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/models/document.dart';
 import '../../core/api/api_error_mapper.dart';
+import '../scanner/processing/metadata_matcher.dart';
 
 part 'inbox_notifier.g.dart';
 
@@ -109,6 +110,66 @@ class InboxNotifier extends _$InboxNotifier {
   /// gesture and the actions menu both firing for the same document, which would
   /// issue a redundant API write and decrement totalCount twice.
   final Set<int> _removing = {};
+
+  /// Accept OCR/match suggestions for [doc]: applies suggested tags,
+  /// correspondent, and document type in a single update that also strips the
+  /// inbox tags (so accepting files the document out of the inbox).
+  ///
+  /// Returns the document's previous values for those fields so the caller
+  /// can offer Undo via [undoAccept]. Throws on API failure. A concurrent
+  /// accept/remove in flight for the same document is a no-op returning null.
+  Future<Map<String, dynamic>?> acceptSuggestions(
+    Document doc,
+    MetadataSuggestions suggestions,
+  ) async {
+    if (!_removing.add(doc.id)) return null;
+    try {
+      final api = ref.read(paperlessApiProvider);
+      final tagsMap = await ref.read(tagsProvider.future);
+      final inboxTagIds =
+          tagsMap.values.where((t) => t.isInboxTag).map((t) => t.id).toSet();
+
+      final newTags = <int>{
+        ...doc.tags.where((id) => !inboxTagIds.contains(id)),
+        ...suggestions.tagIds,
+      }.toList();
+
+      final previous = <String, dynamic>{
+        'tags': doc.tags,
+        'correspondent': doc.correspondent,
+        'document_type': doc.documentType,
+      };
+
+      final data = <String, dynamic>{'tags': newTags};
+      if (suggestions.correspondentId != null && doc.correspondent == null) {
+        data['correspondent'] = suggestions.correspondentId;
+      }
+      if (suggestions.documentTypeId != null && doc.documentType == null) {
+        data['document_type'] = suggestions.documentTypeId;
+      }
+
+      await api.updateDocument(doc.id, data);
+
+      final current = state.valueOrNull;
+      if (current != null) {
+        state = AsyncData(current.copyWith(
+          documents: current.documents.where((d) => d.id != doc.id).toList(),
+          totalCount: (current.totalCount - 1).clamp(0, current.totalCount),
+        ));
+      }
+      return previous;
+    } finally {
+      _removing.remove(doc.id);
+    }
+  }
+
+  /// Revert a previously accepted document to [previous] (from
+  /// [acceptSuggestions]) and reload the inbox so it reappears.
+  Future<void> undoAccept(int documentId, Map<String, dynamic> previous) async {
+    final api = ref.read(paperlessApiProvider);
+    await api.updateDocument(documentId, previous);
+    ref.invalidateSelf();
+  }
 
   /// Remove a document from inbox by removing inbox tags.
   /// Throws on API failure so the caller can handle rollback. A concurrent

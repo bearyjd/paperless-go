@@ -6,7 +6,7 @@ part of 'inbox_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$inboxNotifierHash() => r'82002090f665b5e0ccc7c0706745d0300ff1ac6d';
+String _$inboxNotifierHash() => r'49c32be413f37585f06a4faa83ac8ab2adfb1478';
 
 /// See also [InboxNotifier].
 @ProviderFor(InboxNotifier)
