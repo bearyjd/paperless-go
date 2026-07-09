@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
@@ -15,13 +16,13 @@ import '../../core/api/thumbnail_cache_bust.dart';
 import '../../shared/widgets/destructive_button_style.dart';
 import '../../shared/widgets/metadata_dropdown.dart';
 import '../../core/auth/auth_provider.dart';
-import '../../core/models/correspondent.dart';
 import '../../core/models/custom_field.dart';
-import '../../core/models/document_type.dart';
+import '../../core/models/document.dart';
 import '../../core/models/storage_path.dart';
 import '../../core/models/tag.dart';
+import '../../core/design_tokens.dart';
+import '../../shared/widgets/metadata_sheet.dart';
 import '../../shared/widgets/tag_chip.dart';
-import '../../shared/widgets/tag_picker_sheet.dart';
 import 'ai_edit_trail_notifier.dart';
 import 'document_detail_notifier.dart';
 import 'documents_notifier.dart';
@@ -297,45 +298,14 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
 
               const Divider(height: 32),
 
-              // Correspondent
-              MetadataDropdown<Correspondent>(
-                label: 'Correspondent',
-                value: correspondent,
-                items: correspondents.values.toList(),
-                displayName: (c) => c.name,
-                onChanged: (c) async {
-                  try {
-                    await ref.read(documentDetailProvider(documentId).notifier)
-                        .updateField({'correspondent': c?.id});
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to update: ${friendlyApiMessage(e)}')),
-                      );
-                    }
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-
-              // Document Type
-              MetadataDropdown<DocumentType>(
-                label: 'Document Type',
-                value: docType,
-                items: docTypes.values.toList(),
-                displayName: (dt) => dt.name,
-                onChanged: (dt) async {
-                  try {
-                    await ref.read(documentDetailProvider(documentId).notifier)
-                        .updateField({'document_type': dt?.id});
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to update: ${friendlyApiMessage(e)}')),
-                      );
-                    }
-                  }
-                },
+              // Metadata summary — correspondent, type, date and tags in one
+              // card; edited together via the shared MetadataSheet.
+              _MetadataSummaryCard(
+                correspondentName: correspondent?.name,
+                documentTypeName: docType?.name,
+                created: doc.created,
+                tags: docTags,
+                onEdit: () => _openMetadataSheet(doc),
               ),
               const SizedBox(height: 12),
 
@@ -360,35 +330,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Date
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.calendar_today),
-                title: const Text('Created'),
-                subtitle: Text(doc.created != null ? DateFormat.yMMMd().format(doc.created!) : 'Unknown'),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: doc.created ?? DateTime.now(),
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (picked != null && context.mounted) {
-                    try {
-                      await ref.read(documentDetailProvider(documentId).notifier)
-                          .updateField({'created': picked.toIso8601String().split('T').first});
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to update date: ${friendlyApiMessage(e)}')),
-                        );
-                      }
-                    }
-                  }
-                },
-              ),
-
-              // Scan date shortcut — shown below created date
+              // Scan date shortcut — shown below the metadata summary
               if (doc.added != null) ...[
                 const SizedBox(height: 2),
                 Padding(
@@ -517,15 +459,6 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                 },
               ),
 
-              const Divider(height: 32),
-
-              // Tags
-              _TagsSection(
-                documentId: documentId,
-                docTags: docTags,
-                allTags: tags,
-              ),
-
               // Custom fields
               const Divider(height: 32),
               _CustomFieldsSection(
@@ -570,6 +503,54 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
         );
       },
     );
+  }
+
+  void _openMetadataSheet(Document doc) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => MetadataSheet(
+        correspondentId: doc.correspondent,
+        documentTypeId: doc.documentType,
+        tagIds: doc.tags,
+        created: doc.created,
+        onSave: (result) => _saveMetadata(doc, result),
+      ),
+    );
+  }
+
+  /// Persist only the fields the sheet actually changed, in one PATCH.
+  Future<void> _saveMetadata(Document doc, MetadataSheetResult result) async {
+    final patch = <String, dynamic>{};
+    if (result.correspondentId != doc.correspondent) {
+      patch['correspondent'] = result.correspondentId;
+    }
+    if (result.documentTypeId != doc.documentType) {
+      patch['document_type'] = result.documentTypeId;
+    }
+    // A cleared date means "leave as is" here — Paperless requires created.
+    if (result.created != null) {
+      final newDate = result.created!.toIso8601String().split('T').first;
+      final oldDate = doc.created?.toIso8601String().split('T').first;
+      if (newDate != oldDate) patch['created'] = newDate;
+    }
+    if (!setEquals(result.tagIds.toSet(), doc.tags.toSet())) {
+      patch['tags'] = result.tagIds;
+    }
+    if (patch.isEmpty) return;
+    try {
+      await ref
+          .read(documentDetailProvider(documentId).notifier)
+          .updateField(patch);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('Failed to update details: ${friendlyApiMessage(e)}')),
+        );
+      }
+    }
   }
 
   Future<void> _showRotateChooser(BuildContext context, WidgetRef ref) async {
@@ -939,68 +920,87 @@ class _EditableTile extends StatelessWidget {
   }
 }
 
-class _TagsSection extends ConsumerWidget {
-  final int documentId;
-  final List<Tag> docTags;
-  final Map<int, Tag> allTags;
-
-  const _TagsSection({
-    required this.documentId,
-    required this.docTags,
-    required this.allTags,
+/// Read-only summary of the core metadata (correspondent, type, date, tags)
+/// with a single Edit action that opens the shared [MetadataSheet].
+class _MetadataSummaryCard extends StatelessWidget {
+  const _MetadataSummaryCard({
+    required this.correspondentName,
+    required this.documentTypeName,
+    required this.created,
+    required this.tags,
+    required this.onEdit,
   });
 
+  final String? correspondentName;
+  final String? documentTypeName;
+  final DateTime? created;
+  final List<Tag> tags;
+  final VoidCallback onEdit;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+  Widget build(BuildContext context) {
+    final tokens = AppTokens.of(context);
+
+    Widget row(IconData icon, String label, String? value) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: tokens.inkSoft),
+              const SizedBox(width: Spacing.md),
+              Text(label,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: tokens.inkSoft)),
+              const Spacer(),
+              Flexible(
+                child: Text(
+                  value ?? 'None',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: value == null ? tokens.inkSoft : tokens.ink,
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            Spacing.lg, Spacing.md, Spacing.lg, Spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Semantics(header: true, child: Text('Tags', style: Theme.of(context).textTheme.titleSmall)),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.add, size: 20),
-              onPressed: () => _showTagPicker(context, ref),
+            row(Icons.person_outline, 'Correspondent', correspondentName),
+            row(Icons.category_outlined, 'Type', documentTypeName),
+            row(
+                Icons.calendar_today_outlined,
+                'Created',
+                created != null
+                    ? DateFormat.yMMMd().format(created!)
+                    : null),
+            if (tags.isNotEmpty) ...[
+              const SizedBox(height: Spacing.sm),
+              Wrap(
+                spacing: Spacing.sm - 2,
+                runSpacing: Spacing.sm - 2,
+                children: [for (final tag in tags) TagChip(tag: tag)],
+              ),
+            ],
+            const SizedBox(height: Spacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Edit details'),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: docTags.map((tag) {
-            final bgColor = TagChip.parseColor(tag.colour);
-            final fgColor = bgColor != null ? TagChip.contrastColor(bgColor) : null;
-            return InputChip(
-              label: Text(tag.name, style: const TextStyle(fontSize: 12)),
-              backgroundColor: bgColor,
-              labelStyle: TextStyle(color: fgColor),
-              deleteIconColor: fgColor,
-              onDeleted: () => ref.read(documentDetailProvider(documentId).notifier)
-                  .removeTag(tag.id),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  void _showTagPicker(BuildContext context, WidgetRef ref) {
-    final availableTags = allTags.values
-        .where((t) => !docTags.any((dt) => dt.id == t.id))
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => TagPickerSheet(
-        tags: availableTags,
-        onSelected: (tag) {
-          ref.read(documentDetailProvider(documentId).notifier).addTag(tag.id);
-          Navigator.pop(ctx);
-        },
       ),
     );
   }
