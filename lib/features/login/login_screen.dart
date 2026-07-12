@@ -36,7 +36,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _testConnection() async {
     final url = _normalizeUrl(_serverUrlController.text.trim());
-    if (url.isEmpty) return;
+    if (url.isEmpty || url.startsWith('http://')) {
+      setState(() => _connectionOk = false);
+      return;
+    }
 
     setState(() { _testing = true; _connectionOk = null; });
     final authService = ref.read(authServiceProvider);
@@ -170,6 +173,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         if (!url.startsWith('http://') && !url.startsWith('https://')) {
                           return 'URL must start with https:// or http://';
                         }
+                        if (url.startsWith('http://')) {
+                          return 'This app requires https:// — plain http:// connections '
+                              'are blocked. Put your server behind a reverse proxy or '
+                              'Tailscale Serve for a valid HTTPS address.';
+                        }
                         final parsed = Uri.tryParse(v.trim());
                         if (parsed == null || parsed.host.isEmpty) {
                           return 'Enter a valid URL';
@@ -185,11 +193,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         padding: const EdgeInsets.only(top: Spacing.sm),
                         child: Row(
                           children: [
-                            Icon(Icons.warning_amber, size: 16, color: Theme.of(context).colorScheme.error),
+                            Icon(Icons.error_outline, size: 16, color: Theme.of(context).colorScheme.error),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                'Insecure connection — credentials sent in plaintext',
+                                'http:// is blocked by this app — use https:// instead',
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error),
                               ),
                             ),
