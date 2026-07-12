@@ -21,13 +21,6 @@ enum CompressionQuality {
   const CompressionQuality({required this.jpegQuality, required this.label});
 }
 
-/// Validates a password for PDF encryption. Returns error message or null.
-String? validatePassword(String password) {
-  if (password.isEmpty) return 'Password cannot be empty';
-  if (password.length < 4) return 'Password must be at least 4 characters';
-  return null;
-}
-
 /// Estimates compressed file size in bytes.
 int estimateCompressedSize({
   required int originalBytes,
@@ -51,26 +44,6 @@ Future<String> compressPdf({
   final dir = await getTemporaryDirectory();
   final outputPath =
       '${dir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.pdf';
-  await File(outputPath).writeAsBytes(pdfBytes);
-  return outputPath;
-}
-
-/// Creates a password-protected copy of a PDF.
-/// Returns the path to the new PDF.
-/// TODO: Add actual encryption when pdf package supports it via Document API.
-Future<String> protectPdf({
-  required String inputPath,
-  required String password,
-}) async {
-  final pageImages = await PdfRendererChannel.renderPages(inputPath);
-  final pdfBytes = await Isolate.run(() => _buildPdf(
-        pageImages: pageImages,
-        jpegQuality: 85,
-      ));
-
-  final dir = await getTemporaryDirectory();
-  final outputPath =
-      '${dir.path}/protected_${DateTime.now().millisecondsSinceEpoch}.pdf';
   await File(outputPath).writeAsBytes(pdfBytes);
   return outputPath;
 }

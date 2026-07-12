@@ -11,7 +11,7 @@ Manage your documents on the go with a clean, modern interface:
 * Dashboard with library statistics overview
 * Saved views: create, apply, rename, and delete filter sets
 * Workflows: view, toggle, and delete automation rules
-* PDF tools: rotate, split, compress, password protect, annotate, and redact
+* PDF tools: rotate, split, compress, annotate, and redact
 * Bulk operations: tag, re-tag, delete, merge, and more
 * Biometric authentication for secure access
 * Offline-capable with full SQLite caching

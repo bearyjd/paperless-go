@@ -22,24 +22,6 @@ void main() {
     });
   });
 
-  group('validatePassword', () {
-    test('rejects empty password', () {
-      expect(validatePassword(''), 'Password cannot be empty');
-    });
-
-    test('rejects password shorter than 4 chars', () {
-      expect(validatePassword('abc'), 'Password must be at least 4 characters');
-    });
-
-    test('accepts valid password', () {
-      expect(validatePassword('mypassword'), isNull);
-    });
-
-    test('accepts 4-char password', () {
-      expect(validatePassword('abcd'), isNull);
-    });
-  });
-
   group('estimateCompressedSize', () {
     test('estimates size based on quality ratio', () {
       final estimate = estimateCompressedSize(

@@ -209,11 +209,6 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                     title: Text('Compress & Share'),
                     contentPadding: EdgeInsets.zero,
                   )),
-                  const PopupMenuItem(value: 'protect_share', child: ListTile(
-                    leading: Icon(Icons.lock_outline),
-                    title: Text('Password Protect & Share'),
-                    contentPadding: EdgeInsets.zero,
-                  )),
                   const PopupMenuDivider(),
                   PopupMenuItem(
                     value: _isLocked ? 'unlock_doc' : 'lock_doc',
@@ -765,73 +760,6 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Compress failed: ${friendlyApiMessage(e)}')),
-            );
-          }
-        }
-      case 'protect_share':
-        final passwordController = TextEditingController();
-        String? validationError;
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => StatefulBuilder(
-            builder: (ctx, setState) => AlertDialog(
-              title: const Text('Password protect PDF'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      errorText: validationError,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    final err = validatePassword(passwordController.text);
-                    if (err != null) {
-                      setState(() => validationError = err);
-                    } else {
-                      Navigator.pop(ctx, true);
-                    }
-                  },
-                  child: const Text('Protect & Share'),
-                ),
-              ],
-            ),
-          ),
-        );
-        if (confirmed != true) break;
-        if (!context.mounted) break;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Encrypting...')),
-        );
-        try {
-          final tempPath = await ref.read(
-            documentDownloadProvider(documentId, title).future,
-          );
-          final outputPath = await protectPdf(
-            inputPath: tempPath,
-            password: passwordController.text,
-          );
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            await Share.shareXFiles([XFile(outputPath)]);
-          }
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Protect failed: ${friendlyApiMessage(e)}')),
             );
           }
         }

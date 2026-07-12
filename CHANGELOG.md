@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Remove "Password Protect & Share" — it re-encoded the PDF and silently ignored the password without ever encrypting the file, giving a false sense of protection. No encryption library the app can legally bundle (Syncfusion is proprietary, incompatible with AGPL-3.0; the bundled `pdf` package only exposes an abstract encryption extension point, not an implementation) makes this honest to keep without a from-scratch cryptographic implementation, which needs dedicated security review rather than a quick fix. "Compress & Share" is unaffected.
+
 ## [1.1.5] - 2026-07-06
 
 ### Changed
