@@ -215,20 +215,35 @@ class CacheRepository {
     return _db.select(_db.pendingUploads).get();
   }
 
+  Future<List<PendingUpload>> getFailedUploads() async {
+    return (_db.select(_db.pendingUploads)
+          ..where((t) => t.isFailed.equals(true)))
+        .get();
+  }
+
   Future<void> removePendingUpload(int id) async {
     await (_db.delete(_db.pendingUploads)
           ..where((t) => t.id.equals(id)))
         .go();
   }
 
-  Future<void> incrementRetryCount(int id, String error) async {
+  /// Records a failed upload attempt. Once [maxRetries] is reached the
+  /// upload is marked terminally failed so the drain loop stops retrying it
+  /// silently forever and the UI can surface it.
+  Future<void> incrementRetryCount(
+    int id,
+    String error, {
+    required int maxRetries,
+  }) async {
     final row = await (_db.select(_db.pendingUploads)
           ..where((t) => t.id.equals(id)))
         .getSingle();
+    final newRetryCount = row.retryCount + 1;
     await (_db.update(_db.pendingUploads)..where((t) => t.id.equals(id)))
         .write(PendingUploadsCompanion(
-      retryCount: Value(row.retryCount + 1),
+      retryCount: Value(newRetryCount),
       lastError: Value(error),
+      isFailed: Value(newRetryCount >= maxRetries),
     ));
   }
 

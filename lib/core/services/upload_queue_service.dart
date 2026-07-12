@@ -40,7 +40,7 @@ class UploadQueueService extends _$UploadQueueService {
 
       const maxRetries = 5;
       for (final upload in pending) {
-        if (upload.retryCount >= maxRetries) continue;
+        if (upload.isFailed) continue;
 
         // The source file may have been cleaned up by the OS since it was
         // queued. Drop it rather than retrying forever against a missing path.
@@ -67,7 +67,11 @@ class UploadQueueService extends _$UploadQueueService {
 
           await cache.removePendingUpload(upload.id);
         } catch (e) {
-          await cache.incrementRetryCount(upload.id, e.toString());
+          await cache.incrementRetryCount(
+            upload.id,
+            e.toString(),
+            maxRetries: maxRetries,
+          );
         }
       }
     } finally {

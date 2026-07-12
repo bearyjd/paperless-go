@@ -86,6 +86,7 @@ class PendingUploads extends Table {
   DateTimeColumn get queuedAt => dateTime()();
   IntColumn get retryCount => integer().withDefault(const Constant(0))();
   TextColumn get lastError => text().nullable()();
+  BoolColumn get isFailed => boolean().withDefault(const Constant(false))();
 }
 
 class LockedDocuments extends Table {
@@ -140,7 +141,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -159,6 +160,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await migrator.createTable(pendingEdits);
+      }
+      if (from < 7) {
+        await migrator.addColumn(pendingUploads, pendingUploads.isFailed);
       }
     },
   );
