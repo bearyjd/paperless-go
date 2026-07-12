@@ -1,0 +1,6 @@
+* Full UI redesign: new theme, bundled Space Grotesk font, refreshed bottom nav with a raised Scan button
+* Inbox: swipeable card stack with OCR suggestion chips
+* Library: omnibox search, stamp filter pills, restyled document cards
+* Scan: 3-tap capture flow with a reusable metadata sheet
+* Document details: edit metadata inline from the summary card
+* Settings: verify Paperless-AI credentials before saving
