@@ -1,0 +1,3 @@
+* Fixed: uploads that permanently fail (e.g. rejected by the server) now stop retrying instead of looping forever, and are recorded as terminally failed
+* Fixed: login now blocks http:// server URLs upfront with a clear explanation, instead of accepting them and failing confusingly later
+* Removed "Password Protect & Share" — it never actually encrypted the file, so it gave a false sense of protection; real encryption needs a dedicated security-reviewed implementation and will return separately

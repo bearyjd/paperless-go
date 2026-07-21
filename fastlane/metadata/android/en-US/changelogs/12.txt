@@ -1,0 +1,4 @@
+Bug fixes:
+* Fix uploads retrying forever after a permanent failure — now stops and records a terminal failure
+* Fix login accepting http:// URLs that then fail confusingly — now blocked upfront with an explanation
+* Remove "Password Protect & Share" — it never encrypted the file; real encryption is coming as a separately reviewed feature
