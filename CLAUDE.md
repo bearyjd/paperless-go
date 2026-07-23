@@ -171,16 +171,11 @@ User reports bug
 
 ## YOLO Mode Configuration
 
-> **⚠️ `run-paperless-fable.sh` (repo root) does NOT match this section.**
-> That script's embedded prompt targets "the Go codebase" (`go test ./...`,
-> Go-specific security checks) — this is a Flutter/Dart project, so that
-> command always fails and the script's `until` loop will retry forever
-> with `--dangerously-skip-permissions` on every cycle. Do not run it as-is.
-> See `.agent_native/agent_roadmap.md` item 3 for the fix. The
-> `debug-overnight.sh` pattern actually described below (and referenced by
-> `.claude/agents/`) is the one that matches this repo — but note
-> `scripts/debug-overnight.sh` and `debug/queue/` don't exist on disk yet
-> either (`.agent_native/agent_roadmap.md` item 4).
+> `run-paperless-fable.sh` (repo root) was rewritten in `048d8a3` to match
+> this repo's stack: it targets Flutter/Dart (not Go), never passes
+> `--dangerously-skip-permissions`, and bounds its retry loop
+> (`max-attempts`, default 3). `scripts/debug-overnight.sh` and
+> `debug/queue/` both exist on disk and match the pattern described below.
 
 When running overnight autonomous debug sessions, use these settings:
 
@@ -334,7 +329,7 @@ lib/
 │   │                               #   home_widget_service, notification_service, pdf_tools_service
 │   ├── router/                     # scan_route_args.dart
 │   ├── theme.dart                  # AppTheme.light()/dark(), ColorScheme.fromSeed
-│   └── design_tokens.dart          # Spacing/Radii constants (no color/type tokens yet — see AUDIT.md)
+│   └── design_tokens.dart          # Spacing/Radii constants (no color/type tokens yet — see DESIGN-IS-2026-06-20/AUDIT.md)
 │
 ├── features/                       # One dir per feature; providers/notifiers live beside their
 │   │                               #   screen (there is no separate core/providers/ dir)
@@ -360,8 +355,8 @@ test/
 
 debug/
 ├── reports/                        # Generated debug reports (full-codebase-audit.md, etc. exist)
-└── (debug/queue/ and debug/logs/, described in "Bug Queue" below, are NOT yet created
-    — see .agent_native/agent_roadmap.md #4)
+├── queue/                          # Bug queue, described in "Bug Queue" below (has an example file)
+└── logs/                           # Overnight-runner logs (.gitkeep only until a run happens)
 ```
 
 **Known gap:** `pubspec.yaml` has no HTTP-mocking dev dependency
