@@ -501,7 +501,8 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
     bool hasChat,
   ) async {
     Widget sectionLabel(BuildContext ctx, String label) => Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.fromLTRB(
+              Spacing.lg, Spacing.md, Spacing.lg, Spacing.xs),
           child: Text(label, style: Theme.of(ctx).textTheme.titleSmall),
         );
 
@@ -574,7 +575,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                   style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
               onTap: () => Navigator.pop(ctx, 'delete'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.sm),
           ],
         ),
       ),
@@ -838,6 +839,8 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
             }
           }
         }
+      default:
+        assert(false, 'Unhandled document detail action: $action');
     }
   }
 }
