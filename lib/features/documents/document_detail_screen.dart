@@ -152,83 +152,26 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
             .whereType<Tag>()
             .toList();
 
+        // One primary action (Share — the single most common thing to do
+        // with a document once you've found it) plus one overflow entry
+        // point for everything else, grouped by intent in a bottom sheet
+        // rather than a flat dropdown. Preview already has its own large,
+        // obvious tap target (the thumbnail below), so it doesn't need a
+        // second app-bar affordance.
+        final hasChat = (ref.watch(aiChatUrlProvider) ?? '').isNotEmpty;
         return Scaffold(
           appBar: AppBar(
             title: Text(doc.title, maxLines: 1, overflow: TextOverflow.ellipsis),
             actions: [
               IconButton(
-                icon: const Icon(Icons.picture_as_pdf),
-                tooltip: 'Preview PDF',
-                onPressed: () => context.push('/documents/$documentId/preview'),
+                icon: const Icon(Icons.share_outlined),
+                tooltip: 'Share',
+                onPressed: () => _handleAction(context, ref, 'share', doc.title),
               ),
-              if (ref.watch(aiChatUrlProvider) != null && ref.watch(aiChatUrlProvider)!.isNotEmpty)
-                IconButton(
-                  icon: const Icon(Icons.smart_toy),
-                  tooltip: 'Chat about document',
-                  onPressed: () => context.push(
-                    '/documents/$documentId/chat?title=${Uri.encodeComponent(doc.title)}',
-                  ),
-                ),
-              PopupMenuButton<String>(
-                onSelected: (action) => _handleAction(context, ref, action, doc.title),
-                itemBuilder: (_) => [
-                  const PopupMenuItem(value: 'download', child: ListTile(
-                    leading: Icon(Icons.download),
-                    title: Text('Download'),
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                  const PopupMenuItem(value: 'share', child: ListTile(
-                    leading: Icon(Icons.share),
-                    title: Text('Share'),
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                  const PopupMenuItem(value: 'more_like', child: ListTile(
-                    leading: Icon(Icons.find_in_page),
-                    title: Text('More like this'),
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(value: 'rotate', child: ListTile(
-                    leading: Icon(Icons.rotate_right),
-                    title: Text('Rotate'),
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                  const PopupMenuItem(value: 'split', child: ListTile(
-                    leading: Icon(Icons.call_split),
-                    title: Text('Split document'),
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                  const PopupMenuItem(value: 'annotate', child: ListTile(
-                    leading: Icon(Icons.draw),
-                    title: Text('Annotate'),
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                  const PopupMenuItem(value: 'compress_share', child: ListTile(
-                    leading: Icon(Icons.compress),
-                    title: Text('Compress & Share'),
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                  const PopupMenuDivider(),
-                  PopupMenuItem(
-                    value: _isLocked ? 'unlock_doc' : 'lock_doc',
-                    child: ListTile(
-                      leading: Icon(_isLocked ? Icons.lock_open : Icons.lock_outline),
-                      title: Text(_isLocked ? 'Remove Lock' : 'Lock Document'),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem(value: 'delete', child: ListTile(
-                    leading: Icon(Icons.delete_outline,
-                        color: Theme.of(context).colorScheme.error),
-                    title: Text('Delete',
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.error)),
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                ],
+              IconButton(
+                icon: const Icon(Icons.more_vert),
+                tooltip: 'More actions',
+                onPressed: () => _showActionsSheet(context, ref, doc.title, hasChat),
               ),
             ],
           ),
@@ -545,6 +488,107 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                   Text('Failed to update details: ${friendlyApiMessage(e)}')),
         );
       }
+    }
+  }
+
+  /// Every action that isn't the app bar's primary Share, grouped by intent.
+  /// Returns via [_handleAction] for the shared cases, and pushes directly
+  /// for the two navigation-only actions (preview, chat).
+  Future<void> _showActionsSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    bool hasChat,
+  ) async {
+    Widget sectionLabel(BuildContext ctx, String label) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Text(label, style: Theme.of(ctx).textTheme.titleSmall),
+        );
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            sectionLabel(ctx, 'View'),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined),
+              title: const Text('Preview PDF'),
+              onTap: () => Navigator.pop(ctx, 'preview'),
+            ),
+            if (hasChat)
+              ListTile(
+                leading: const Icon(Icons.smart_toy_outlined),
+                title: const Text('Chat about document'),
+                onTap: () => Navigator.pop(ctx, 'chat'),
+              ),
+            ListTile(
+              leading: const Icon(Icons.find_in_page_outlined),
+              title: const Text('More like this'),
+              onTap: () => Navigator.pop(ctx, 'more_like'),
+            ),
+            const Divider(height: 1),
+            sectionLabel(ctx, 'Edit'),
+            ListTile(
+              leading: const Icon(Icons.rotate_right_outlined),
+              title: const Text('Rotate'),
+              onTap: () => Navigator.pop(ctx, 'rotate'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.call_split),
+              title: const Text('Split document'),
+              onTap: () => Navigator.pop(ctx, 'split'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.draw_outlined),
+              title: const Text('Annotate'),
+              onTap: () => Navigator.pop(ctx, 'annotate'),
+            ),
+            const Divider(height: 1),
+            sectionLabel(ctx, 'Export'),
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: const Text('Download'),
+              onTap: () => Navigator.pop(ctx, 'download'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.compress),
+              title: const Text('Compress & Share'),
+              onTap: () => Navigator.pop(ctx, 'compress_share'),
+            ),
+            const Divider(height: 1),
+            sectionLabel(ctx, 'Manage'),
+            ListTile(
+              leading: Icon(_isLocked ? Icons.lock_open : Icons.lock_outline),
+              title: Text(_isLocked ? 'Remove Lock' : 'Lock Document'),
+              onTap: () =>
+                  Navigator.pop(ctx, _isLocked ? 'unlock_doc' : 'lock_doc'),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(Icons.delete_outline,
+                  color: Theme.of(ctx).colorScheme.error),
+              title: Text('Delete',
+                  style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (action == null || !context.mounted) return;
+    switch (action) {
+      case 'preview':
+        context.push('/documents/$documentId/preview');
+      case 'chat':
+        context.push(
+          '/documents/$documentId/chat?title=${Uri.encodeComponent(title)}',
+        );
+      default:
+        await _handleAction(context, ref, action, title);
     }
   }
 
