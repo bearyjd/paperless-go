@@ -49,8 +49,9 @@ android/key.properties
 *.jks
 *.keystore
 
-# Debug artifacts
-debug/
+# Debug artifacts — reports/logs are generated; queue/ is committed bug intake
+debug/*
+!debug/queue/
 
 # Claude Code
 .claude/
