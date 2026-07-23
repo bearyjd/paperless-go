@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/design_tokens.dart';
-import '../../core/models/tag.dart';
-import '../../core/models/correspondent.dart';
-import '../../core/models/document_type.dart';
 import '../../core/models/storage_path.dart';
+import '../../core/models/tag.dart';
 import '../../core/api/api_error_mapper.dart';
+import '../../shared/widgets/metadata_sheet.dart';
 
 /// Floating action bar shown during multi-select mode.
 class BulkActionBar extends ConsumerWidget {
@@ -36,7 +35,10 @@ class BulkActionBar extends ConsumerWidget {
         side: BorderSide(color: tokens.line),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.sm,
+          vertical: Spacing.xs,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -47,25 +49,15 @@ class BulkActionBar extends ConsumerWidget {
             ),
             Text(
               '${selectedIds.length}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: tokens.ink,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: tokens.ink),
             ),
             const SizedBox(width: Spacing.xs),
             _ActionButton(
-              icon: Icons.label_outline,
-              tooltip: 'Add tags',
-              onPressed: () => _showBulkTagDialog(context, ref),
-            ),
-            _ActionButton(
-              icon: Icons.person_outline,
-              tooltip: 'Set correspondent',
-              onPressed: () => _showBulkCorrespondentDialog(context, ref),
-            ),
-            _ActionButton(
-              icon: Icons.category_outlined,
-              tooltip: 'Set document type',
-              onPressed: () => _showBulkDocTypeDialog(context, ref),
+              icon: Icons.edit_outlined,
+              tooltip: 'Edit metadata',
+              onPressed: () => _showEditSheet(context, ref),
             ),
             _ActionButton(
               icon: Icons.share_outlined,
@@ -145,42 +137,93 @@ class BulkActionBar extends ConsumerWidget {
     );
   }
 
-  Future<void> _showBulkTagDialog(BuildContext context, WidgetRef ref) async {
-    final tagsMap = ref.read(tagsProvider).valueOrNull ?? {};
-    final allTags = tagsMap.values.toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-
-    final selected = await showDialog<Set<int>>(
+  /// Opens the shared [MetadataSheet] for bulk-editing tags, correspondent,
+  /// and document type across the selection. Starts blank (not diffed against
+  /// any single document) — only fields the user actually touches are sent,
+  /// each as its own `bulkEdit` call. There's no bulk-edit method for
+  /// `created`, so the sheet's date field is a no-op here.
+  Future<void> _showEditSheet(BuildContext context, WidgetRef ref) async {
+    final count = selectedIds.length;
+    await showModalBottomSheet(
       context: context,
-      builder: (ctx) => _BulkTagPicker(tags: allTags),
+      isScrollControlled: true,
+      builder: (_) => MetadataSheet(
+        topSlot: Text(
+          'Editing $count documents',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        onSave: (result) => _applyBulkEdit(context, ref, result),
+      ),
     );
-
-    if (selected != null && selected.isNotEmpty && context.mounted) {
-      final count = selectedIds.length;
-      try {
-        final api = ref.read(paperlessApiProvider);
-        await api.bulkEdit(
-          documents: selectedIds.toList(),
-          method: 'modify_tags',
-          parameters: {'add_tags': selected.toList(), 'remove_tags': []},
-        );
-        if (!context.mounted) return;
-        onClearSelection();
-        onRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tags added to $count documents')),
-        );
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to add tags: ${friendlyApiMessage(e)}')),
-          );
-        }
-      }
-    }
   }
 
-  Future<void> _showBulkTagRemoveDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _applyBulkEdit(
+    BuildContext context,
+    WidgetRef ref,
+    MetadataSheetResult result,
+  ) async {
+    if (result.correspondentId == null &&
+        result.documentTypeId == null &&
+        result.tagIds.isEmpty) {
+      return;
+    }
+
+    final api = ref.read(paperlessApiProvider);
+    final docIds = selectedIds.toList();
+    final failures = <String>[];
+
+    if (result.correspondentId != null) {
+      try {
+        await api.bulkEdit(
+          documents: docIds,
+          method: 'set_correspondent',
+          parameters: {'correspondent': result.correspondentId},
+        );
+      } catch (e) {
+        failures.add('correspondent (${friendlyApiMessage(e)})');
+      }
+    }
+    if (result.documentTypeId != null) {
+      try {
+        await api.bulkEdit(
+          documents: docIds,
+          method: 'set_document_type',
+          parameters: {'document_type': result.documentTypeId},
+        );
+      } catch (e) {
+        failures.add('document type (${friendlyApiMessage(e)})');
+      }
+    }
+    if (result.tagIds.isNotEmpty) {
+      try {
+        await api.bulkEdit(
+          documents: docIds,
+          method: 'modify_tags',
+          parameters: {'add_tags': result.tagIds, 'remove_tags': <int>[]},
+        );
+      } catch (e) {
+        failures.add('tags (${friendlyApiMessage(e)})');
+      }
+    }
+
+    if (!context.mounted) return;
+    onClearSelection();
+    onRefresh();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          failures.isEmpty
+              ? '${docIds.length} documents updated'
+              : 'Failed to update: ${failures.join(', ')}',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showBulkTagRemoveDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final tagsMap = ref.read(tagsProvider).valueOrNull ?? {};
     final allTags = tagsMap.values.toList()
       ..sort((a, b) => a.name.compareTo(b.name));
@@ -212,94 +255,19 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to remove tags: ${friendlyApiMessage(e)}')),
+            SnackBar(
+              content: Text('Failed to remove tags: ${friendlyApiMessage(e)}'),
+            ),
           );
         }
       }
     }
   }
 
-  Future<void> _showBulkCorrespondentDialog(BuildContext context, WidgetRef ref) async {
-    final corrsMap = ref.read(correspondentsProvider).valueOrNull ?? {};
-    final allCorrs = corrsMap.values.toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-
-    final selected = await showDialog<int?>(
-      context: context,
-      builder: (ctx) => _BulkSinglePicker<Correspondent>(
-        title: 'Set Correspondent',
-        items: allCorrs,
-        displayName: (c) => c.name,
-        getId: (c) => c.id,
-      ),
-    );
-
-    if (selected != null && context.mounted) {
-      final count = selectedIds.length;
-      try {
-        final api = ref.read(paperlessApiProvider);
-        await api.bulkEdit(
-          documents: selectedIds.toList(),
-          method: 'set_correspondent',
-          parameters: {'correspondent': selected},
-        );
-        if (!context.mounted) return;
-        onClearSelection();
-        onRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Correspondent set on $count documents')),
-        );
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to set correspondent: ${friendlyApiMessage(e)}')),
-          );
-        }
-      }
-    }
-  }
-
-  Future<void> _showBulkDocTypeDialog(BuildContext context, WidgetRef ref) async {
-    final typesMap = ref.read(documentTypesProvider).valueOrNull ?? {};
-    final allTypes = typesMap.values.toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-
-    final selected = await showDialog<int?>(
-      context: context,
-      builder: (ctx) => _BulkSinglePicker<DocumentType>(
-        title: 'Set Document Type',
-        items: allTypes,
-        displayName: (dt) => dt.name,
-        getId: (dt) => dt.id,
-      ),
-    );
-
-    if (selected != null && context.mounted) {
-      final count = selectedIds.length;
-      try {
-        final api = ref.read(paperlessApiProvider);
-        await api.bulkEdit(
-          documents: selectedIds.toList(),
-          method: 'set_document_type',
-          parameters: {'document_type': selected},
-        );
-        if (!context.mounted) return;
-        onClearSelection();
-        onRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Document type set on $count documents')),
-        );
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to set document type: ${friendlyApiMessage(e)}')),
-          );
-        }
-      }
-    }
-  }
-
-  Future<void> _showBulkStoragePathDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showBulkStoragePathDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final pathsMap = ref.read(storagePathsProvider).valueOrNull ?? {};
     final allPaths = pathsMap.values.toList()
       ..sort((a, b) => a.name.compareTo(b.name));
@@ -332,7 +300,11 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to set storage path: ${friendlyApiMessage(e)}')),
+            SnackBar(
+              content: Text(
+                'Failed to set storage path: ${friendlyApiMessage(e)}',
+              ),
+            ),
           );
         }
       }
@@ -379,14 +351,19 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to merge: ${friendlyApiMessage(e)}')),
+            SnackBar(
+              content: Text('Failed to merge: ${friendlyApiMessage(e)}'),
+            ),
           );
         }
       }
     }
   }
 
-  Future<void> _showBulkRotateDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showBulkRotateDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final degrees = await showDialog<int>(
       context: context,
       builder: (ctx) => SimpleDialog(
@@ -420,13 +397,15 @@ class BulkActionBar extends ConsumerWidget {
         if (!context.mounted) return;
         onClearSelection();
         onRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$count documents rotated')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$count documents rotated')));
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to rotate: ${friendlyApiMessage(e)}')),
+            SnackBar(
+              content: Text('Failed to rotate: ${friendlyApiMessage(e)}'),
+            ),
           );
         }
       }
@@ -458,10 +437,7 @@ class BulkActionBar extends ConsumerWidget {
       final count = selectedIds.length;
       try {
         final api = ref.read(paperlessApiProvider);
-        await api.bulkEdit(
-          documents: selectedIds.toList(),
-          method: 'redo_ocr',
-        );
+        await api.bulkEdit(documents: selectedIds.toList(), method: 'redo_ocr');
         if (!context.mounted) return;
         onClearSelection();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -470,21 +446,24 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to re-run OCR: ${friendlyApiMessage(e)}')),
+            SnackBar(
+              content: Text('Failed to re-run OCR: ${friendlyApiMessage(e)}'),
+            ),
           );
         }
       }
     }
   }
 
-  Future<void> _showBulkDeleteDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showBulkDeleteDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Move to trash?'),
-        content: Text(
-          'Move ${selectedIds.length} documents to trash?',
-        ),
+        content: Text('Move ${selectedIds.length} documents to trash?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -515,7 +494,9 @@ class BulkActionBar extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete: ${friendlyApiMessage(e)}')),
+            SnackBar(
+              content: Text('Failed to delete: ${friendlyApiMessage(e)}'),
+            ),
           );
         }
       }
@@ -652,7 +633,12 @@ class _BulkSinglePickerState<T> extends State<_BulkSinglePicker<T>> {
   @override
   Widget build(BuildContext context) {
     final filtered = widget.items
-        .where((item) => widget.displayName(item).toLowerCase().contains(_filter.toLowerCase()))
+        .where(
+          (item) => widget
+              .displayName(item)
+              .toLowerCase()
+              .contains(_filter.toLowerCase()),
+        )
         .toList();
 
     return AlertDialog(
