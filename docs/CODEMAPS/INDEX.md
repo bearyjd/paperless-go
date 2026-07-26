@@ -3,6 +3,7 @@
 # Paperless Go Codemaps — Index
 
 **Last Updated:** 2026-06-19
+**Testing Structure section corrected against the actual tree:** 2026-07-26
 
 Paperless Go is a modern Flutter client for Paperless-ngx with:
 - **State Management:** Riverpod + Notifiers
@@ -94,13 +95,19 @@ Paperless Go is a modern Flutter client for Paperless-ngx with:
 
 ```
 test/
-├── unit/                        # Business logic tests
-│   ├── api/                     # API client + mocking
-│   ├── models/                  # Serialization tests
-│   └── providers/               # Riverpod logic tests
-├── widget/                      # Widget tests
-└── integration/                 # Critical user flows (device tests)
+├── unit/<feature>/               # Business logic tests, mirrors lib/features/<feature>/
+│   ├── api/                      # API client tests (mocked via http_mock_adapter)
+│   └── models/                   # Serialization tests
+├── widget/<feature>/             # Widget tests
+├── widget/goldens/               # Golden (matchesGoldenFile) tests
+├── features/scanner/             # Filter-pipeline tests, mirrors lib/features/scanner/
+├── fixtures/api/                 # Recorded JSON fixtures for API tests
+└── test_utils/                   # Shared test helpers (font loading, golden surface sizing)
 ```
+
+There is no `test/unit/providers/` (Riverpod logic is tested alongside its
+feature under `test/unit/<feature>/`) or `test/integration/`/`integration_test/`
+directory yet.
 
 ## Development Commands
 
