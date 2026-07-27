@@ -248,8 +248,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           autocorrect: false,
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty)
+                            if (v == null || v.trim().isEmpty) {
                               return 'Enter your API token';
+                            }
                             return null;
                           },
                         ),
@@ -263,8 +264,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           autofillHints: const [AutofillHints.username],
                           autocorrect: false,
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty)
+                            if (v == null || v.trim().isEmpty) {
                               return 'Enter your username';
+                            }
                             return null;
                           },
                         ),
@@ -288,8 +290,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           autofillHints: const [AutofillHints.password],
                           obscureText: _obscurePassword,
                           validator: (v) {
-                            if (v == null || v.isEmpty)
+                            if (v == null || v.isEmpty) {
                               return 'Enter your password';
+                            }
                             return null;
                           },
                         ),
