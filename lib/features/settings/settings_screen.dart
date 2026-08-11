@@ -166,6 +166,13 @@ class SettingsScreen extends ConsumerWidget {
                 trailing: const Icon(Icons.edit, size: 18),
                 onTap: () => _editAiCredentials(context, ref),
               ),
+              ListTile(
+                leading: Icon(Icons.wifi_tethering, color: tokens.inkSoft),
+                title: const Text('Verify Connection'),
+                subtitle: const Text('Check server reachability and credentials'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _verifyAiConnection(context, ref),
+              ),
             ],
           ),
           _SettingsSection(
@@ -312,6 +319,64 @@ class SettingsScreen extends ConsumerWidget {
       if (!authenticated || !context.mounted) return;
     }
     ref.read(biometricLockProvider.notifier).setEnabled(enabled);
+  }
+
+  Future<void> _verifyAiConnection(BuildContext context, WidgetRef ref) async {
+    final service = ref.read(chatServiceProvider);
+    if (service == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Set the Paperless-AI URL first.')),
+      );
+      return;
+    }
+    final username = ref.read(aiChatUsernameProvider) ?? '';
+    final password = ref.read(aiChatPasswordProvider) ?? '';
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Set your Paperless-AI credentials first.')),
+      );
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 16),
+              Text('Verifying...'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    String? error;
+    try {
+      await service.login(username, password);
+    } on Exception catch (e) {
+      error = e.toString().replaceFirst('Exception: ', '');
+    }
+
+    if (!context.mounted) return;
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(error ?? 'Paperless-AI connection verified'),
+        backgroundColor:
+            error != null ? Theme.of(context).colorScheme.error : null,
+      ),
+    );
   }
 
   void _editAiCredentials(BuildContext context, WidgetRef ref) {
