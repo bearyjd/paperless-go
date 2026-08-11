@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.8] - 2026-08-11
+
+### Changed
+- Document detail screen now has one primary action button with the rest grouped into an overflow menu
+- Bulk edit (tags, correspondent, document type) now goes through a single consistent picker sheet
+
 ### Fixed
 - Remove "Password Protect & Share" — it re-encoded the PDF and silently ignored the password without ever encrypting the file, giving a false sense of protection. No encryption library the app can legally bundle (Syncfusion is proprietary, incompatible with AGPL-3.0; the bundled `pdf` package only exposes an abstract encryption extension point, not an implementation) makes this honest to keep without a from-scratch cryptographic implementation, which needs dedicated security review rather than a quick fix. "Compress & Share" is unaffected.
 

@@ -1,0 +1,6 @@
+Bug fixes:
+* Remove "Password Protect & Share" — it never encrypted the file; real encryption is coming as a separately reviewed feature
+
+Other changes:
+* Document detail screen: one primary action button, rest grouped into a menu
+* Bulk tag/correspondent/document-type editing now uses one consistent picker
