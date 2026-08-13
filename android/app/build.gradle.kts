@@ -58,6 +58,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Diagnostic-only: lets a debug build install alongside the
+            // signed release build for on-device log investigation.
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

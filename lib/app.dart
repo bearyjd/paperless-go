@@ -79,31 +79,36 @@ GoRouter router(Ref ref) {
       ),
     ),
     redirect: (context, state) {
-      // Intercept Android VIEW intent URIs (content://, file://) before GoRouter
-      // tries to treat them as deep link paths and shows "Page not found".
-      // Redirect to '/' so the app shell renders and ShareIntentHandler picks up
-      // the file via getInitialMedia() in its addPostFrameCallback.
-      // Note: GoRouter re-evaluates this redirect for the returned '/' path,
-      // so auth guards below still apply on the second pass.
-      final scheme = state.uri.scheme;
-      if (scheme == 'content' || scheme == 'file') return '/';
-      if (scheme == 'paperlessgo') {
-        final path = state.uri.host;
-        if (path == 'scan') return '/scan';
-        if (path == 'upload') return '/scan';
-        return '/';
-      }
-
-      // Dashboard was retired in the redesign; '/' now lands on Inbox (the
-      // highest-frequency workflow). Keeping the redirect (rather than
-      // deleting the path) preserves old deep links and widget intents.
-      if (state.uri.path == '/') return '/inbox';
-
       final authState = ref.read(authStateProvider);
       // Don't redirect while auth state is still loading from storage
       if (authState.isLoading && !authState.hasError) return null;
       final isAuthenticated = authState.valueOrNull?.isAuthenticated ?? false;
       final isLoginRoute = state.matchedLocation == '/login';
+
+      // Intercept Android VIEW/SEND intent URIs (content://, file://) and the
+      // paperlessgo:// widget scheme before GoRouter tries to treat them as
+      // deep-link paths. Resolved directly to a real registered route in one
+      // hop rather than via an intermediate '/' — platform-pushed routes
+      // (e.g. onNewIntent on a reused singleTask Activity when a sharing
+      // app also sets Intent.data) aren't guaranteed a second redirect pass,
+      // and '/' has no route of its own since Dashboard was retired, so a
+      // one-hop '/' would show "Page not found" instead of resolving further.
+      final scheme = state.uri.scheme;
+      if (scheme == 'content' || scheme == 'file' || scheme == 'paperlessgo') {
+        if (!isAuthenticated) return '/login';
+        if (scheme == 'paperlessgo') {
+          final path = state.uri.host;
+          if (path == 'scan' || path == 'upload') return '/scan';
+        }
+        return '/inbox';
+      }
+
+      // Dashboard was retired in the redesign; '/' now lands on Inbox (the
+      // highest-frequency workflow). Keeping the redirect (rather than
+      // deleting the path) preserves old deep links and widget intents.
+      if (state.uri.path == '/') {
+        return isAuthenticated ? '/inbox' : '/login';
+      }
 
       if (!isAuthenticated && !isLoginRoute) return '/login';
       if (isAuthenticated && isLoginRoute) return '/inbox';

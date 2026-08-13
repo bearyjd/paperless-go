@@ -45,9 +45,6 @@ dependencies:
   # Biometric Auth
   local_auth: ^2.3.0
 
-  # Share Intent Receiver
-  receive_sharing_intent: ^1.8.1
-
   # Local Notifications
   flutter_local_notifications: ^18.0.1
 
