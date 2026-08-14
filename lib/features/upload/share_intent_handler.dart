@@ -69,6 +69,9 @@ class ShareIntentHandler {
     final context = _navigatorKey.currentContext;
     if (context == null || !context.mounted) return;
 
+    // TODO(#24): pushes unconditionally, including while logged out — this
+    // lands the scan/upload screen on top of /login with no auth gate. Needs
+    // either a check here or a "pending share" queue that resumes post-login.
     context.push(route.location, extra: route.extra);
   }
 
