@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:paperless_go/features/upload/share_intent_handler.dart';
 
 SharedFile _shared(String path, {String filename = '', String? mimeType}) =>
@@ -7,6 +9,22 @@ SharedFile _shared(String path, {String filename = '', String? mimeType}) =>
       filename: filename.isEmpty ? path.split('/').last : filename,
       mimeType: mimeType,
     );
+
+Future<GlobalKey<NavigatorState>> _pumpTestRouter(WidgetTester tester) async {
+  final navigatorKey = GlobalKey<NavigatorState>();
+  final router = GoRouter(
+    navigatorKey: navigatorKey,
+    initialLocation: '/home',
+    routes: [
+      GoRoute(path: '/home', builder: (_, __) => const Text('home')),
+      GoRoute(path: '/scan/upload', builder: (_, __) => const Text('upload screen')),
+      GoRoute(path: '/scan/review', builder: (_, __) => const Text('review screen')),
+    ],
+  );
+  await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+  await tester.pumpAndSettle();
+  return navigatorKey;
+}
 
 void main() {
   group('resolveShareRoute', () {
@@ -64,6 +82,57 @@ void main() {
         resolveShareRoute([_shared('', mimeType: 'image/jpeg')]),
         isNull,
       );
+    });
+  });
+
+  group('ShareIntentHandler pending share queue', () {
+    // Regression (#24): a share/open-with arriving while logged out used to
+    // push straight through onto /login. It must now wait for login and
+    // resume automatically, never navigating while unauthenticated.
+    testWidgets('queues a share received while logged out, flushes after login', (
+      tester,
+    ) async {
+      final navigatorKey = await _pumpTestRouter(tester);
+      var authenticated = false;
+      final handler = ShareIntentHandler(navigatorKey, () => authenticated);
+
+      handler.debugHandleSharedFiles([
+        _shared('/tmp/share_1_invoice.pdf', filename: 'invoice.pdf', mimeType: 'application/pdf'),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('upload screen'), findsNothing);
+      expect(handler.debugPendingRoute, isNotNull);
+
+      authenticated = true;
+      handler.flushPendingShare();
+      await tester.pumpAndSettle();
+
+      expect(find.text('upload screen'), findsOneWidget);
+      expect(handler.debugPendingRoute, isNull);
+    });
+
+    testWidgets('pushes immediately when already authenticated', (tester) async {
+      final navigatorKey = await _pumpTestRouter(tester);
+      final handler = ShareIntentHandler(navigatorKey, () => true);
+
+      handler.debugHandleSharedFiles([
+        _shared('/tmp/photo.jpg', mimeType: 'image/jpeg'),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('review screen'), findsOneWidget);
+      expect(handler.debugPendingRoute, isNull);
+    });
+
+    testWidgets('flushing with nothing pending is a no-op', (tester) async {
+      final navigatorKey = await _pumpTestRouter(tester);
+      final handler = ShareIntentHandler(navigatorKey, () => true);
+
+      handler.flushPendingShare();
+      await tester.pumpAndSettle();
+
+      expect(find.text('home'), findsOneWidget);
     });
   });
 }
