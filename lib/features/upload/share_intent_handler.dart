@@ -39,8 +39,10 @@ class ShareIntentHandler {
   StreamSubscription? _subscription;
   bool _initialized = false;
   final GlobalKey<NavigatorState> _navigatorKey;
+  final bool Function() _isAuthenticated;
+  ShareRoute? _pendingRoute;
 
-  ShareIntentHandler(this._navigatorKey);
+  ShareIntentHandler(this._navigatorKey, this._isAuthenticated);
 
   void initialize() {
     if (_initialized) return;
@@ -66,18 +68,43 @@ class ShareIntentHandler {
     debugPrint('PaperlessShare: resolveShareRoute -> $route');
     if (route == null) return;
 
+    // #24: a share/open-with arriving while logged out must not push
+    // straight through onto /login. Queue it and wait for flushPendingShare()
+    // once login succeeds, called by the app shell on the auth transition.
+    if (!_isAuthenticated()) {
+      debugPrint('PaperlessShare: not authenticated, queuing $route');
+      _pendingRoute = route;
+      return;
+    }
+
+    _pushRoute(route);
+  }
+
+  /// Pushes a share that arrived while logged out. Call once auth state
+  /// transitions from unauthenticated to authenticated.
+  void flushPendingShare() {
+    final route = _pendingRoute;
+    if (route == null) return;
+    _pendingRoute = null;
+    debugPrint('PaperlessShare: flushing pending share $route');
+    _pushRoute(route);
+  }
+
+  void _pushRoute(ShareRoute route) {
     final context = _navigatorKey.currentContext;
     if (context == null || !context.mounted) return;
-
-    // TODO(#24): pushes unconditionally, including while logged out — this
-    // lands the scan/upload screen on top of /login with no auth gate. Needs
-    // either a check here or a "pending share" queue that resumes post-login.
     context.push(route.location, extra: route.extra);
   }
 
   void dispose() {
     _subscription?.cancel();
   }
+
+  @visibleForTesting
+  void debugHandleSharedFiles(List<SharedFile> files) => _handleSharedFiles(files);
+
+  @visibleForTesting
+  ShareRoute? get debugPendingRoute => _pendingRoute;
 }
 
 /// The navigation target resolved from a batch of shared files.

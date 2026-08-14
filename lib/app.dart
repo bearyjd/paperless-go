@@ -265,8 +265,12 @@ class PaperlessGoApp extends ConsumerStatefulWidget {
 class _PaperlessGoAppState extends ConsumerState<PaperlessGoApp>
     with WidgetsBindingObserver {
   bool _isLocked = false;
-  late final _shareIntentHandler = ShareIntentHandler(rootNavigatorKey);
+  late final _shareIntentHandler = ShareIntentHandler(
+    rootNavigatorKey,
+    () => ref.read(authStateProvider).valueOrNull?.isAuthenticated ?? false,
+  );
   bool _shareIntentInitialized = false;
+  bool _wasAuthenticated = false;
 
   @override
   void initState() {
@@ -297,6 +301,17 @@ class _PaperlessGoAppState extends ConsumerState<PaperlessGoApp>
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeNotifierProvider);
     final biometricEnabled = ref.watch(biometricLockProvider);
+
+    // Flush any share/open-with that arrived while logged out (#24) once
+    // login succeeds. Keyed on the unauthenticated->authenticated edge, not
+    // just "is authenticated now", so this doesn't refire on every rebuild.
+    ref.listen(authStateProvider, (previous, next) {
+      final isAuthenticated = next.valueOrNull?.isAuthenticated ?? false;
+      if (!_wasAuthenticated && isAuthenticated) {
+        _shareIntentHandler.flushPendingShare();
+      }
+      _wasAuthenticated = isAuthenticated;
+    });
 
     return MaterialApp.router(
       title: 'Paperless Go',
