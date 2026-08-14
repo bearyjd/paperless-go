@@ -16,6 +16,36 @@ import java.io.File
 import java.io.FileOutputStream
 
 /**
+ * Which part of an Intent carries the shared file, decided by [selectSource] from
+ * the intent's action and Intent.data scheme alone. Kept as a pure decision separate
+ * from the actual (Android-only) extraction so the action→source mapping — the exact
+ * class of bug this file has shipped three times (share-intent fixes in 10411c1,
+ * 810f061, cade169, each missing a different action type) — has a plain JUnit
+ * regression test with no Android runtime required.
+ */
+internal enum class ShareSource { EXTRA_STREAM, INTENT_DATA, NONE }
+
+/**
+ * Decides where to read a shared file's URI(s) from for a given intent action.
+ *
+ * - SEND / SEND_MULTIPLE: EXTRA_STREAM (share-sheet flow).
+ * - VIEW: Intent.data, but ONLY for content/file schemes — "Open with" from a file
+ *   manager (see the ACTION_VIEW intent-filter in AndroidManifest.xml) uses this
+ *   action, but so does the paperlessgo:// home-screen-widget deep link, which is
+ *   NOT a file and must not be misread as one.
+ * - anything else: no file.
+ */
+internal fun selectSource(action: String?, dataScheme: String?): ShareSource = when (action) {
+    Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> ShareSource.EXTRA_STREAM
+    Intent.ACTION_VIEW -> if (dataScheme == "content" || dataScheme == "file") {
+        ShareSource.INTENT_DATA
+    } else {
+        ShareSource.NONE
+    }
+    else -> ShareSource.NONE
+}
+
+/**
  * Resolves shared files by reading their bytes directly via ContentResolver
  * and copying them to app cache. This exists because receive_sharing_intent's
  * FileDirectory.getAbsolutePath() resolves content:// URIs by translating them
@@ -24,6 +54,12 @@ import java.io.FileOutputStream
  * via a Downloads/Files picker) — the file silently never reaches Dart.
  * ContentResolver.openInputStream() works for any content:// URI the intent
  * already granted read access to, regardless of provider.
+ *
+ * Any app can fire an implicit ACTION_VIEW at this activity (it's exported with
+ * a BROWSABLE intent-filter) — that's the mechanism "Open with" relies on.
+ * Android's URI-grant permission model is the trust boundary, not this code;
+ * a URI without a valid grant fails in copyToCache() (caught, returns null),
+ * it doesn't bypass anything.
  */
 class SharePlugin(private val activity: Activity) {
     private var eventSink: EventChannel.EventSink? = null
@@ -66,14 +102,16 @@ class SharePlugin(private val activity: Activity) {
 
     private fun resolveIntent(intent: Intent?): JSONArray {
         if (intent == null) return JSONArray()
-        val uris: List<Uri> = when (intent.action) {
-            Intent.ACTION_SEND -> {
-                parcelableExtra<Uri>(intent, Intent.EXTRA_STREAM)?.let { listOf(it) } ?: emptyList()
+        val uris: List<Uri> = when (selectSource(intent.action, intent.data?.scheme)) {
+            ShareSource.EXTRA_STREAM -> when (intent.action) {
+                Intent.ACTION_SEND ->
+                    parcelableExtra<Uri>(intent, Intent.EXTRA_STREAM)?.let { listOf(it) } ?: emptyList()
+                Intent.ACTION_SEND_MULTIPLE ->
+                    parcelableArrayListExtra<Uri>(intent, Intent.EXTRA_STREAM) ?: emptyList()
+                else -> emptyList()
             }
-            Intent.ACTION_SEND_MULTIPLE -> {
-                parcelableArrayListExtra<Uri>(intent, Intent.EXTRA_STREAM) ?: emptyList()
-            }
-            else -> emptyList()
+            ShareSource.INTENT_DATA -> intent.data?.let { listOf(it) } ?: emptyList()
+            ShareSource.NONE -> emptyList()
         }
         Log.d(TAG, "resolveIntent: action=${intent.action} extracted ${uris.size} uri(s): $uris")
 
