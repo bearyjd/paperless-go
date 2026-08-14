@@ -12,9 +12,9 @@ Paperless Go is a client app for the self-hosted Paperless-ngx document
 management server. It has no backend of its own and requires a server to sign in.
 
 Demo server for review:
-  Server URL: https://<DEMO-INSTANCE>        (FILL IN)
-  Username:   <REVIEWER-USERNAME>            (FILL IN)
-  Password:   <REVIEWER-PASSWORD>            (FILL IN)
+  Server URL: https://paperless-demo.ventouxlabs.com
+  Username:   reviewer
+  Password:   (see .env on the demo host, or reset.sh output — not committed here, repo is public)
 
 To review:
   1. Launch the app.
@@ -27,11 +27,16 @@ If the demo server is unavailable, the app requires the user's own Paperless-ngx
 instance (https://docs.paperless-ngx.com) and cannot be exercised without one.
 ```
 
-## Setting up the demo server (recommended)
-- Stand up a throwaway Paperless-ngx instance (Docker compose is the standard
-  install) reachable over HTTPS, seed it with a few non-sensitive sample docs,
-  and create a dedicated reviewer account.
+## Demo server (live)
+- Runs on the `.23` Docker host (`~/paperless-go-demo`), exposed via a named
+  Cloudflare Tunnel at the hostname above.
+- **Daily flush + reseed**: a cron job runs `reset.sh` at 04:00 UTC — tears the
+  stack down (`docker compose down -v`), brings it back up, and reseeds the 3
+  sample docs via `seed/make_samples.py`. Reviewer creds are stable across
+  resets (set via `.env`, not stored data).
+- **2G storage cap**: `data`/`media`/`redisdata` are bind-mounted into a
+  loop-mounted ext4 filesystem capped at 2G (`/var/lib/paperless-go-demo-quota`,
+  see `/etc/fstab` on the host), so uploads can't fill the host disk.
 - Keep it running through review; first review on a new account can take days to
-  ~2 weeks. Tear it down afterward.
-- Instructions-only (no demo server) reviews frequently bounce — provide the
-  working server if at all possible.
+  ~2 weeks. Tear it down afterward with `docker compose down -v` and remove the
+  Cloudflare tunnel + `/etc/fstab` entry + quota image.

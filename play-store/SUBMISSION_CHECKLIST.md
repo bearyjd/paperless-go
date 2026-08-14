@@ -39,9 +39,13 @@ Legend: ✅ done · 🟡 ready to paste/transcribe (no work left but yours) · �
 
 ## App access (REQUIRED — top rejection cause) → `play-store/app-access-instructions.md`
 - ✅ Reviewer blurb drafted.
-- ⛔ **Stand up a demo Paperless-ngx server** (HTTPS, seeded with non-sensitive
-  docs, dedicated reviewer account). Fill URL + username/password into the blurb,
-  paste into Console → App content → App access. Keep it up through review.
+- ✅ **Demo Paperless-ngx server is live**: `https://paperless-demo.ventouxlabs.com`,
+  seeded with 3 non-sensitive sample docs, dedicated `reviewer` account.
+  Daily flush/reseed via cron (`reset.sh`, 04:00 UTC) and a 2G storage cap
+  (loop-mounted ext4). Password lives in `.env` on the `.23` host — not in git
+  (repo is public).
+- 🟡 Paste URL + username/password (from `.env`) into Console → App content →
+  App access. Keep the stack up through review.
 
 ## "What's new" (first release: optional) → `play-store/release-notes.md`
 - ✅ Drafted (≤500 chars). 🟡 Paste into the production release.
