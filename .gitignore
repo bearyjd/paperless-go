@@ -63,3 +63,4 @@ debug/*
 .omc/
 .reports/
 .superpowers/
+.gstack/
