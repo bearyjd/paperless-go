@@ -23,6 +23,10 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onNewIntent(intent: Intent) {
         stripDataFromShareIntent(intent)
         super.onNewIntent(intent)
+        // Activity.intent otherwise still points at whatever launched the process,
+        // so a later getInitialShare() (SharePlugin reads activity.intent) resolves
+        // the *stale* intent and returns zero files for a share that just arrived.
+        setIntent(intent)
         sharePlugin.onNewIntent(intent)
     }
 
