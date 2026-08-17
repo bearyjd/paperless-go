@@ -130,7 +130,14 @@ class SharePlugin(private val activity: Activity) {
                             Log.d(TAG, "getInitialShare: intent already delivered, skipping")
                             JSONArray()
                         } else {
-                            resolveIntent(current).also { markDelivered(current) }
+                            // Marked only on a non-empty result: copyToCache
+                            // swallows IO failures and returns nothing, and
+                            // burning the intent on a transient failure would
+                            // make the share unrecoverable. Re-resolving a
+                            // genuinely empty intent costs nothing.
+                            resolveIntent(current).also {
+                                if (it.length() > 0) markDelivered(current)
+                            }
                         }
                         result.success(files.toString())
                     }
@@ -158,9 +165,11 @@ class SharePlugin(private val activity: Activity) {
             return
         }
         val files = resolveIntent(intent)
-        markDelivered(intent)
         Log.d(TAG, "onNewIntent: resolved ${files.length()} file(s)")
+        // See getInitialShare: an empty result means nothing was delivered, so
+        // the intent stays open rather than being burned on a failed copy.
         if (files.length() == 0) return
+        markDelivered(intent)
 
         deliveries.deliver(files.toString())
     }
