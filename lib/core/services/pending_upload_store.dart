@@ -53,14 +53,17 @@ class PendingUploadStore {
     if (await file.exists()) await file.delete();
   }
 
+  /// Monotonic within the isolate, so two [persist] calls that land on the
+  /// same millisecond with the same basename cannot pick the same name.
+  /// Checking `existsSync()` first would not be enough — the check and the
+  /// copy are separated by an await, so concurrent callers could both observe
+  /// "free" and the second copy would overwrite the first.
+  static int _sequence = 0;
+
   File _uniqueTarget(String basename) {
     final stamp = DateTime.now().millisecondsSinceEpoch;
-    var candidate = File(p.join(directory.path, '${stamp}_$basename'));
-    var suffix = 1;
-    while (candidate.existsSync()) {
-      candidate = File(p.join(directory.path, '${stamp}_${suffix++}_$basename'));
-    }
-    return candidate;
+    final seq = _sequence++;
+    return File(p.join(directory.path, '${stamp}_${seq}_$basename'));
   }
 }
 

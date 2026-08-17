@@ -227,9 +227,11 @@ class CacheRepository {
         .go();
   }
 
-  /// Marks an upload terminally failed without consuming a retry, for
-  /// failures that retrying cannot fix (e.g. the queued file is gone). The row
-  /// is kept rather than deleted so the document does not vanish silently.
+  /// Marks an upload terminally failed without consuming a retry, for failures
+  /// that retrying cannot fix (e.g. the queued file is gone). The row is kept
+  /// rather than deleted so the failure stays on the record — note there is no
+  /// queue UI yet, so today that record is only reachable via
+  /// [getFailedUploads] and is not surfaced to the user.
   Future<void> markUploadFailed(int id, String error) async {
     await (_db.update(_db.pendingUploads)..where((t) => t.id.equals(id)))
         .write(PendingUploadsCompanion(
@@ -240,7 +242,7 @@ class CacheRepository {
 
   /// Records a failed upload attempt. Once [maxRetries] is reached the
   /// upload is marked terminally failed so the drain loop stops retrying it
-  /// silently forever and the UI can surface it.
+  /// silently forever. Surfacing those rows still needs a queue UI.
   Future<void> incrementRetryCount(
     int id,
     String error, {
@@ -248,7 +250,9 @@ class CacheRepository {
   }) async {
     final row = await (_db.select(_db.pendingUploads)
           ..where((t) => t.id.equals(id)))
-        .getSingle();
+        .getSingleOrNull();
+    // Already removed (a concurrent drain finished it) — nothing to record.
+    if (row == null) return;
     final newRetryCount = row.retryCount + 1;
     await (_db.update(_db.pendingUploads)..where((t) => t.id.equals(id)))
         .write(PendingUploadsCompanion(
@@ -258,9 +262,17 @@ class CacheRepository {
     ));
   }
 
-  // Clear all
+  // Clear
 
-  Future<void> clearAll() async {
+  /// Drops everything mirrored from a server. Used on logout and when
+  /// switching server profiles.
+  ///
+  /// Deliberately leaves [PendingUploads] alone: a queued upload is a document
+  /// the user handed us that has not reached any server yet, so it is their
+  /// data, not server cache. Clearing it here used to mean that fixing an
+  /// unreachable server — which goes through logout — destroyed the very
+  /// uploads that were waiting on that fix.
+  Future<void> clearServerCache() async {
     await _db.batch((batch) {
       batch.deleteAll(_db.cachedDocuments);
       batch.deleteAll(_db.cachedTags);
@@ -270,7 +282,14 @@ class CacheRepository {
       batch.deleteAll(_db.cachedSavedViews);
       batch.deleteAll(_db.cachedCustomFields);
       batch.deleteAll(_db.cachedWorkflows);
-      batch.deleteAll(_db.pendingUploads);
     });
+  }
+
+  /// Server cache *and* the pending-upload queue. For a full local wipe only —
+  /// callers must discard the queued files themselves, or they are orphaned in
+  /// app storage with no row left to reference them.
+  Future<void> clearAll() async {
+    await clearServerCache();
+    await _db.delete(_db.pendingUploads).go();
   }
 }

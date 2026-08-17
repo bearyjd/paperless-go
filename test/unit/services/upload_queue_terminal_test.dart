@@ -35,4 +35,40 @@ void main() {
 
     expect((await cache.getPendingUploads()).single.retryCount, 0);
   });
+
+  test('incrementRetryCount tolerates a row a concurrent drain removed',
+      () async {
+    await cache.enqueueUpload(filePath: '/tmp/x.pdf', filename: 'x.pdf');
+    final queued = (await cache.getPendingUploads()).single;
+    await cache.removePendingUpload(queued.id);
+
+    await expectLater(
+      cache.incrementRetryCount(queued.id, 'boom', maxRetries: 5),
+      completes,
+    );
+  });
+
+  group('logout must not destroy the queue', () {
+    // Regression: logout() called clearAll(), which deleted pendingUploads.
+    // Switching server profiles goes through logout() — so the single most
+    // likely fix for "server unreachable" wiped the uploads waiting on it.
+    test('clearServerCache keeps queued uploads', () async {
+      await cache.enqueueUpload(
+        filePath: '/docs/obb tix.pdf',
+        filename: 'obb tix.pdf',
+      );
+
+      await cache.clearServerCache();
+
+      expect(await cache.getPendingUploads(), hasLength(1));
+    });
+
+    test('clearAll still wipes them, for a full local reset', () async {
+      await cache.enqueueUpload(filePath: '/docs/x.pdf', filename: 'x.pdf');
+
+      await cache.clearAll();
+
+      expect(await cache.getPendingUploads(), isEmpty);
+    });
+  });
 }

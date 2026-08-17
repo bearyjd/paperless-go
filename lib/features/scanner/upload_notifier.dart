@@ -202,8 +202,8 @@ class UploadNotifier extends _$UploadNotifier {
   /// app and then hit an unreachable (or not-yet-configured) server has to
   /// come back later, not vanish. So this covers three families:
   ///
-  ///  - transport failures dio types explicitly (`connectionError` and the
-  ///    pre-send timeouts);
+  ///  - transport failures dio types explicitly (`connectionError`,
+  ///    `connectionTimeout`, `sendTimeout`);
   ///  - `DioExceptionType.unknown`, which is how dio surfaces a wrapped
   ///    `SocketException` — DNS failure against a self-hosted hostname is the
   ///    single most likely way this app fails to reach its server;
@@ -211,8 +211,13 @@ class UploadNotifier extends _$UploadNotifier {
   ///    configured / no session at all.
   ///
   /// Deliberately excluded: `badResponse` (the server answered — a 4xx will
-  /// not fix itself on retry) and `receiveTimeout` (the request was fully
-  /// sent, so a retry risks a duplicate document).
+  /// not fix itself on retry) and `receiveTimeout` (the body was fully sent,
+  /// so a retry risks a duplicate document).
+  ///
+  /// Note the duplicate risk is not exclusive to `receiveTimeout`: a connection
+  /// reset mid-transfer can also land after the server accepted the body. We
+  /// queue those anyway — losing the document is worse than uploading it twice
+  /// — but that is a judgement call, not a guarantee of exactly-once.
   static bool shouldQueueForLater(Object e) {
     if (e is StateError) return true;
     if (e is SocketException) return true;
@@ -243,24 +248,50 @@ class UploadNotifier extends _$UploadNotifier {
     List<int>? tags,
     DateTime? created,
   }) async {
+    // Nothing below may throw past this method. It runs inside the catch block
+    // of a failed upload, so an escaping exception would skip the state
+    // assignment entirely and leave the screen spinning on `uploading` forever
+    // — with the file neither uploaded, nor queued, nor reported.
+    if (!await File(filePath).exists()) {
+      state = const UploadState(
+        status: UploadStatus.failure,
+        errorMessage: 'The file is no longer available on this device.',
+      );
+      return;
+    }
+
     // The queue holds a bare path, and every path that reaches here points at
     // evictable storage — Android's cacheDir for shares, getTemporaryDirectory
     // for generated PDFs. Copy into app-private documents storage first, or a
     // document queued overnight can be deleted by the OS before the retry.
-    final store = await ref.read(pendingUploadStoreProvider.future);
-    final durablePath = await store.persist(filePath);
+    var queuedPath = filePath;
+    try {
+      final store = await ref.read(pendingUploadStoreProvider.future);
+      queuedPath = await store.persist(filePath);
+    } on FileSystemException catch (_) {
+      // Out of space, or storage unavailable. Queue the original path anyway:
+      // an evictable copy is a worse guarantee than a durable one, but it is
+      // far better than dropping the document.
+    }
 
-    final cache = ref.read(cacheRepositoryProvider);
-    await cache.enqueueUpload(
-      filePath: durablePath,
-      filename: filename,
-      title: title,
-      correspondent: correspondent,
-      documentType: documentType,
-      tags: tags,
-      created: created,
-    );
-    state = const UploadState(status: UploadStatus.queued);
+    try {
+      final cache = ref.read(cacheRepositoryProvider);
+      await cache.enqueueUpload(
+        filePath: queuedPath,
+        filename: filename,
+        title: title,
+        correspondent: correspondent,
+        documentType: documentType,
+        tags: tags,
+        created: created,
+      );
+      state = const UploadState(status: UploadStatus.queued);
+    } on Exception catch (e) {
+      state = UploadState(
+        status: UploadStatus.failure,
+        errorMessage: friendlyApiMessage(e),
+      );
+    }
   }
 
   static const _maxPollAttempts = 150; // 150 * 2s = 5 minutes
