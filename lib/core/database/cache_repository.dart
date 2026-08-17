@@ -227,6 +227,17 @@ class CacheRepository {
         .go();
   }
 
+  /// Marks an upload terminally failed without consuming a retry, for
+  /// failures that retrying cannot fix (e.g. the queued file is gone). The row
+  /// is kept rather than deleted so the document does not vanish silently.
+  Future<void> markUploadFailed(int id, String error) async {
+    await (_db.update(_db.pendingUploads)..where((t) => t.id.equals(id)))
+        .write(PendingUploadsCompanion(
+      lastError: Value(error),
+      isFailed: const Value(true),
+    ));
+  }
+
   /// Records a failed upload attempt. Once [maxRetries] is reached the
   /// upload is marked terminally failed so the drain loop stops retrying it
   /// silently forever and the UI can surface it.

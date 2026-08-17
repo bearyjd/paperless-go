@@ -6,7 +6,7 @@ part of 'upload_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$uploadNotifierHash() => r'9c83079cf7d9c4cc4c1e3c417cc854ecdb9eea6e';
+String _$uploadNotifierHash() => r'5dd79fc9d424f76380502d85a7a456f92d4ed0e7';
 
 /// See also [UploadNotifier].
 @ProviderFor(UploadNotifier)
