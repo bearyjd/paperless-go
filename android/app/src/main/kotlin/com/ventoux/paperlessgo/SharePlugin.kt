@@ -64,6 +64,20 @@ internal fun selectSource(action: String?, dataScheme: String?): ShareSource = w
 class SharePlugin(private val activity: Activity) {
     private var eventSink: EventChannel.EventSink? = null
 
+    /**
+     * A share resolved by [onNewIntent] before Dart attached its EventChannel
+     * listener. Without this it was simply dropped (`eventSink?.success` no-ops
+     * on null) and the shared file vanished. Replayed on the next [onListen].
+     */
+    private var pendingEvent: String? = null
+
+    /**
+     * The intent [onNewIntent] already resolved. MainActivity calls setIntent()
+     * so activity.intent is current — which means a getInitialShare() arriving
+     * after onNewIntent would resolve (and re-copy) the same file a second time.
+     */
+    private var resolvedIntent: Intent? = null
+
     companion object {
         private const val TAG = "PaperlessShare"
         private const val METHOD_CHANNEL = "com.ventoux.paperlessgo/share"
@@ -74,7 +88,16 @@ class SharePlugin(private val activity: Activity) {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "getInitialShare" -> result.success(resolveIntent(activity.intent).toString())
+                    "getInitialShare" -> {
+                        val current = activity.intent
+                        val files = if (current != null && current === resolvedIntent) {
+                            Log.d(TAG, "getInitialShare: intent already delivered via onNewIntent, skipping")
+                            JSONArray()
+                        } else {
+                            resolveIntent(current)
+                        }
+                        result.success(files.toString())
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -83,6 +106,11 @@ class SharePlugin(private val activity: Activity) {
             .setStreamHandler(object : EventChannel.StreamHandler {
                 override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
                     eventSink = events
+                    pendingEvent?.let {
+                        Log.d(TAG, "onListen: replaying buffered share")
+                        events.success(it)
+                        pendingEvent = null
+                    }
                 }
 
                 override fun onCancel(arguments: Any?) {
@@ -94,9 +122,17 @@ class SharePlugin(private val activity: Activity) {
     fun onNewIntent(intent: Intent) {
         Log.d(TAG, "onNewIntent: action=${intent.action} data=${intent.data} type=${intent.type}")
         val files = resolveIntent(intent)
+        resolvedIntent = intent
         Log.d(TAG, "onNewIntent: resolved ${files.length()} file(s), eventSink=${eventSink != null}")
-        if (files.length() > 0) {
-            eventSink?.success(files.toString())
+        if (files.length() == 0) return
+
+        val payload = files.toString()
+        val sink = eventSink
+        if (sink != null) {
+            sink.success(payload)
+        } else {
+            Log.d(TAG, "onNewIntent: no listener yet, buffering share for replay")
+            pendingEvent = payload
         }
     }
 
