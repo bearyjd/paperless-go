@@ -59,7 +59,7 @@ class AuthState extends _$AuthState {
     final authService = ref.read(authServiceProvider);
     try {
       final cache = ref.read(cacheRepositoryProvider);
-      await cache.clearAll();
+      await cache.clearServerCache();
     } catch (_) {
       // Cache may not be initialized yet
     }

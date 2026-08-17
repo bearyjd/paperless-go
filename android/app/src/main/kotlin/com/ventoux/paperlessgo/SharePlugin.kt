@@ -46,6 +46,55 @@ internal fun selectSource(action: String?, dataScheme: String?): ShareSource = w
 }
 
 /**
+ * Whether a share intent has already produced a delivery, from the two signals
+ * that survive Activity/engine recreation.
+ *
+ * MainActivity calls setIntent() so activity.intent stays current for
+ * getInitialShare — which also means the share intent lives on in the task
+ * record. Without a guard it gets resolved again (copying a second file into
+ * cache and re-pushing the user into the upload screen) by any later
+ * getInitialShare: a relaunch from Recents, or a recreation that builds a fresh
+ * SharePlugin. Instance state cannot cover that; a mark on the intent survives
+ * exactly as long as the intent does, and LAUNCHED_FROM_HISTORY catches an
+ * intent consumed before the mark existed.
+ */
+internal fun isAlreadyDelivered(marked: Boolean, flags: Int): Boolean =
+    marked || (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
+
+/**
+ * Holds resolved shares until Dart's EventChannel listener attaches.
+ *
+ * Shares can be resolved before Flutter is listening — an `eventSink?.success`
+ * on a null sink drops the file with no trace, which is exactly how a share
+ * that copied successfully still vanished. Buffered payloads replay in arrival
+ * order on [attach]. A list, not a single slot: two shares can arrive back to
+ * back while the engine boots, and each has already been copied to cache, so
+ * overwriting would strand one on disk.
+ */
+internal class ShareDeliveryBuffer {
+    private var sink: ((String) -> Unit)? = null
+    private val pending = mutableListOf<String>()
+
+    val bufferedCount: Int get() = pending.size
+
+    fun deliver(payload: String) {
+        val current = sink
+        if (current != null) current(payload) else pending.add(payload)
+    }
+
+    fun attach(listener: (String) -> Unit) {
+        sink = listener
+        if (pending.isEmpty()) return
+        pending.forEach(listener)
+        pending.clear()
+    }
+
+    fun detach() {
+        sink = null
+    }
+}
+
+/**
  * Resolves shared files by reading their bytes directly via ContentResolver
  * and copying them to app cache. This exists because receive_sharing_intent's
  * FileDirectory.getAbsolutePath() resolves content:// URIs by translating them
@@ -62,26 +111,13 @@ internal fun selectSource(action: String?, dataScheme: String?): ShareSource = w
  * it doesn't bypass anything.
  */
 class SharePlugin(private val activity: Activity) {
-    private var eventSink: EventChannel.EventSink? = null
-
-    /**
-     * A share resolved by [onNewIntent] before Dart attached its EventChannel
-     * listener. Without this it was simply dropped (`eventSink?.success` no-ops
-     * on null) and the shared file vanished. Replayed on the next [onListen].
-     */
-    private var pendingEvent: String? = null
-
-    /**
-     * The intent [onNewIntent] already resolved. MainActivity calls setIntent()
-     * so activity.intent is current — which means a getInitialShare() arriving
-     * after onNewIntent would resolve (and re-copy) the same file a second time.
-     */
-    private var resolvedIntent: Intent? = null
+    private val deliveries = ShareDeliveryBuffer()
 
     companion object {
         private const val TAG = "PaperlessShare"
         private const val METHOD_CHANNEL = "com.ventoux.paperlessgo/share"
         private const val EVENT_CHANNEL = "com.ventoux.paperlessgo/share_stream"
+        private const val EXTRA_DELIVERED = "com.ventoux.paperlessgo.SHARE_DELIVERED"
     }
 
     fun register(flutterEngine: FlutterEngine) {
@@ -90,11 +126,11 @@ class SharePlugin(private val activity: Activity) {
                 when (call.method) {
                     "getInitialShare" -> {
                         val current = activity.intent
-                        val files = if (current != null && current === resolvedIntent) {
-                            Log.d(TAG, "getInitialShare: intent already delivered via onNewIntent, skipping")
+                        val files = if (current == null || wasDelivered(current)) {
+                            Log.d(TAG, "getInitialShare: intent already delivered, skipping")
                             JSONArray()
                         } else {
-                            resolveIntent(current)
+                            resolveIntent(current).also { markDelivered(current) }
                         }
                         result.success(files.toString())
                     }
@@ -105,35 +141,37 @@ class SharePlugin(private val activity: Activity) {
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL)
             .setStreamHandler(object : EventChannel.StreamHandler {
                 override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
-                    eventSink = events
-                    pendingEvent?.let {
-                        Log.d(TAG, "onListen: replaying buffered share")
-                        events.success(it)
-                        pendingEvent = null
-                    }
+                    Log.d(TAG, "onListen: replaying ${deliveries.bufferedCount} buffered share(s)")
+                    deliveries.attach { events.success(it) }
                 }
 
                 override fun onCancel(arguments: Any?) {
-                    eventSink = null
+                    deliveries.detach()
                 }
             })
     }
 
     fun onNewIntent(intent: Intent) {
         Log.d(TAG, "onNewIntent: action=${intent.action} data=${intent.data} type=${intent.type}")
+        if (wasDelivered(intent)) {
+            Log.d(TAG, "onNewIntent: intent already delivered, skipping")
+            return
+        }
         val files = resolveIntent(intent)
-        resolvedIntent = intent
-        Log.d(TAG, "onNewIntent: resolved ${files.length()} file(s), eventSink=${eventSink != null}")
+        markDelivered(intent)
+        Log.d(TAG, "onNewIntent: resolved ${files.length()} file(s)")
         if (files.length() == 0) return
 
-        val payload = files.toString()
-        val sink = eventSink
-        if (sink != null) {
-            sink.success(payload)
-        } else {
-            Log.d(TAG, "onNewIntent: no listener yet, buffering share for replay")
-            pendingEvent = payload
-        }
+        deliveries.deliver(files.toString())
+    }
+
+    private fun wasDelivered(intent: Intent): Boolean = isAlreadyDelivered(
+        marked = intent.getBooleanExtra(EXTRA_DELIVERED, false),
+        flags = intent.flags,
+    )
+
+    private fun markDelivered(intent: Intent) {
+        intent.putExtra(EXTRA_DELIVERED, true)
     }
 
     private fun resolveIntent(intent: Intent?): JSONArray {

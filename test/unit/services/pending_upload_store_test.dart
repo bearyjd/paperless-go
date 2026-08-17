@@ -79,6 +79,30 @@ void main() {
       expect(await File(persistedB).readAsString(), 'B');
     });
 
+    test('concurrent persists of the same basename do not overwrite each other',
+        () async {
+      final cache = Directory(p.join(root.path, 'cache'))
+        ..createSync(recursive: true);
+      final a = File(p.join(cache.path, 'a', 'invoice.pdf'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('A');
+      final b = File(p.join(cache.path, 'b', 'invoice.pdf'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('B');
+
+      final persisted =
+          await Future.wait([store.persist(a.path), store.persist(b.path)]);
+
+      expect(persisted.toSet(), hasLength(2));
+      expect(
+        {
+          await File(persisted[0]).readAsString(),
+          await File(persisted[1]).readAsString(),
+        },
+        {'A', 'B'},
+      );
+    });
+
     test('returns the input unchanged when the source is missing', () async {
       final missing = p.join(root.path, 'gone.pdf');
 

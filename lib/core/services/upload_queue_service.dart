@@ -15,6 +15,7 @@ part 'upload_queue_service.g.dart';
 @Riverpod(keepAlive: true)
 class UploadQueueService extends _$UploadQueueService {
   bool _draining = false;
+  bool _drainRequested = false;
 
   @override
   void build() {
@@ -45,7 +46,10 @@ class UploadQueueService extends _$UploadQueueService {
   Future<void> drainNow() => _drainQueue();
 
   Future<void> _drainQueue() async {
-    if (_draining) return;
+    if (_draining) {
+      _drainRequested = true;
+      return;
+    }
     _draining = true;
 
     try {
@@ -68,7 +72,8 @@ class UploadQueueService extends _$UploadQueueService {
         // missing one means it was cleared out from under us. Retrying is
         // pointless, but deleting the row silently is how a document
         // disappears without trace — mark it failed so it stays on the record.
-        if (!File(upload.filePath).existsSync()) {
+        var uploaded = false;
+        if (!await File(upload.filePath).exists()) {
           await cache.markUploadFailed(
             upload.id,
             'The queued file is no longer available on this device.',
@@ -93,7 +98,7 @@ class UploadQueueService extends _$UploadQueueService {
           );
 
           await cache.removePendingUpload(upload.id);
-          await store.discard(upload.filePath);
+          uploaded = true;
         } catch (e) {
           await cache.incrementRetryCount(
             upload.id,
@@ -101,9 +106,29 @@ class UploadQueueService extends _$UploadQueueService {
             maxRetries: maxRetries,
           );
         }
+
+        // Outside the try on purpose. The document is already on the server by
+        // now, so a failure to delete our local copy is cosmetic — letting it
+        // reach the catch above would retry an upload that already succeeded
+        // against a row that no longer exists, and abandon the rest of the
+        // queue with it.
+        if (uploaded) {
+          try {
+            await store.discard(upload.filePath);
+          } on FileSystemException catch (_) {
+            // Leftover file; harmless.
+          }
+        }
       }
     } finally {
       _draining = false;
+    }
+
+    // A share enqueued *during* this pass was not in the snapshot above and
+    // would otherwise wait for an unrelated connectivity or auth edge.
+    if (_drainRequested) {
+      _drainRequested = false;
+      await _drainQueue();
     }
   }
 }
