@@ -50,13 +50,11 @@ class ShareIntentHandler {
 
     // Handle shared files when app is already running
     _subscription = _eventChannel.receiveBroadcastStream().listen((raw) {
-      debugPrint('PaperlessShare: event received: $raw');
       _handleSharedFiles(_parseSharedFiles(raw as String));
     });
 
     // Handle shared files when app is opened via share
     _methodChannel.invokeMethod<String>('getInitialShare').then((raw) {
-      debugPrint('PaperlessShare: getInitialShare returned: $raw');
       if (raw == null) return;
       final files = _parseSharedFiles(raw);
       if (files.isNotEmpty) _handleSharedFiles(files);
@@ -65,14 +63,12 @@ class ShareIntentHandler {
 
   void _handleSharedFiles(List<SharedFile> files) {
     final route = resolveShareRoute(files);
-    debugPrint('PaperlessShare: resolveShareRoute -> $route');
     if (route == null) return;
 
     // #24: a share/open-with arriving while logged out must not push
     // straight through onto /login. Queue it and wait for flushPendingShare()
     // once login succeeds, called by the app shell on the auth transition.
     if (!_isAuthenticated()) {
-      debugPrint('PaperlessShare: not authenticated, queuing $route');
       _pendingRoute = route;
       return;
     }
@@ -86,7 +82,6 @@ class ShareIntentHandler {
     final route = _pendingRoute;
     if (route == null) return;
     _pendingRoute = null;
-    debugPrint('PaperlessShare: flushing pending share $route');
     _pushRoute(route);
   }
 
