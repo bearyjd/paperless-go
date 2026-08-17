@@ -61,6 +61,7 @@ android {
         debug {
             // Diagnostic-only: lets a debug build install alongside the
             // signed release build for on-device log investigation.
+            // TODO: remove before cutting the release build.
             applicationIdSuffix = ".debug"
         }
         release {

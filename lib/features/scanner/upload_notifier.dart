@@ -9,6 +9,7 @@ import '../../core/api/api_error_mapper.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/database/cache_provider.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/services/pending_upload_store.dart';
 import 'pdf/pdf_generator.dart';
 
 part 'upload_notifier.g.dart';
@@ -122,7 +123,7 @@ class UploadNotifier extends _$UploadNotifier {
       _startPolling(taskId);
     } catch (e) {
       // Clean up temp PDF on failure too (unless queuing for later)
-      if (_isNetworkError(e) && pdfPath != null && safeFilename != null) {
+      if (shouldQueueForLater(e) && pdfPath != null && safeFilename != null) {
         await _enqueueForLater(
           filePath: pdfPath,
           filename: '$safeFilename.pdf',
@@ -175,7 +176,7 @@ class UploadNotifier extends _$UploadNotifier {
 
       _startPolling(taskId);
     } catch (e) {
-      if (_isNetworkError(e)) {
+      if (shouldQueueForLater(e)) {
         await _enqueueForLater(
           filePath: filePath,
           filename: filename,
@@ -194,11 +195,41 @@ class UploadNotifier extends _$UploadNotifier {
     }
   }
 
-  bool _isNetworkError(Object e) {
+  /// Whether a failed upload should be parked in the queue rather than
+  /// surfaced as a dead end.
+  ///
+  /// The point is that the *document* must survive: a share that reached the
+  /// app and then hit an unreachable (or not-yet-configured) server has to
+  /// come back later, not vanish. So this covers three families:
+  ///
+  ///  - transport failures dio types explicitly (`connectionError` and the
+  ///    pre-send timeouts);
+  ///  - `DioExceptionType.unknown`, which is how dio surfaces a wrapped
+  ///    `SocketException` — DNS failure against a self-hosted hostname is the
+  ///    single most likely way this app fails to reach its server;
+  ///  - `StateError` from `dioProvider`, thrown when there is no server
+  ///    configured / no session at all.
+  ///
+  /// Deliberately excluded: `badResponse` (the server answered — a 4xx will
+  /// not fix itself on retry) and `receiveTimeout` (the request was fully
+  /// sent, so a retry risks a duplicate document).
+  static bool shouldQueueForLater(Object e) {
+    if (e is StateError) return true;
+    if (e is SocketException) return true;
     if (e is DioException) {
-      return e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.sendTimeout;
+      switch (e.type) {
+        case DioExceptionType.connectionError:
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+          return true;
+        case DioExceptionType.unknown:
+          return e.error is SocketException;
+        case DioExceptionType.badResponse:
+        case DioExceptionType.receiveTimeout:
+        case DioExceptionType.cancel:
+        case DioExceptionType.badCertificate:
+          return false;
+      }
     }
     return false;
   }
@@ -212,9 +243,16 @@ class UploadNotifier extends _$UploadNotifier {
     List<int>? tags,
     DateTime? created,
   }) async {
+    // The queue holds a bare path, and every path that reaches here points at
+    // evictable storage — Android's cacheDir for shares, getTemporaryDirectory
+    // for generated PDFs. Copy into app-private documents storage first, or a
+    // document queued overnight can be deleted by the OS before the retry.
+    final store = await ref.read(pendingUploadStoreProvider.future);
+    final durablePath = await store.persist(filePath);
+
     final cache = ref.read(cacheRepositoryProvider);
     await cache.enqueueUpload(
-      filePath: filePath,
+      filePath: durablePath,
       filename: filename,
       title: title,
       correspondent: correspondent,
