@@ -278,6 +278,12 @@ void main() {
   group('the upload pass survives one bad row', () {
     /// Queues [name] behind [ahead] so a boundary failure on the first row is
     /// visible as the second row never being sent.
+    ///
+    /// "Behind" is only meaningful because `getPendingUploads()` orders by id —
+    /// with the unordered select this file used to rely on, a reversed result
+    /// set put the healthy row FIRST, and every one of these tests passed with
+    /// the boundary removed. Verified by reversing the repository and watching
+    /// them stay green.
     Future<String> queuedBehind(String ahead, String name) async {
       await queuedFile(ahead);
       return queuedFile(name);
@@ -308,6 +314,10 @@ void main() {
       // attempted. Both fail to upload here, so the proof is the attempt.
       await broken.read(uploadQueueServiceProvider.notifier).drainNow();
 
+      // Load-bearing: `good` is genuinely SECOND, because getPendingUploads
+      // orders by id. Reaching it at all means the pass survived the first
+      // row's throw. (Counting attempts instead would be wrong — the service
+      // also drains on build, so attempts accumulate across passes.)
       expect(api.attempted, contains(good),
           reason: 'a failed retry write on one row must not end the pass');
     });
