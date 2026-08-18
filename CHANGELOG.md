@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.9] - 2026-08-18
+
+### Fixed
+- Sharing a file into Paperless Go now works reliably. Four separate faults could each lose a share: the app resolved the *previous* share instead of the new one, a share that arrived before the app was listening was dropped entirely, relaunching a killed app from Recents re-imported the same file again, and a shared file could flash "Page not found" while your session was still being restored
+- An upload that cannot reach the server is no longer lost. Being offline, having no server configured yet, or a server name that does not resolve now queue the document and retry it later — on reconnect, on sign-in, and on app launch, not only when the network happens to blip
+- Queued documents are no longer stored where Android can delete them under storage pressure. They are copied into the app's private storage and released only once the upload succeeds
+- Signing out, or switching server profiles, no longer deletes everything waiting in the upload queue
+- A queued upload is now bound to the server it was queued for, so switching profiles cannot send a document to the wrong account
+- Being offline no longer burns the retry budget. Five launches without signal used to terminally fail a perfectly good upload, and it was then never retried
+
+### Changed
+- A queued upload that has not reached the server for 30 days is marked as failed but its file is **kept**, not deleted. The queue has no screen yet, so nothing can warn you before a document is discarded — and the 30-day timer relies on the device clock, which can jump. Keeping the file means a clock change costs storage rather than the document itself. Files for abandoned uploads will accumulate until a queue screen exists to manage them
+
 ## [1.1.8] - 2026-08-11
 
 ### Changed

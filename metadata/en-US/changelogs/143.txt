@@ -1,0 +1,9 @@
+Bug fixes:
+* Sharing a file into the app now works reliably — shares are no longer dropped, no longer re-imported when you relaunch from Recents, and no longer flash "Page not found" while signing in
+* An upload that cannot reach your server is queued and retried instead of lost — including when you are offline, not signed in yet, or the server name does not resolve
+* Queued documents are stored where Android cannot delete them, and are kept until the upload actually succeeds
+* Signing out or switching server profiles no longer wipes the upload queue
+* A queued upload can no longer be sent to the wrong account after switching profiles
+
+Other changes:
+* A queued upload that has not reached the server for 30 days is marked failed, but its file is kept rather than deleted — nothing can warn you before a document is discarded until the queue has its own screen
