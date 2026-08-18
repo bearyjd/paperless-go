@@ -66,11 +66,15 @@ class UploadQueueService extends _$UploadQueueService {
   /// How long a queued upload keeps its file on disk before being given up on.
   ///
   /// app-documents storage is not evictable by the OS, so anything the drain
-  /// stops acting on holds the user's document until they wipe app data. Three
+  /// stops acting on holds the user's document until they wipe app data. Four
   /// ways a row stops being acted on, and all of them need this bound:
   ///  - terminally failed, so the drain skips it;
   ///  - its server is unreachable, which deliberately does not consume retries;
-  ///  - it belongs to another profile, possibly one since deleted.
+  ///  - it belongs to another profile, possibly one since deleted;
+  ///  - no server is configured at all, so the upload pass never starts.
+  ///
+  /// The last one is why the sweep runs before the API is resolved rather than
+  /// as a guard inside the upload loop.
   ///
   /// The window is deliberately generous, because the file IS the document.
   static const _retention = Duration(days: 30);
@@ -138,6 +142,12 @@ class UploadQueueService extends _$UploadQueueService {
         } catch (e) {
           // One unreadable row must not strand the sweep for every row behind
           // it — the whole point of the sweep is that it always runs.
+          //
+          // Catches Error as well as Exception, deliberately, for the same
+          // reason as the outer catch below: the likeliest escapee is a Drift
+          // StateError, which `on Exception` would let through to the outer
+          // handler — abandoning every row behind this one, which is exactly
+          // the boundary this block exists to draw.
           assert(() {
             debugPrint('Upload queue retention skipped a row: $e');
             return true;

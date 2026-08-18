@@ -65,18 +65,24 @@ Note this also moves it in the app drawer.
 
 ---
 
+## FIXED after this handoff was written
+
+### Retention never runs when signed out — fixed
+
+The drain returned at the `paperlessApiProvider` guard before ever reaching `getPendingUploads()`,
+so a signed-out or misconfigured launch skipped the retention sweep entirely and held queued
+documents forever. A hole in `846932e`, found by `/codex consult`.
+
+The sweep is now a separate pass over the same fetch, ahead of resolving the API, with a per-row
+fault boundary — which is the structural fix Codex recommended under item 1 below, not a guard
+bolted on. Two tests cover it (expired row released with no server configured; a row whose
+bookkeeping write throws does not strand the rows behind it), both verified RED first.
+
+---
+
 ## OPEN — start here
 
-### 1. Retention never runs when signed out (real, confirmed, unfixed)
-
-`upload_queue_service.dart:131` returns before `getPendingUploads()` at `:135`, so a signed-out or
-misconfigured launch skips the retention sweep entirely. The "retention first" comment is true
-*within* the loop; the loop is unreachable. A signed-out user still holds queued documents forever.
-
-Found by `/codex consult`, verified by reading. This is a hole in `846932e`, shipped ~30 minutes
-after that commit claimed storage was bounded.
-
-### 2. The drain wants restructuring, not another guard
+### 1. The drain wants restructuring, not another guard
 
 Seven commits landed on `upload_queue_service.dart` in one day, and today's regression came from two
 of *my own* fixes interacting. Correctness now depends on the ORDER of sequential guard clauses in
@@ -84,23 +90,23 @@ one loop.
 
 Codex's recommended design (session `01a0157f-46a8-7582-b292-c63d645e70ae`, resume with `/codex`):
 
-- **Separate the retention sweep from the upload pass.** Sweep runs before auth/API resolution, so
-  no upload guard can bypass it — this also fixes item 1 structurally.
+- ~~**Separate the retention sweep from the upload pass.**~~ Done — see FIXED above.
 - **Sealed decision types** in the upload pass (`deferTerminal`, `deferWrongServer`,
   `failMissingFile`, `attemptUpload`) so a new outcome breaks exhaustive switches loudly.
-- **Per-row fault boundaries** — currently a malformed `tagsJson`, a failed retry write, or a failed
-  row removal can escape and abandon every later row. The existing "one failure does not abandon the
-  rest" test only proves the missing-file case.
+- **Per-row fault boundaries** — in the *upload* pass, a malformed `tagsJson`, a failed retry write,
+  or a failed row removal can still escape and abandon every later row. The existing "one failure
+  does not abandon the rest" test only proves the missing-file case. (The retention sweep now has
+  this boundary; the upload pass does not.)
 - No Drift schema change needed.
 
-### 3. Queue has no UI at all
+### 2. Queue has no UI at all
 
 Failed rows, `lastError`, wrong-profile rows and legacy rows are all invisible. Retention now gives
 up on a document after 30 days and tells the user nothing. Codex's position, which I agree with:
 either ship minimal queue visibility with this work, or change the retention policy until it exists.
 Silently discarding the only remaining copy is not defensible while the queue is invisible.
 
-### 4. Second `/codex review` never completed
+### 3. Second `/codex review` never completed
 
 Exit 124 (stalled past 5.5 min) on the full ~20-file diff. Re-run scoped smaller, e.g.
 `--commit 846932e`.
