@@ -213,8 +213,23 @@ class CacheRepository {
         ));
   }
 
+  /// Queued uploads, oldest first.
+  ///
+  /// Ordered by `id`, not `queuedAt`. Both are insertion-ordered in the normal
+  /// case, but `queuedAt` is stamped from [DateTime.now], which is not
+  /// monotonic — a device clock that moves backwards between two shares would
+  /// sort the newer one first. `id` is autoIncrement and cannot go backwards.
+  ///
+  /// The order matters beyond tidiness: the drain processes this list in
+  /// sequence, so without an ORDER BY "which upload is retried first" is
+  /// whatever SQLite feels like returning. That also made the drain's
+  /// fault-boundary tests unfalsifiable — a test proving "one bad row does not
+  /// strand the row behind it" cannot be written when there is no defined
+  /// behind.
   Future<List<PendingUpload>> getPendingUploads() async {
-    return _db.select(_db.pendingUploads).get();
+    return (_db.select(_db.pendingUploads)
+          ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+        .get();
   }
 
   Future<List<PendingUpload>> getFailedUploads() async {
