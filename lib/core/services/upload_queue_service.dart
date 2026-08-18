@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -13,6 +12,7 @@ import '../database/cache_provider.dart';
 import '../database/cache_repository.dart';
 import 'connectivity_service.dart';
 import 'pending_upload_store.dart';
+import 'upload_decision.dart';
 
 part 'upload_queue_service.g.dart';
 
@@ -185,93 +185,30 @@ class UploadQueueService extends _$UploadQueueService {
       }
       final activeServer = ref.read(authStateProvider).valueOrNull?.serverUrl;
 
-      const maxRetries = 5;
       for (final upload in live) {
-        if (upload.isFailed) continue;
-
-        // Never send someone's document to the wrong account. Switching server
-        // profiles calls loginWithToken, which emits AsyncLoading before the
-        // new authenticated state — the auth listener reads that as an
-        // unauthenticated->authenticated edge and drains immediately, so
-        // without this check every row queued for profile A went to profile B.
-        //
-        // A null serverUrl means the row predates this column. Skipping rather
-        // than guessing: uploading to the wrong server is worse than waiting,
-        // and the row keeps its file either way.
-        if (upload.serverUrl != activeServer) {
-          continue;
-        }
-
-        // Queued files live in app-private storage (PendingUploadStore), so a
-        // missing one means it was cleared out from under us. Retrying is
-        // pointless, but deleting the row silently is how a document
-        // disappears without trace — mark it failed so it stays on the record.
-        var uploaded = false;
-        if (!await File(upload.filePath).exists()) {
-          await cache.markUploadFailed(
-            upload.id,
-            'The queued file is no longer available on this device.',
-          );
-          continue;
-        }
+        // One row, one fault boundary. Everything below — the file check, the
+        // bookkeeping writes, and the writes made from inside the send's own
+        // catch — is inside it, because every one of them has abandoned the
+        // rest of the queue at some point in this file's history.
         try {
-          List<int>? tags;
-          if (upload.tagsJson != null) {
-            tags = (jsonDecode(upload.tagsJson!) as List<dynamic>)
-                .cast<int>();
-          }
-
-          await api.uploadDocument(
-            filePath: upload.filePath,
-            filename: upload.filename,
-            title: upload.title,
-            correspondent: upload.correspondent,
-            documentType: upload.documentType,
-            tags: tags,
-            created: upload.created,
+          final decision = decideUpload(
+            upload,
+            activeServer: activeServer,
+            fileExists: await File(upload.filePath).exists(),
           );
-
-          // At-least-once, not exactly-once: if the process dies between the
-          // server accepting this upload and the row being removed, the next
-          // drain sends it again.
-          //
-          // That does NOT produce a duplicate document. Verified against a real
-          // paperless-ngx 2.20: consumption is checksum-deduplicated, and the
-          // second copy is rejected with
-          //   "Not consuming <file>: It is a duplicate of <doc> (#N)"
-          // so the re-upload costs one failed task on the server and nothing
-          // else. Client-side checksum suppression would reimplement this.
-          await cache.removePendingUpload(upload.id);
-          uploaded = true;
+          switch (decision) {
+            case SkipUpload():
+              break;
+            case FailUpload(:final reason):
+              await cache.markUploadFailed(upload.id, reason);
+            case SendUpload(:final tags):
+              await _send(api, cache, store, upload, tags);
+          }
         } catch (e) {
-          if (isUnreachableServerError(e)) {
-            // Says nothing about the document — offline, server unreachable, no
-            // session. Consuming a retry here meant five launches out of signal
-            // terminally failed a perfectly good upload, and the drain then
-            // skipped it forever even once connectivity came back. Made worse
-            // by ConnectivityNotifier optimistically reporting online until its
-            // first real check lands, so the startup drain runs while offline.
-            await cache.recordUploadError(upload.id, e.toString());
-          } else {
-            await cache.incrementRetryCount(
-              upload.id,
-              e.toString(),
-              maxRetries: maxRetries,
-            );
-          }
-        }
-
-        // Outside the try on purpose. The document is already on the server by
-        // now, so a failure to delete our local copy is cosmetic — letting it
-        // reach the catch above would retry an upload that already succeeded
-        // against a row that no longer exists, and abandon the rest of the
-        // queue with it.
-        if (uploaded) {
-          try {
-            await store.discard(upload.filePath);
-          } on FileSystemException catch (_) {
-            // Leftover file; harmless.
-          }
+          assert(() {
+            debugPrint('Upload queue skipped a row: $e');
+            return true;
+          }());
         }
       }
     } catch (e) {
@@ -289,6 +226,77 @@ class UploadQueueService extends _$UploadQueueService {
         debugPrint('Upload queue drain aborted: $e');
         return true;
       }());
+    }
+  }
+
+  /// How many attempts a row gets before the drain stops retrying it.
+  static const _maxRetries = 5;
+
+  /// Sends one row and records the outcome.
+  ///
+  /// Throws nothing the caller has to special-case: every failure lands in the
+  /// caller's per-row boundary, including a bookkeeping write that fails while
+  /// recording another failure.
+  Future<void> _send(
+    PaperlessApi api,
+    CacheRepository cache,
+    PendingUploadStore store,
+    PendingUpload upload,
+    List<int>? tags,
+  ) async {
+    var uploaded = false;
+    try {
+      await api.uploadDocument(
+        filePath: upload.filePath,
+        filename: upload.filename,
+        title: upload.title,
+        correspondent: upload.correspondent,
+        documentType: upload.documentType,
+        tags: tags,
+        created: upload.created,
+      );
+
+      // At-least-once, not exactly-once: if the process dies between the
+      // server accepting this upload and the row being removed, the next
+      // drain sends it again.
+      //
+      // That does NOT produce a duplicate document. Verified against a real
+      // paperless-ngx 2.20: consumption is checksum-deduplicated, and the
+      // second copy is rejected with
+      //   "Not consuming <file>: It is a duplicate of <doc> (#N)"
+      // so the re-upload costs one failed task on the server and nothing
+      // else. Client-side checksum suppression would reimplement this.
+      await cache.removePendingUpload(upload.id);
+      uploaded = true;
+    } catch (e) {
+      if (isUnreachableServerError(e)) {
+        // Says nothing about the document — offline, server unreachable, no
+        // session. Consuming a retry here meant five launches out of signal
+        // terminally failed a perfectly good upload, and the drain then
+        // skipped it forever even once connectivity came back. Made worse
+        // by ConnectivityNotifier optimistically reporting online until its
+        // first real check lands, so the startup drain runs while offline.
+        await cache.recordUploadError(upload.id, e.toString());
+      } else {
+        await cache.incrementRetryCount(
+          upload.id,
+          e.toString(),
+          maxRetries: _maxRetries,
+        );
+      }
+      return;
+    }
+
+    // Outside the try on purpose. The document is already on the server by
+    // now, so a failure to delete our local copy is cosmetic — letting it
+    // reach the catch above would retry an upload that already succeeded
+    // against a row that no longer exists.
+    if (uploaded) {
+      try {
+        await store.discard(upload.filePath);
+      } on FileSystemException catch (_) {
+        // Leftover file; harmless.
+      }
     }
   }
 }

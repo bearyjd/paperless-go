@@ -26,6 +26,11 @@ class _FakeApi extends PaperlessApi {
   _FakeApi() : super(Dio());
 
   final uploaded = <String>[];
+
+  /// Every row the pass got as far as sending, successful or not. Distinct
+  /// from [uploaded] so a test can prove the pass REACHED a row even when the
+  /// server rejects everything.
+  final attempted = <String>[];
   Object? failure;
 
   @override
@@ -39,10 +44,31 @@ class _FakeApi extends PaperlessApi {
     DateTime? created,
     void Function(int sent, int total)? onSendProgress,
   }) async {
+    attempted.add(filePath);
     final error = failure;
     if (error != null) throw error;
     uploaded.add(filePath);
     return 'task-${uploaded.length}';
+  }
+}
+
+/// Throws from the retry bookkeeping of whichever row fails first — i.e. from
+/// inside the upload pass's own catch block, which is the throw a boundary
+/// wrapped only around the happy path would not contain.
+class _FailsRetryWrite extends CacheRepository {
+  _FailsRetryWrite(super.db);
+
+  int? failedId;
+
+  @override
+  Future<void> incrementRetryCount(
+    int id,
+    String error, {
+    required int maxRetries,
+  }) async {
+    failedId ??= id;
+    if (id == failedId) throw StateError('database gone');
+    return super.incrementRetryCount(id, error, maxRetries: maxRetries);
   }
 }
 
@@ -247,6 +273,88 @@ void main() {
 
     expect(api.uploaded, isEmpty);
     expect(await cache.getPendingUploads(), hasLength(1));
+  });
+
+  group('the upload pass survives one bad row', () {
+    /// Queues [name] behind [ahead] so a boundary failure on the first row is
+    /// visible as the second row never being sent.
+    Future<String> queuedBehind(String ahead, String name) async {
+      await queuedFile(ahead);
+      return queuedFile(name);
+    }
+
+    test('a retry write that throws does not strand the row behind it',
+        () async {
+      // The escape most likely to survive a naive fix: this throw is raised
+      // from INSIDE the pass's own catch block, so a try/catch that only wraps
+      // the happy path does not contain it.
+      final good = await queuedBehind('first.pdf', 'second.pdf');
+      api.failure = DioException(
+        requestOptions: RequestOptions(path: '/'),
+        type: DioExceptionType.badResponse,
+      );
+      final broken = ProviderContainer(
+        overrides: [
+          cacheRepositoryProvider.overrideWithValue(_FailsRetryWrite(db)),
+          paperlessApiProvider.overrideWithValue(api),
+          pendingUploadStoreProvider.overrideWith((ref) async => store),
+          authStateProvider.overrideWith(_FakeAuthenticated.new),
+          connectivityNotifierProvider.overrideWith(_FakeOnline.new),
+        ],
+      );
+      addTearDown(broken.dispose);
+
+      // The first row's retry bookkeeping throws; the second must still be
+      // attempted. Both fail to upload here, so the proof is the attempt.
+      await broken.read(uploadQueueServiceProvider.notifier).drainNow();
+
+      expect(api.attempted, contains(good),
+          reason: 'a failed retry write on one row must not end the pass');
+    });
+
+    test('a failed missing-file write does not strand the row behind it',
+        () async {
+      // The missing-file branch marks the row failed OUTSIDE the pass's
+      // try/catch, so a throw there escapes the loop entirely.
+      final good = await queuedBehind('vanished.pdf', 'healthy.pdf');
+      final rows = await cache.getPendingUploads();
+      final gone = rows.firstWhere((r) => r.filePath.endsWith('vanished.pdf'));
+      await File(gone.filePath).delete();
+
+      final broken = ProviderContainer(
+        overrides: [
+          cacheRepositoryProvider.overrideWithValue(_FailsFirstRow(db)),
+          paperlessApiProvider.overrideWithValue(api),
+          pendingUploadStoreProvider.overrideWith((ref) async => store),
+          authStateProvider.overrideWith(_FakeAuthenticated.new),
+          connectivityNotifierProvider.overrideWith(_FakeOnline.new),
+        ],
+      );
+      addTearDown(broken.dispose);
+
+      await broken.read(uploadQueueServiceProvider.notifier).drainNow();
+
+      expect(api.uploaded, contains(good));
+    });
+
+    test('a row with unreadable tags is failed, not retried forever', () async {
+      final good = await queuedBehind('badtags.pdf', 'fine.pdf');
+      final rows = await cache.getPendingUploads();
+      final bad = rows.firstWhere((r) => r.filePath.endsWith('badtags.pdf'));
+      await (db.update(db.pendingUploads)..where((t) => t.id.equals(bad.id)))
+          .write(const PendingUploadsCompanion(tagsJson: Value('not json')));
+
+      await drain();
+
+      final row = (await cache.getPendingUploads())
+          .firstWhere((r) => r.id == bad.id);
+      expect(row.isFailed, isTrue,
+          reason: 'retrying cannot repair metadata that will not parse');
+      expect(row.retryCount, 0,
+          reason: 'and it must not burn the budget on the way there');
+      expect(api.uploaded, contains(good),
+          reason: 'the row behind it still uploads');
+    });
   });
 
   test('one failure does not abandon the rest of the queue', () async {
