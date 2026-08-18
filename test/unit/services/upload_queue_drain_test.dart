@@ -53,6 +53,20 @@ class _FakeAuthenticated extends AuthState {
       );
 }
 
+/// Starts unauthenticated and flips once [authenticate] is called, the way a
+/// real launch restores a session after the queue service has already built.
+class _DeferredAuth extends AuthState {
+  @override
+  Future<AuthStatus> build() async => const AuthStatus.unauthenticated();
+
+  void authenticate() => state = const AsyncData(
+        AuthStatus.authenticated(
+          serverUrl: 'https://paperless.example.com',
+          token: 'test-token',
+        ),
+      );
+}
+
 /// The real one opens a connectivity_plus EventChannel, which needs a platform.
 class _FakeOnline extends ConnectivityNotifier {
   @override
@@ -236,6 +250,61 @@ void main() {
 
     expect(freshApi.uploaded, [path],
         reason: 'no explicit drain was requested — startup alone must flush');
+    expect(await freshCache.getPendingUploads(), isEmpty);
+  });
+
+  test('logging in flushes a queue that was waiting on authentication',
+      () async {
+    // Regression, caught on a Pixel 9 Pro Fold: the queue sat there after
+    // login and never drained. The auth listener fired correctly, but the api
+    // provider throws while unauthenticated and Riverpod still served that
+    // cached error to a read one millisecond later — so the drain gave up and
+    // nothing retriggered it. The listener has to defer a turn.
+    final freshDb = AppDatabase(NativeDatabase.memory());
+    final freshCache = CacheRepository(freshDb);
+    final freshApi = _FakeApi();
+    addTearDown(freshDb.close);
+
+    final source = File(p.join(root.path, 'src', 'after-login.pdf'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync('PDF');
+    final path = await store.persist(source.path);
+    await freshCache.enqueueUpload(
+      filePath: path,
+      filename: 'after-login.pdf',
+    );
+
+    final auth = _DeferredAuth();
+    final pending = ProviderContainer(
+      overrides: [
+        cacheRepositoryProvider.overrideWithValue(freshCache),
+        pendingUploadStoreProvider.overrideWith((ref) async => store),
+        connectivityNotifierProvider.overrideWith(_FakeOnline.new),
+        authStateProvider.overrideWith(() => auth),
+        // Mirrors dioProvider: throws while unauthenticated, so Riverpod
+        // caches the failure exactly as it does in the app.
+        paperlessApiProvider.overrideWith((ref) {
+          final status = ref.watch(authStateProvider).valueOrNull;
+          if (status == null || !status.isAuthenticated) {
+            throw StateError('Not authenticated');
+          }
+          return freshApi;
+        }),
+      ],
+    );
+    addTearDown(pending.dispose);
+
+    pending.read(uploadQueueServiceProvider);
+    await Future<void>.delayed(Duration.zero);
+    expect(freshApi.uploaded, isEmpty, reason: 'not logged in yet');
+
+    auth.authenticate();
+    for (var i = 0; i < 100 && freshApi.uploaded.isEmpty; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+
+    expect(freshApi.uploaded, [path],
+        reason: 'logging in must flush the queue on its own');
     expect(await freshCache.getPendingUploads(), isEmpty);
   });
 
