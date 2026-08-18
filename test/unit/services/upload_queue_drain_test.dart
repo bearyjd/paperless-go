@@ -68,6 +68,22 @@ class _DeferredAuth extends AuthState {
       );
 }
 
+/// Fails the bookkeeping for one row, so the sweep's per-row fault boundary is
+/// exercised with the failure it actually has to survive: a database write.
+class _FailsOneRow extends CacheRepository {
+  _FailsOneRow(super.db, this.failingId);
+
+  final int failingId;
+
+  @override
+  Future<void> markUploadFailed(int id, String error) async {
+    // StateError, not an Exception: `on Exception` would let this escape, and
+    // the boundary has to hold for it too.
+    if (id == failingId) throw StateError('database gone');
+    return super.markUploadFailed(id, error);
+  }
+}
+
 /// The real one opens a connectivity_plus EventChannel, which needs a platform.
 class _FakeOnline extends ConnectivityNotifier {
   @override
@@ -479,6 +495,35 @@ void main() {
       expect((await cache.getPendingUploads()).single.isFailed, isTrue);
     });
 
+    test('a row the sweep cannot record does not strand the rest', () async {
+      final first = await queuedFile('unrecordable.pdf');
+      final second = await queuedFile('behind-it.pdf');
+      final rows = await cache.getPendingUploads();
+      for (final row in rows) {
+        await ageRow(row.id, const Duration(days: 31));
+      }
+
+      final broken = ProviderContainer(
+        overrides: [
+          cacheRepositoryProvider.overrideWithValue(
+            _FailsOneRow(db, rows.first.id),
+          ),
+          paperlessApiProvider.overrideWithValue(api),
+          pendingUploadStoreProvider.overrideWith((ref) async => store),
+          authStateProvider.overrideWith(_FakeAuthenticated.new),
+          connectivityNotifierProvider.overrideWith(_FakeOnline.new),
+        ],
+      );
+      addTearDown(broken.dispose);
+
+      await broken.read(uploadQueueServiceProvider.notifier).drainNow();
+
+      expect(await File(second).exists(), isFalse,
+          reason: 'the row behind the broken one is still swept');
+      expect(await File(first).exists(), isFalse,
+          reason: 'its file was released before the write that failed');
+    });
+
     test('a recent row is untouched while signed out', () async {
       final path = await queuedFile('still-waiting.pdf');
 
@@ -530,6 +575,6 @@ void main() {
     );
     expect(await cache.getPendingUploads(), hasLength(1));
     expect(await File(path).exists(), isTrue,
-        reason: 'nothing may be discarded while the server is unreachable');
+        reason: 'a row still inside its retention window keeps its file');
   });
 }
