@@ -53,13 +53,24 @@ internal fun selectSource(action: String?, dataScheme: String?): ShareSource = w
  * getInitialShare — which also means the share intent lives on in the task
  * record. Without a guard it gets resolved again (copying a second file into
  * cache and re-pushing the user into the upload screen) by any later
- * getInitialShare: a relaunch from Recents, or a recreation that builds a fresh
- * SharePlugin. Instance state cannot cover that; a mark on the intent survives
- * exactly as long as the intent does, and LAUNCHED_FROM_HISTORY catches an
- * intent consumed before the mark existed.
+ * getInitialShare.
+ *
+ * Three signals, because no single one covers every path:
+ *  - [marked], an extra written onto the intent, covers a second query within
+ *    one process;
+ *  - [restoredTask] (savedInstanceState != null) is the only one that survives
+ *    process death — measured on device, the other two do not;
+ *  - LAUNCHED_FROM_HISTORY catches a Recents relaunch of an intent that was
+ *    consumed before the mark existed.
  */
-internal fun isAlreadyDelivered(marked: Boolean, flags: Int): Boolean =
-    marked || (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
+internal fun isAlreadyDelivered(
+    marked: Boolean,
+    flags: Int,
+    restoredTask: Boolean = false,
+): Boolean =
+    marked ||
+        restoredTask ||
+        (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
 
 /**
  * Holds resolved shares until Dart's EventChannel listener attaches.
@@ -110,7 +121,10 @@ internal class ShareDeliveryBuffer {
  * a URI without a valid grant fails in copyToCache() (caught, returns null),
  * it doesn't bypass anything.
  */
-class SharePlugin(private val activity: Activity) {
+class SharePlugin(
+    private val activity: Activity,
+    private val isRestoredTask: () -> Boolean = { false },
+) {
     private val deliveries = ShareDeliveryBuffer()
 
     companion object {
@@ -177,6 +191,7 @@ class SharePlugin(private val activity: Activity) {
     private fun wasDelivered(intent: Intent): Boolean = isAlreadyDelivered(
         marked = intent.getBooleanExtra(EXTRA_DELIVERED, false),
         flags = intent.flags,
+        restoredTask = isRestoredTask(),
     )
 
     private fun markDelivered(intent: Intent) {

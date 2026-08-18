@@ -59,12 +59,17 @@ android {
 
     buildTypes {
         debug {
-            // Diagnostic-only: lets a debug build install alongside the
-            // signed release build for on-device log investigation.
-            // TODO: remove before cutting the release build.
+            // A debug build installs alongside the signed release build so
+            // on-device investigation does not cost a reinstall (and a
+            // re-login) of the real app. The distinct label matters as much as
+            // the distinct id: both appear in the system share sheet, and two
+            // identical "Paperless Go" entries make it impossible to tell
+            // which build a share test actually went to.
             applicationIdSuffix = ".debug"
+            manifestPlaceholders["appLabel"] = "Paperless Go (debug)"
         }
         release {
+            manifestPlaceholders["appLabel"] = "Paperless Go"
             isMinifyEnabled = true
             isShrinkResources = true
             signingConfig = if (keystorePropertiesFile.exists()) {
