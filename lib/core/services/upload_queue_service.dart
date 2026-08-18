@@ -36,7 +36,11 @@ class UploadQueueService extends _$UploadQueueService {
           previous?.valueOrNull?.isAuthenticated ?? false;
       final isAuthenticated = next.valueOrNull?.isAuthenticated ?? false;
       if (!wasAuthenticated && isAuthenticated) {
-        _drainQueue();
+        // Deferred a turn on purpose. dioProvider throws StateError while
+        // unauthenticated, and Riverpod serves that cached error to dependents
+        // until the invalidation from this very state change propagates —
+        // draining synchronously here reads the stale error and gives up.
+        Future.microtask(_drainQueue);
       }
     });
 
