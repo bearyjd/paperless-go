@@ -68,18 +68,31 @@ class _DeferredAuth extends AuthState {
       );
 }
 
-/// Fails the bookkeeping for one row, so the sweep's per-row fault boundary is
-/// exercised with the failure it actually has to survive: a database write.
-class _FailsOneRow extends CacheRepository {
-  _FailsOneRow(super.db, this.failingId);
+/// Fails the bookkeeping for whichever row the sweep reaches first, so the
+/// per-row fault boundary is exercised with the failure it actually has to
+/// survive: a database write.
+///
+/// Deliberately keyed on arrival rather than on a fixed id. `getPendingUploads`
+/// has no ORDER BY, and a test that fails the *last* row swept proves nothing —
+/// a boundary-less sweep dying after the final row strands nothing, so the
+/// assertions pass either way. Failing the first row seen means there is always
+/// a row behind it.
+class _FailsFirstRow extends CacheRepository {
+  _FailsFirstRow(super.db);
 
-  final int failingId;
+  int? failedId;
 
   @override
   Future<void> markUploadFailed(int id, String error) async {
-    // StateError, not an Exception: `on Exception` would let this escape, and
-    // the boundary has to hold for it too.
-    if (id == failingId) throw StateError('database gone');
+    // Latched, not once-only. The service drains on build as well as on
+    // demand, and a row that failed only on the first pass would simply be
+    // marked by the second — the fake has to stay broken for the same row.
+    failedId ??= id;
+    if (id == failedId) {
+      // StateError, not an Exception: `on Exception` would let this escape,
+      // and the boundary has to hold for it too.
+      throw StateError('database gone');
+    }
     return super.markUploadFailed(id, error);
   }
 }
@@ -496,18 +509,17 @@ void main() {
     });
 
     test('a row the sweep cannot record does not strand the rest', () async {
-      final first = await queuedFile('unrecordable.pdf');
-      final second = await queuedFile('behind-it.pdf');
+      await queuedFile('unrecordable.pdf');
+      await queuedFile('behind-it.pdf');
       final rows = await cache.getPendingUploads();
       for (final row in rows) {
         await ageRow(row.id, const Duration(days: 31));
       }
+      final repo = _FailsFirstRow(db);
 
       final broken = ProviderContainer(
         overrides: [
-          cacheRepositoryProvider.overrideWithValue(
-            _FailsOneRow(db, rows.first.id),
-          ),
+          cacheRepositoryProvider.overrideWithValue(repo),
           paperlessApiProvider.overrideWithValue(api),
           pendingUploadStoreProvider.overrideWith((ref) async => store),
           authStateProvider.overrideWith(_FakeAuthenticated.new),
@@ -518,10 +530,18 @@ void main() {
 
       await broken.read(uploadQueueServiceProvider.notifier).drainNow();
 
-      expect(await File(second).exists(), isFalse,
-          reason: 'the row behind the broken one is still swept');
-      expect(await File(first).exists(), isFalse,
-          reason: 'its file was released before the write that failed');
+      // Asserted on database state rather than file existence, so the proof
+      // does not depend on which row SQLite happened to return first.
+      final swept = await cache.getPendingUploads();
+      final threw = repo.failedId;
+      expect(threw, isNotNull, reason: 'the sweep must have reached a row');
+      expect(swept.where((r) => r.isFailed).map((r) => r.id),
+          swept.map((r) => r.id).where((id) => id != threw),
+          reason: 'every row behind the one that threw is still swept');
+
+      final stranded = swept.firstWhere((r) => r.id == threw);
+      expect(await File(stranded.filePath).exists(), isTrue,
+          reason: 'a failed write must leave the bytes, not orphan them');
     });
 
     test('a recent row is untouched while signed out', () async {
