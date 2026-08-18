@@ -68,13 +68,28 @@ class AuthState extends _$AuthState {
   }
 }
 
+/// Thrown when something needs an authenticated client and there is no session
+/// — no server configured yet, or the user is signed out.
+///
+/// A named type rather than a bare [StateError] because callers branch on it:
+/// the upload queue treats it as "park this document and retry after login".
+/// Matching `StateError` there would also swallow every unrelated bad-state bug
+/// into a silent retry loop, and would break on a Riverpod upgrade that wraps
+/// provider build errors rather than rethrowing the original object.
+class NotAuthenticatedException implements Exception {
+  const NotAuthenticatedException();
+
+  @override
+  String toString() => 'Not authenticated';
+}
+
 /// Provides an authenticated Dio instance. Throws if not authenticated.
 /// Closes the previous instance when auth state changes.
 @Riverpod(keepAlive: true)
 Dio dio(Ref ref) {
   final authStatus = ref.watch(authStateProvider).valueOrNull;
   if (authStatus == null || !authStatus.isAuthenticated) {
-    throw StateError('Not authenticated');
+    throw const NotAuthenticatedException();
   }
   final dio = DioClient.create(authStatus.serverUrl!, authStatus.token!);
   ref.onDispose(() => dio.close());

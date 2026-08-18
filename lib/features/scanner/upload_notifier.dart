@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:dio/dio.dart';
 
 import '../../core/api/api_error_mapper.dart';
 import '../../core/api/api_providers.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/database/cache_provider.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/pending_upload_store.dart';
@@ -207,8 +209,10 @@ class UploadNotifier extends _$UploadNotifier {
   ///  - `DioExceptionType.unknown`, which is how dio surfaces a wrapped
   ///    `SocketException` — DNS failure against a self-hosted hostname is the
   ///    single most likely way this app fails to reach its server;
-  ///  - `StateError` from `dioProvider`, thrown when there is no server
-  ///    configured / no session at all.
+  ///  - [NotAuthenticatedException] from `dioProvider`, thrown when there is no
+  ///    server configured / no session at all. Deliberately a named type: a
+  ///    bare `StateError` match would also queue-and-retry every unrelated
+  ///    bad-state bug in the upload path, five times, silently.
   ///
   /// Deliberately excluded: `badResponse` (the server answered — a 4xx will
   /// not fix itself on retry) and `receiveTimeout` (the body was fully sent,
@@ -219,7 +223,7 @@ class UploadNotifier extends _$UploadNotifier {
   /// queue those anyway — losing the document is worse than uploading it twice
   /// — but that is a judgement call, not a guarantee of exactly-once.
   static bool shouldQueueForLater(Object e) {
-    if (e is StateError) return true;
+    if (e is NotAuthenticatedException) return true;
     if (e is SocketException) return true;
     if (e is DioException) {
       switch (e.type) {
@@ -269,9 +273,19 @@ class UploadNotifier extends _$UploadNotifier {
       final store = await ref.read(pendingUploadStoreProvider.future);
       queuedPath = await store.persist(filePath);
     } on FileSystemException catch (_) {
-      // Out of space, or storage unavailable. Queue the original path anyway:
-      // an evictable copy is a worse guarantee than a durable one, but it is
-      // far better than dropping the document.
+      // Out of space. Queue the original path anyway: an evictable copy is a
+      // worse guarantee than a durable one, but far better than dropping it.
+    } catch (e) {
+      // Storage unavailable entirely — getApplicationDocumentsDirectory throws
+      // MissingPlatformDirectoryException, and a missing plugin registration
+      // throws MissingPluginException. Both `implements Exception` rather than
+      // extending FileSystemException, so the narrow catch above lets them
+      // through, out of the catch block this method runs inside, and the
+      // screen stays on `uploading` forever. Same fallback: queue the original.
+      assert(() {
+        debugPrint('Pending-upload store unavailable: $e');
+        return true;
+      }());
     }
 
     try {
@@ -286,10 +300,15 @@ class UploadNotifier extends _$UploadNotifier {
         created: created,
       );
       state = const UploadState(status: UploadStatus.queued);
-    } on Exception catch (e) {
+    } catch (e) {
+      // Catches Error too, not just Exception: a drift failure here surfaces as
+      // a StateError, which `on Exception` would let escape and wedge the UI.
       state = UploadState(
         status: UploadStatus.failure,
-        errorMessage: friendlyApiMessage(e),
+        errorMessage: friendlyApiMessage(
+          e,
+          fallback: 'Could not save the upload for later.',
+        ),
       );
     }
   }

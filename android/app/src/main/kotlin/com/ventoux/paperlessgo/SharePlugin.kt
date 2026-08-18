@@ -73,6 +73,16 @@ internal fun isAlreadyDelivered(
         (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
 
 /**
+ * Whether resolving an intent should burn it, given how many files came back.
+ *
+ * Only a delivery marks the intent. copyToCache swallows IO failures and
+ * returns nothing, so marking unconditionally turned a transient copy failure
+ * into a permanently unrecoverable share — the intent was spent with no file
+ * ever reaching Dart. Re-resolving a genuinely empty intent costs nothing.
+ */
+internal fun shouldMarkDelivered(resolvedCount: Int): Boolean = resolvedCount > 0
+
+/**
  * Holds resolved shares until Dart's EventChannel listener attaches.
  *
  * Shares can be resolved before Flutter is listening — an `eventSink?.success`
@@ -132,6 +142,18 @@ class SharePlugin(
         private const val METHOD_CHANNEL = "com.ventoux.paperlessgo/share"
         private const val EVENT_CHANNEL = "com.ventoux.paperlessgo/share_stream"
         private const val EXTRA_DELIVERED = "com.ventoux.paperlessgo.SHARE_DELIVERED"
+
+        /**
+         * Whether to emit the verbose share trace.
+         *
+         * These lines carry the user's real filenames and provider URIs, and
+         * Log.d compiles into release builds — the same leak that got the Dart
+         * debugPrints removed. Log.isLoggable is false by default at DEBUG
+         * level, so this is off everywhere until someone opts in with:
+         *
+         *   adb shell setprop log.tag.PaperlessShare DEBUG
+         */
+        private fun verbose(): Boolean = Log.isLoggable(TAG, Log.DEBUG)
     }
 
     fun register(flutterEngine: FlutterEngine) {
@@ -141,7 +163,7 @@ class SharePlugin(
                     "getInitialShare" -> {
                         val current = activity.intent
                         val files = if (current == null || wasDelivered(current)) {
-                            Log.d(TAG, "getInitialShare: intent already delivered, skipping")
+                            if (verbose()) Log.d(TAG, "getInitialShare: intent already delivered, skipping")
                             JSONArray()
                         } else {
                             // Marked only on a non-empty result: copyToCache
@@ -150,7 +172,7 @@ class SharePlugin(
                             // make the share unrecoverable. Re-resolving a
                             // genuinely empty intent costs nothing.
                             resolveIntent(current).also {
-                                if (it.length() > 0) markDelivered(current)
+                                if (shouldMarkDelivered(it.length())) markDelivered(current)
                             }
                         }
                         result.success(files.toString())
@@ -162,7 +184,7 @@ class SharePlugin(
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL)
             .setStreamHandler(object : EventChannel.StreamHandler {
                 override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
-                    Log.d(TAG, "onListen: replaying ${deliveries.bufferedCount} buffered share(s)")
+                    if (verbose()) Log.d(TAG, "onListen: replaying ${deliveries.bufferedCount} buffered share(s)")
                     deliveries.attach { events.success(it) }
                 }
 
@@ -173,16 +195,16 @@ class SharePlugin(
     }
 
     fun onNewIntent(intent: Intent) {
-        Log.d(TAG, "onNewIntent: action=${intent.action} data=${intent.data} type=${intent.type}")
+        if (verbose()) Log.d(TAG, "onNewIntent: action=${intent.action} data=${intent.data} type=${intent.type}")
         if (wasDelivered(intent)) {
-            Log.d(TAG, "onNewIntent: intent already delivered, skipping")
+            if (verbose()) Log.d(TAG, "onNewIntent: intent already delivered, skipping")
             return
         }
         val files = resolveIntent(intent)
-        Log.d(TAG, "onNewIntent: resolved ${files.length()} file(s)")
-        // See getInitialShare: an empty result means nothing was delivered, so
-        // the intent stays open rather than being burned on a failed copy.
-        if (files.length() == 0) return
+        if (verbose()) Log.d(TAG, "onNewIntent: resolved ${files.length()} file(s)")
+        // See shouldMarkDelivered: an empty result means nothing was delivered,
+        // so the intent stays open rather than being burned on a failed copy.
+        if (!shouldMarkDelivered(files.length())) return
         markDelivered(intent)
 
         deliveries.deliver(files.toString())
@@ -211,7 +233,7 @@ class SharePlugin(
             ShareSource.INTENT_DATA -> intent.data?.let { listOf(it) } ?: emptyList()
             ShareSource.NONE -> emptyList()
         }
-        Log.d(TAG, "resolveIntent: action=${intent.action} extracted ${uris.size} uri(s): $uris")
+        if (verbose()) Log.d(TAG, "resolveIntent: action=${intent.action} extracted ${uris.size} uri(s): $uris")
 
         val results = JSONArray()
         for (uri in uris) {
@@ -226,12 +248,12 @@ class SharePlugin(
             val displayName = queryDisplayName(uri) ?: "shared_${System.currentTimeMillis()}"
             val mimeType = intentMimeType ?: resolver.getType(uri)
             val targetFile = File(activity.cacheDir, "share_${System.currentTimeMillis()}_$displayName")
-            Log.d(TAG, "copyToCache: uri=$uri displayName=$displayName mimeType=$mimeType target=${targetFile.absolutePath}")
+            if (verbose()) Log.d(TAG, "copyToCache: uri=$uri displayName=$displayName mimeType=$mimeType target=${targetFile.absolutePath}")
             val copied = resolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(targetFile).use { output -> input.copyTo(output) }
                 true
             } ?: false
-            Log.d(TAG, "copyToCache: copied=$copied exists=${targetFile.exists()} size=${targetFile.length()}")
+            if (verbose()) Log.d(TAG, "copyToCache: copied=$copied exists=${targetFile.exists()} size=${targetFile.length()}")
             if (!copied) return null
 
             JSONObject()
@@ -239,7 +261,7 @@ class SharePlugin(
                 .put("filename", displayName)
                 .put("mimeType", mimeType)
         } catch (e: Exception) {
-            Log.e(TAG, "copyToCache failed for uri=$uri: ${e.javaClass.simpleName}: ${e.message}", e)
+            Log.e(TAG, "copyToCache failed: ${e.javaClass.simpleName}")
             null
         }
     }
