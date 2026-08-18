@@ -1,7 +1,10 @@
-# 18 — Session Handoff (2026-08-18) — share intent fixed on-device, upload queue hardened, PR #25 open
+# 18 — Session Handoff (2026-08-18) — share intent fixed on-device, upload queue hardened, PR #25 MERGED
 
-Branch `fix/share-intent-and-upload-queue`, PR **#25**, 13 commits, CI green as of `a7168f1`.
-Nothing merged to `main`. The live v1.1.8 release contains **none** of this.
+PR **#25** was rebase-merged into `main` on 2026-08-18 (`215de68`). 21 commits, CI green,
+`main` re-verified locally afterwards: 262 Dart tests, `flutter analyze` clean.
+
+**Not released.** The live v1.1.8 contains none of this — shipping it needs a version bump and a
+release build. That is the next decision, not more queue work.
 
 ---
 
@@ -9,9 +12,9 @@ Nothing merged to `main`. The live v1.1.8 release contains **none** of this.
 
 | | |
 |---|---|
-| Branch | `fix/share-intent-and-upload-queue` → PR #25 |
-| Head | `846932e` |
-| Tests | 259 Dart, 24 Kotlin, `flutter analyze` clean |
+| Branch | `fix/share-intent-and-upload-queue` → PR #25, **merged** |
+| Head | `215de68` on `main` |
+| Tests | 262 Dart, 24 Kotlin, `flutter analyze` clean |
 | Builds | debug + profile + release all verified |
 | Device | Verified on Pixel 9 Pro Fold (`4A111FDKD0000C`) |
 
