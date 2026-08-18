@@ -85,7 +85,7 @@ class ShareDeliveryBufferTest {
 class ShareMarkOnDeliveryTest {
     @Test
     fun `a resolved file burns the intent`() {
-        assertTrue(shouldMarkDelivered(1))
+        assertTrue(shouldMarkDelivered(resolvedCount = 1, requestedCount = 1))
     }
 
     @Test
@@ -93,12 +93,25 @@ class ShareMarkOnDeliveryTest {
         // copyToCache swallows IO failures and returns nothing. Marking
         // unconditionally turned a transient copy failure into a permanently
         // unrecoverable share — cost a rebuild to find on device.
-        assertFalse(shouldMarkDelivered(0))
+        assertFalse(shouldMarkDelivered(resolvedCount = 0, requestedCount = 1))
     }
 
     @Test
-    fun `a multi-file share burns the intent once`() {
-        assertTrue(shouldMarkDelivered(3))
+    fun `a fully delivered multi-file share burns the intent`() {
+        assertTrue(shouldMarkDelivered(resolvedCount = 3, requestedCount = 3))
+    }
+
+    @Test
+    fun `a PARTIAL multi-file share does not burn the intent`() {
+        // ACTION_SEND_MULTIPLE with one failed copy out of three: marking on
+        // "non-empty" delivered two files and destroyed the third with no
+        // trace, because the intent was spent.
+        assertFalse(shouldMarkDelivered(resolvedCount = 2, requestedCount = 3))
+    }
+
+    @Test
+    fun `an intent that requested nothing is never marked`() {
+        assertFalse(shouldMarkDelivered(resolvedCount = 0, requestedCount = 0))
     }
 }
 
@@ -124,16 +137,23 @@ class ShareDeliveryMarkTest {
     }
 
     @Test
-    fun `a task restored after process death does not re-deliver the share`() {
+    fun `a share already delivered before a restore is not delivered twice`() {
         // Measured on a Pixel 9 Pro Fold: kill the process, relaunch from
         // Recents, and the share was resolved and copied a second time —
         // neither the intent extra nor LAUNCHED_FROM_HISTORY survived.
-        assertTrue(isAlreadyDelivered(marked = false, flags = 0, restoredTask = true))
+        assertTrue(
+            isAlreadyDelivered(marked = false, flags = 0, deliveredBeforeRestore = true),
+        )
     }
 
     @Test
-    fun `a fresh launch is not treated as a restore`() {
-        assertFalse(isAlreadyDelivered(marked = false, flags = 0, restoredTask = false))
+    fun `a restore BEFORE any delivery still delivers the share`() {
+        // The blunt version of this guard keyed on "savedInstanceState != null",
+        // which is true for an Activity recreated before Dart ever asked for
+        // the share — suppressing it dropped the file permanently.
+        assertFalse(
+            isAlreadyDelivered(marked = false, flags = 0, deliveredBeforeRestore = false),
+        )
     }
 
     @Test

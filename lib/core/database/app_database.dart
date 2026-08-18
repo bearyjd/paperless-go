@@ -87,6 +87,15 @@ class PendingUploads extends Table {
   IntColumn get retryCount => integer().withDefault(const Constant(0))();
   TextColumn get lastError => text().nullable()();
   BoolColumn get isFailed => boolean().withDefault(const Constant(false))();
+
+  /// The server this upload was queued for.
+  ///
+  /// Without it the drain sends every pending row to whatever server happens to
+  /// be active. Switching profiles emits an unauthenticated->authenticated edge,
+  /// which triggers a drain, so documents queued for account A were uploaded to
+  /// account B. Nullable only because rows predating this column exist; the
+  /// drain refuses to send those rather than guess.
+  TextColumn get serverUrl => text().nullable()();
 }
 
 class LockedDocuments extends Table {
@@ -141,7 +150,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -163,6 +172,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 7) {
         await migrator.addColumn(pendingUploads, pendingUploads.isFailed);
+      }
+      if (from < 8) {
+        await migrator.addColumn(pendingUploads, pendingUploads.serverUrl);
       }
     },
   );

@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../api/api_providers.dart';
 import '../api/paperless_api.dart';
+import '../api/upload_retry_policy.dart';
 import '../auth/auth_provider.dart';
 import '../database/app_database.dart';
 import '../database/cache_provider.dart';
@@ -99,12 +100,26 @@ class UploadQueueService extends _$UploadQueueService {
         return;
       }
       final store = await ref.read(pendingUploadStoreProvider.future);
+      final activeServer = ref.read(authStateProvider).valueOrNull?.serverUrl;
       final pending = await cache.getPendingUploads();
 
       const maxRetries = 5;
       for (final upload in pending) {
         if (upload.isFailed) {
           await _releaseStaleFailure(store, upload);
+          continue;
+        }
+
+        // Never send someone's document to the wrong account. Switching server
+        // profiles calls loginWithToken, which emits AsyncLoading before the
+        // new authenticated state — the auth listener reads that as an
+        // unauthenticated->authenticated edge and drains immediately, so
+        // without this check every row queued for profile A went to profile B.
+        //
+        // A null serverUrl means the row predates this column. Skipping rather
+        // than guessing: uploading to the wrong server is worse than waiting,
+        // and the row keeps its file either way.
+        if (upload.serverUrl != activeServer) {
           continue;
         }
 
@@ -145,11 +160,21 @@ class UploadQueueService extends _$UploadQueueService {
           await cache.removePendingUpload(upload.id);
           uploaded = true;
         } catch (e) {
-          await cache.incrementRetryCount(
-            upload.id,
-            e.toString(),
-            maxRetries: maxRetries,
-          );
+          if (isUnreachableServerError(e)) {
+            // Says nothing about the document — offline, server unreachable, no
+            // session. Consuming a retry here meant five launches out of signal
+            // terminally failed a perfectly good upload, and the drain then
+            // skipped it forever even once connectivity came back. Made worse
+            // by ConnectivityNotifier optimistically reporting online until its
+            // first real check lands, so the startup drain runs while offline.
+            await cache.recordUploadError(upload.id, e.toString());
+          } else {
+            await cache.incrementRetryCount(
+              upload.id,
+              e.toString(),
+              maxRetries: maxRetries,
+            );
+          }
         }
 
         // Outside the try on purpose. The document is already on the server by

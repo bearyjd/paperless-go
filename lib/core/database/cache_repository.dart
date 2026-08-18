@@ -193,6 +193,7 @@ class CacheRepository {
   Future<void> enqueueUpload({
     required String filePath,
     required String filename,
+    String? serverUrl,
     String? title,
     int? correspondent,
     int? documentType,
@@ -202,6 +203,7 @@ class CacheRepository {
     await _db.into(_db.pendingUploads).insert(PendingUploadsCompanion.insert(
           filePath: filePath,
           filename: filename,
+          serverUrl: Value(serverUrl),
           title: Value(title),
           correspondent: Value(correspondent),
           documentType: Value(documentType),
@@ -238,6 +240,15 @@ class CacheRepository {
       lastError: Value(error),
       isFailed: const Value(true),
     ));
+  }
+
+  /// Records why an attempt failed without counting it against the retry
+  /// budget. For failures that say nothing about the document — offline, server
+  /// unreachable, not signed in — where consuming a retry would let five
+  /// launches in a tunnel terminally fail a perfectly good upload.
+  Future<void> recordUploadError(int id, String error) async {
+    await (_db.update(_db.pendingUploads)..where((t) => t.id.equals(id)))
+        .write(PendingUploadsCompanion(lastError: Value(error)));
   }
 
   /// Records a failed upload attempt. Once [maxRetries] is reached the

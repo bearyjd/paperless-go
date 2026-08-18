@@ -44,6 +44,12 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Default for every build type. The Flutter Gradle plugin also creates a
+        // `profile` variant, which is not enumerated in buildTypes below — setting
+        // the placeholder only on debug/release left profile with an unresolved
+        // ${appLabel} and hard-failed manifest merging on `flutter build --profile`.
+        manifestPlaceholders["appLabel"] = "Paperless Go"
     }
 
     signingConfigs {
@@ -69,7 +75,6 @@ android {
             manifestPlaceholders["appLabel"] = "Paperless Go (debug)"
         }
         release {
-            manifestPlaceholders["appLabel"] = "Paperless Go"
             isMinifyEnabled = true
             isShrinkResources = true
             signingConfig = if (keystorePropertiesFile.exists()) {
