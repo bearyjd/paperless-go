@@ -104,6 +104,19 @@ class ShareDeliveryMarkTest {
     }
 
     @Test
+    fun `a task restored after process death does not re-deliver the share`() {
+        // Measured on a Pixel 9 Pro Fold: kill the process, relaunch from
+        // Recents, and the share was resolved and copied a second time —
+        // neither the intent extra nor LAUNCHED_FROM_HISTORY survived.
+        assertTrue(isAlreadyDelivered(marked = false, flags = 0, restoredTask = true))
+    }
+
+    @Test
+    fun `a fresh launch is not treated as a restore`() {
+        assertFalse(isAlreadyDelivered(marked = false, flags = 0, restoredTask = false))
+    }
+
+    @Test
     fun `unrelated intent flags do not suppress a real share`() {
         assertFalse(
             isAlreadyDelivered(
