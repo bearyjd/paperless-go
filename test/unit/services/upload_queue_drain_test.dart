@@ -444,6 +444,52 @@ void main() {
       expect(await File(persisted).exists(), isFalse);
     });
 
+    /// A launch with no usable server: `paperlessApiProvider` throws, which is
+    /// what a signed-out or misconfigured app does on every drain.
+    ProviderContainer signedOutContainer() {
+      final c = ProviderContainer(
+        overrides: [
+          cacheRepositoryProvider.overrideWithValue(cache),
+          pendingUploadStoreProvider.overrideWith((ref) async => store),
+          connectivityNotifierProvider.overrideWith(_FakeOnline.new),
+          authStateProvider.overrideWith(_FakeAuthenticated.new),
+          paperlessApiProvider.overrideWith(
+            (ref) => throw const NotAuthenticatedException(),
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    test('an expired row is released even with no server configured', () async {
+      // Regression: the drain returned as soon as paperlessApiProvider threw,
+      // so the retention sweep never ran for a signed-out user — who then held
+      // queued documents in non-evictable storage forever.
+      final path = await queuedFile('signed-out.pdf');
+      await ageRow((await cache.getPendingUploads()).single.id,
+          const Duration(days: 31));
+
+      await signedOutContainer()
+          .read(uploadQueueServiceProvider.notifier)
+          .drainNow();
+
+      expect(await File(path).exists(), isFalse,
+          reason: 'retention cannot depend on being signed in');
+      expect((await cache.getPendingUploads()).single.isFailed, isTrue);
+    });
+
+    test('a recent row is untouched while signed out', () async {
+      final path = await queuedFile('still-waiting.pdf');
+
+      await signedOutContainer()
+          .read(uploadQueueServiceProvider.notifier)
+          .drainNow();
+
+      expect(await File(path).exists(), isTrue);
+      expect((await cache.getPendingUploads()).single.isFailed, isFalse);
+    });
+
     test('a recent row for another server is left completely alone', () async {
       final source = File(p.join(root.path, 'src', 'other-recent.pdf'))
         ..createSync(recursive: true)

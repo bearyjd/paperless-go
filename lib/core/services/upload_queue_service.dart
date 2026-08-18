@@ -123,25 +123,42 @@ class UploadQueueService extends _$UploadQueueService {
   Future<void> _drainOnce() async {
     try {
       final cache = ref.read(cacheRepositoryProvider);
+      final store = await ref.read(pendingUploadStoreProvider.future);
+      final pending = await cache.getPendingUploads();
+
+      // The retention sweep is a separate pass, ahead of resolving the API on
+      // purpose. Anything that stops the drain acting on a row also stops it
+      // being cleaned up, and the biggest of those is having no server at all:
+      // as a guard inside the upload pass, retention never ran for a
+      // signed-out user, who then held queued documents forever.
+      final live = <PendingUpload>[];
+      for (final upload in pending) {
+        try {
+          if (await _releaseIfExpired(cache, store, upload)) continue;
+        } catch (e) {
+          // One unreadable row must not strand the sweep for every row behind
+          // it — the whole point of the sweep is that it always runs.
+          assert(() {
+            debugPrint('Upload queue retention skipped a row: $e');
+            return true;
+          }());
+          continue;
+        }
+        live.add(upload);
+      }
+
       final PaperlessApi api;
       try {
         api = ref.read(paperlessApiProvider);
       } catch (_) {
-        // Not logged in — skip drain
+        // Not logged in — nothing to upload against, but the sweep above has
+        // already run.
         return;
       }
-      final store = await ref.read(pendingUploadStoreProvider.future);
       final activeServer = ref.read(authStateProvider).valueOrNull?.serverUrl;
-      final pending = await cache.getPendingUploads();
 
       const maxRetries = 5;
-      for (final upload in pending) {
-        // Retention first, ahead of every other skip. Both skips below stop the
-        // drain acting on the row, so anything checked after them can never be
-        // cleaned up — which is how an unreachable server and a deleted profile
-        // both ended up holding documents forever.
-        if (await _releaseIfExpired(cache, store, upload)) continue;
-
+      for (final upload in live) {
         if (upload.isFailed) continue;
 
         // Never send someone's document to the wrong account. Switching server
