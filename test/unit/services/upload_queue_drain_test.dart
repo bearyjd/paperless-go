@@ -54,6 +54,12 @@ class _FakeAuthenticated extends AuthState {
       );
 }
 
+/// Nobody signed in, which is also why `paperlessApiProvider` throws.
+class _FakeSignedOut extends AuthState {
+  @override
+  Future<AuthStatus> build() async => const AuthStatus.unauthenticated();
+}
+
 /// Starts unauthenticated and flips once [authenticate] is called, the way a
 /// real launch restores a session after the queue service has already built.
 class _DeferredAuth extends AuthState {
@@ -473,15 +479,22 @@ void main() {
       expect(await File(persisted).exists(), isFalse);
     });
 
-    /// A launch with no usable server: `paperlessApiProvider` throws, which is
-    /// what a signed-out or misconfigured app does on every drain.
+    /// A genuinely signed-out launch.
+    ///
+    /// The auth state is unauthenticated AND the API throws, because in the app
+    /// the second follows from the first: `dioProvider` throws
+    /// `NotAuthenticatedException` precisely when authState is not
+    /// authenticated (`auth_provider.dart:90-93`). An authenticated auth state
+    /// with a throwing API is a combination the app cannot produce, and a
+    /// fixture built that way would also leave `activeServer` non-null, which
+    /// is not what the drain sees when nobody is signed in.
     ProviderContainer signedOutContainer() {
       final c = ProviderContainer(
         overrides: [
           cacheRepositoryProvider.overrideWithValue(cache),
           pendingUploadStoreProvider.overrideWith((ref) async => store),
           connectivityNotifierProvider.overrideWith(_FakeOnline.new),
-          authStateProvider.overrideWith(_FakeAuthenticated.new),
+          authStateProvider.overrideWith(_FakeSignedOut.new),
           paperlessApiProvider.overrideWith(
             (ref) => throw const NotAuthenticatedException(),
           ),
