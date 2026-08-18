@@ -80,8 +80,20 @@ GoRouter router(Ref ref) {
     ),
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
-      // Don't redirect while auth state is still loading from storage
-      if (authState.isLoading && !authState.hasError) return null;
+      final scheme = state.uri.scheme;
+      final isPlatformUri =
+          scheme == 'content' || scheme == 'file' || scheme == 'paperlessgo';
+
+      // Don't redirect while auth state is still loading from storage.
+      //
+      // A platform-pushed URI is the exception: it is never a real route, so
+      // returning null here let it fall through to errorBuilder and flash
+      // "Page not found" for the frames between the share arriving and the
+      // keystore read completing. Park it on a real screen instead — once auth
+      // resolves, refreshListenable re-runs this and sends it where it belongs.
+      if (authState.isLoading && !authState.hasError) {
+        return isPlatformUri ? '/inbox' : null;
+      }
       final isAuthenticated = authState.valueOrNull?.isAuthenticated ?? false;
       final isLoginRoute = state.matchedLocation == '/login';
 
@@ -93,8 +105,7 @@ GoRouter router(Ref ref) {
       // app also sets Intent.data) aren't guaranteed a second redirect pass,
       // and '/' has no route of its own since Dashboard was retired, so a
       // one-hop '/' would show "Page not found" instead of resolving further.
-      final scheme = state.uri.scheme;
-      if (scheme == 'content' || scheme == 'file' || scheme == 'paperlessgo') {
+      if (isPlatformUri) {
         if (!isAuthenticated) return '/login';
         if (scheme == 'paperlessgo') {
           final path = state.uri.host;
