@@ -58,29 +58,37 @@ internal fun selectSource(action: String?, dataScheme: String?): ShareSource = w
  * Three signals, because no single one covers every path:
  *  - [marked], an extra written onto the intent, covers a second query within
  *    one process;
- *  - [restoredTask] (savedInstanceState != null) is the only one that survives
- *    process death — measured on device, the other two do not;
+ *  - [deliveredBeforeRestore] — a flag written into the Activity's saved state
+ *    once a share has actually been handed to Dart. Survives process death,
+ *    which the other two do not (measured on device). It is deliberately NOT
+ *    "savedInstanceState != null": an Activity can be recreated with saved
+ *    state BEFORE Dart ever called getInitialShare, and treating that as proof
+ *    of delivery drops the file permanently;
  *  - LAUNCHED_FROM_HISTORY catches a Recents relaunch of an intent that was
  *    consumed before the mark existed.
  */
 internal fun isAlreadyDelivered(
     marked: Boolean,
     flags: Int,
-    restoredTask: Boolean = false,
+    deliveredBeforeRestore: Boolean = false,
 ): Boolean =
     marked ||
-        restoredTask ||
+        deliveredBeforeRestore ||
         (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
 
 /**
- * Whether resolving an intent should burn it, given how many files came back.
+ * Whether resolving an intent should burn it.
  *
- * Only a delivery marks the intent. copyToCache swallows IO failures and
- * returns nothing, so marking unconditionally turned a transient copy failure
- * into a permanently unrecoverable share — the intent was spent with no file
- * ever reaching Dart. Re-resolving a genuinely empty intent costs nothing.
+ * Marks only when EVERY requested URI was delivered. copyToCache swallows IO
+ * failures and returns nothing for that URI, so:
+ *  - resolving nothing must not spend the intent, or a transient copy failure
+ *    makes the share permanently unrecoverable;
+ *  - a PARTIAL result must not spend it either. ACTION_SEND_MULTIPLE with one
+ *    failed copy out of three would otherwise deliver two files and destroy the
+ *    third with no trace.
  */
-internal fun shouldMarkDelivered(resolvedCount: Int): Boolean = resolvedCount > 0
+internal fun shouldMarkDelivered(resolvedCount: Int, requestedCount: Int): Boolean =
+    requestedCount > 0 && resolvedCount >= requestedCount
 
 /**
  * Holds resolved shares until Dart's EventChannel listener attaches.
@@ -133,7 +141,8 @@ internal class ShareDeliveryBuffer {
  */
 class SharePlugin(
     private val activity: Activity,
-    private val isRestoredTask: () -> Boolean = { false },
+    private val deliveredBeforeRestore: () -> Boolean = { false },
+    private val onDelivered: () -> Unit = {},
 ) {
     private val deliveries = ShareDeliveryBuffer()
 
@@ -171,8 +180,11 @@ class SharePlugin(
                             // burning the intent on a transient failure would
                             // make the share unrecoverable. Re-resolving a
                             // genuinely empty intent costs nothing.
-                            resolveIntent(current).also {
-                                if (shouldMarkDelivered(it.length())) markDelivered(current)
+                            resolveIntent(current).let { resolved ->
+                                if (shouldMarkDelivered(resolved.files.length(), resolved.requested)) {
+                                    markDelivered(current)
+                                }
+                                resolved.files
                             }
                         }
                         result.success(files.toString())
@@ -200,11 +212,12 @@ class SharePlugin(
             if (verbose()) Log.d(TAG, "onNewIntent: intent already delivered, skipping")
             return
         }
-        val files = resolveIntent(intent)
+        val resolved = resolveIntent(intent)
+        val files = resolved.files
         if (verbose()) Log.d(TAG, "onNewIntent: resolved ${files.length()} file(s)")
         // See shouldMarkDelivered: an empty result means nothing was delivered,
         // so the intent stays open rather than being burned on a failed copy.
-        if (!shouldMarkDelivered(files.length())) return
+        if (!shouldMarkDelivered(files.length(), resolved.requested)) return
         markDelivered(intent)
 
         deliveries.deliver(files.toString())
@@ -213,15 +226,21 @@ class SharePlugin(
     private fun wasDelivered(intent: Intent): Boolean = isAlreadyDelivered(
         marked = intent.getBooleanExtra(EXTRA_DELIVERED, false),
         flags = intent.flags,
-        restoredTask = isRestoredTask(),
+        deliveredBeforeRestore = deliveredBeforeRestore(),
     )
 
     private fun markDelivered(intent: Intent) {
         intent.putExtra(EXTRA_DELIVERED, true)
+        // Also persist it into the Activity's saved state, which is the only
+        // signal that survives process death.
+        onDelivered()
     }
 
-    private fun resolveIntent(intent: Intent?): JSONArray {
-        if (intent == null) return JSONArray()
+    /** Files that copied, alongside how many the intent actually asked for. */
+    private data class Resolved(val files: JSONArray, val requested: Int)
+
+    private fun resolveIntent(intent: Intent?): Resolved {
+        if (intent == null) return Resolved(JSONArray(), 0)
         val uris: List<Uri> = when (selectSource(intent.action, intent.data?.scheme)) {
             ShareSource.EXTRA_STREAM -> when (intent.action) {
                 Intent.ACTION_SEND ->
@@ -239,7 +258,7 @@ class SharePlugin(
         for (uri in uris) {
             copyToCache(uri, intent.type)?.let { results.put(it) }
         }
-        return results
+        return Resolved(results, uris.size)
     }
 
     private fun copyToCache(uri: Uri, intentMimeType: String?): JSONObject? {

@@ -9,37 +9,44 @@ class MainActivity : FlutterFragmentActivity() {
     private lateinit var sharePlugin: SharePlugin
 
     /**
-     * True when this Activity is being rebuilt for a task that already existed
-     * — the process was killed and the user came back via Recents, so Android
-     * restores the task along with the intent that originally started it.
+     * Whether a share was already handed to Dart before this Activity was
+     * rebuilt.
      *
-     * That restored intent is still a share intent, so without this the share
-     * is resolved and delivered a second time: the file is re-copied to cache
-     * and the user is dropped back into an upload flow they already finished
-     * or dismissed. Verified on a Pixel 9 Pro Fold — neither an extra written
-     * onto the intent nor FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY survives process
-     * death, but savedInstanceState does, because it is exactly the signal
-     * that this is a restore rather than a fresh launch.
+     * A restored task still carries the intent that started it, so without a
+     * guard the share is resolved and delivered a second time: the file is
+     * re-copied to cache and the user is dropped back into an upload flow they
+     * already finished. Verified on a Pixel 9 Pro Fold — neither an extra
+     * written onto the intent nor FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY survives
+     * process death.
+     *
+     * This is persisted in the saved-state bundle, which does survive, and is
+     * set only once a delivery actually happened. Using "savedInstanceState is
+     * non-null" instead would suppress a share whose Activity was recreated
+     * BEFORE Dart ever asked for it, dropping the file permanently.
      */
-    private var isRestoredTask = false
+    private var shareDelivered = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         PdfRendererPlugin.register(flutterEngine)
-        sharePlugin = SharePlugin(this) { isRestoredTask }
+        sharePlugin = SharePlugin(
+            this,
+            deliveredBeforeRestore = { shareDelivered },
+            onDelivered = { shareDelivered = true },
+        )
         sharePlugin.register(flutterEngine)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        isRestoredTask = savedInstanceState != null
+        shareDelivered = savedInstanceState?.getBoolean(STATE_SHARE_DELIVERED, false) ?: false
         stripDataFromShareIntent(intent)
         super.onCreate(savedInstanceState)
     }
 
     override fun onNewIntent(intent: Intent) {
-        // A genuinely new intent, so this is no longer a restore — a share
-        // arriving now must be delivered even though the task was resumed.
-        isRestoredTask = false
+        // A genuinely new intent carries a share that has not been delivered
+        // yet, whatever happened to the previous one.
+        shareDelivered = false
         stripDataFromShareIntent(intent)
         super.onNewIntent(intent)
         // Activity.intent otherwise still points at whatever launched the process,
@@ -47,6 +54,15 @@ class MainActivity : FlutterFragmentActivity() {
         // the *stale* intent and returns zero files for a share that just arrived.
         setIntent(intent)
         sharePlugin.onNewIntent(intent)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(STATE_SHARE_DELIVERED, shareDelivered)
+    }
+
+    companion object {
+        private const val STATE_SHARE_DELIVERED = "com.ventoux.paperlessgo.SHARE_DELIVERED"
     }
 
     /**

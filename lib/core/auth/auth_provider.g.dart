@@ -41,7 +41,7 @@ final authServiceProvider = AutoDisposeProvider<AuthService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AuthServiceRef = AutoDisposeProviderRef<AuthService>;
-String _$dioHash() => r'd9465f2619e7b4985ce531fad4c779897f2ce107';
+String _$dioHash() => r'f9b45df15a59afb100f3dca72acbec576ef5e6d1';
 
 /// Provides an authenticated Dio instance. Throws if not authenticated.
 /// Closes the previous instance when auth state changes.
@@ -61,7 +61,7 @@ final dioProvider = Provider<Dio>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DioRef = ProviderRef<Dio>;
-String _$authStateHash() => r'd155cad7e13cb4eb541f84127a8bcde358ea1502';
+String _$authStateHash() => r'800fb0975e44908d56e2e32856dbfa62a55340d1';
 
 /// See also [AuthState].
 @ProviderFor(AuthState)

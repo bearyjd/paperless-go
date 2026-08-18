@@ -121,7 +121,11 @@ void main() {
       ..createSync(recursive: true)
       ..writeAsStringSync(contents);
     final persisted = await store.persist(source.path);
-    await cache.enqueueUpload(filePath: persisted, filename: name);
+    await cache.enqueueUpload(
+      filePath: persisted,
+      filename: name,
+      serverUrl: 'https://paperless.example.com',
+    );
     return persisted;
   }
 
@@ -162,7 +166,10 @@ void main() {
     await drain();
 
     final pending = (await cache.getPendingUploads()).single;
-    expect(pending.retryCount, 1);
+    // retryCount stays 0: an unreachable server says nothing about the
+    // document, so it must not spend the budget. See the offline test below.
+    expect(pending.retryCount, 0);
+    expect(pending.lastError, isNotNull);
     expect(pending.isFailed, isFalse);
     expect(await File(path).exists(), isTrue);
   });
@@ -238,6 +245,7 @@ void main() {
     await freshCache.enqueueUpload(
       filePath: path,
       filename: 'from-last-run.pdf',
+      serverUrl: 'https://paperless.example.com',
     );
 
     final fresh = ProviderContainer(
@@ -278,6 +286,7 @@ void main() {
     await freshCache.enqueueUpload(
       filePath: path,
       filename: 'after-login.pdf',
+      serverUrl: 'https://paperless.example.com',
     );
 
     final auth = _DeferredAuth();
@@ -310,6 +319,78 @@ void main() {
     expect(freshApi.uploaded, [path],
         reason: 'logging in must flush the queue on its own');
     expect(await freshCache.getPendingUploads(), isEmpty);
+  });
+
+  test('a row queued for another server is never uploaded to this one',
+      () async {
+    // Regression: switching profiles calls loginWithToken, which emits
+    // AsyncLoading before authenticated. The auth listener reads that as an
+    // unauthenticated->authenticated edge and drains, so every document queued
+    // for account A was uploaded to account B.
+    final source = File(p.join(root.path, 'src', 'other-account.pdf'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync('PDF');
+    final persisted = await store.persist(source.path);
+    await cache.enqueueUpload(
+      filePath: persisted,
+      filename: 'other-account.pdf',
+      serverUrl: 'https://someone-elses-server.example.com',
+    );
+
+    await drain();
+
+    expect(api.uploaded, isEmpty,
+        reason: 'this document belongs to a different account');
+    expect(await cache.getPendingUploads(), hasLength(1),
+        reason: 'it waits for its own server, it is not discarded');
+    expect(await File(persisted).exists(), isTrue);
+  });
+
+  test('a row with no recorded server is skipped rather than guessed at',
+      () async {
+    final source = File(p.join(root.path, 'src', 'legacy.pdf'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync('PDF');
+    final persisted = await store.persist(source.path);
+    await cache.enqueueUpload(filePath: persisted, filename: 'legacy.pdf');
+
+    await drain();
+
+    expect(api.uploaded, isEmpty);
+    expect(await cache.getPendingUploads(), hasLength(1));
+  });
+
+  test('being offline does not consume the retry budget', () async {
+    // Regression: ConnectivityNotifier reports online until its first real
+    // check lands, so the startup drain runs while offline. Counting those as
+    // retries meant five launches out of signal terminally failed a good
+    // upload, and the drain then skipped it forever once signal came back.
+    await queuedFile('in-a-tunnel.pdf');
+    api.failure = DioException(
+      requestOptions: RequestOptions(path: '/'),
+      type: DioExceptionType.connectionError,
+    );
+
+    for (var launch = 0; launch < 6; launch++) {
+      await drain();
+    }
+
+    final row = (await cache.getPendingUploads()).single;
+    expect(row.retryCount, 0, reason: 'unreachable server is not the document');
+    expect(row.isFailed, isFalse, reason: 'must still upload once back online');
+    expect(row.lastError, isNotNull, reason: 'the reason is still recorded');
+  });
+
+  test('a server-side rejection still consumes the retry budget', () async {
+    await queuedFile('rejected.pdf');
+    api.failure = DioException(
+      requestOptions: RequestOptions(path: '/'),
+      type: DioExceptionType.badResponse,
+    );
+
+    await drain();
+
+    expect((await cache.getPendingUploads()).single.retryCount, 1);
   });
 
   test('drains without a server configured are a no-op, not a crash', () async {

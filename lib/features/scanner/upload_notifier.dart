@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/api/api_error_mapper.dart';
 import '../../core/api/api_providers.dart';
+import '../../core/api/upload_retry_policy.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/database/cache_provider.dart';
 import '../../core/services/notification_service.dart';
@@ -200,48 +201,11 @@ class UploadNotifier extends _$UploadNotifier {
   /// Whether a failed upload should be parked in the queue rather than
   /// surfaced as a dead end.
   ///
-  /// The point is that the *document* must survive: a share that reached the
-  /// app and then hit an unreachable (or not-yet-configured) server has to
-  /// come back later, not vanish. So this covers three families:
-  ///
-  ///  - transport failures dio types explicitly (`connectionError`,
-  ///    `connectionTimeout`, `sendTimeout`);
-  ///  - `DioExceptionType.unknown`, which is how dio surfaces a wrapped
-  ///    `SocketException` — DNS failure against a self-hosted hostname is the
-  ///    single most likely way this app fails to reach its server;
-  ///  - [NotAuthenticatedException] from `dioProvider`, thrown when there is no
-  ///    server configured / no session at all. Deliberately a named type: a
-  ///    bare `StateError` match would also queue-and-retry every unrelated
-  ///    bad-state bug in the upload path, five times, silently.
-  ///
-  /// Deliberately excluded: `badResponse` (the server answered — a 4xx will
-  /// not fix itself on retry) and `receiveTimeout` (the body was fully sent,
-  /// so a retry risks a duplicate document).
-  ///
-  /// Note the duplicate risk is not exclusive to `receiveTimeout`: a connection
-  /// reset mid-transfer can also land after the server accepted the body. We
-  /// queue those anyway — losing the document is worse than uploading it twice
-  /// — but that is a judgement call, not a guarantee of exactly-once.
-  static bool shouldQueueForLater(Object e) {
-    if (e is NotAuthenticatedException) return true;
-    if (e is SocketException) return true;
-    if (e is DioException) {
-      switch (e.type) {
-        case DioExceptionType.connectionError:
-        case DioExceptionType.connectionTimeout:
-        case DioExceptionType.sendTimeout:
-          return true;
-        case DioExceptionType.unknown:
-          return e.error is SocketException;
-        case DioExceptionType.badResponse:
-        case DioExceptionType.receiveTimeout:
-        case DioExceptionType.cancel:
-        case DioExceptionType.badCertificate:
-          return false;
-      }
-    }
-    return false;
-  }
+  /// Delegates to [isUnreachableServerError] so this and the drain's
+  /// retry-accounting cannot drift apart — they have to agree on what counts as
+  /// "the server was unreachable" or a document either gets dropped here or
+  /// burns retries there.
+  static bool shouldQueueForLater(Object e) => isUnreachableServerError(e);
 
   Future<void> _enqueueForLater({
     required String filePath,
@@ -293,6 +257,10 @@ class UploadNotifier extends _$UploadNotifier {
       await cache.enqueueUpload(
         filePath: queuedPath,
         filename: filename,
+        // Binds the row to the account it was queued for. Switching profiles
+        // triggers a drain, and without this the drain would send it to
+        // whichever server is active then.
+        serverUrl: ref.read(authStateProvider).valueOrNull?.serverUrl,
         title: title,
         correspondent: correspondent,
         documentType: documentType,
@@ -303,6 +271,19 @@ class UploadNotifier extends _$UploadNotifier {
     } catch (e) {
       // Catches Error too, not just Exception: a drift failure here surfaces as
       // a StateError, which `on Exception` would let escape and wedge the UI.
+      //
+      // Release the persisted copy first. No queue row references it now, so
+      // neither a successful drain nor terminal-failure cleanup could ever
+      // reach it — it would sit in app-documents storage, holding the user's
+      // document, until they cleared app data.
+      if (queuedPath != filePath) {
+        try {
+          final store = await ref.read(pendingUploadStoreProvider.future);
+          await store.discard(queuedPath);
+        } catch (_) {
+          // Best effort; the enqueue failure below is what the user sees.
+        }
+      }
       state = UploadState(
         status: UploadStatus.failure,
         errorMessage: friendlyApiMessage(

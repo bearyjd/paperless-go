@@ -2133,6 +2133,17 @@ class $PendingUploadsTable extends PendingUploads
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _serverUrlMeta = const VerificationMeta(
+    'serverUrl',
+  );
+  @override
+  late final GeneratedColumn<String> serverUrl = GeneratedColumn<String>(
+    'server_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2147,6 +2158,7 @@ class $PendingUploadsTable extends PendingUploads
     retryCount,
     lastError,
     isFailed,
+    serverUrl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2241,6 +2253,12 @@ class $PendingUploadsTable extends PendingUploads
         isFailed.isAcceptableOrUnknown(data['is_failed']!, _isFailedMeta),
       );
     }
+    if (data.containsKey('server_url')) {
+      context.handle(
+        _serverUrlMeta,
+        serverUrl.isAcceptableOrUnknown(data['server_url']!, _serverUrlMeta),
+      );
+    }
     return context;
   }
 
@@ -2298,6 +2316,10 @@ class $PendingUploadsTable extends PendingUploads
         DriftSqlType.bool,
         data['${effectivePrefix}is_failed'],
       )!,
+      serverUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}server_url'],
+      ),
     );
   }
 
@@ -2320,6 +2342,15 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
   final int retryCount;
   final String? lastError;
   final bool isFailed;
+
+  /// The server this upload was queued for.
+  ///
+  /// Without it the drain sends every pending row to whatever server happens to
+  /// be active. Switching profiles emits an unauthenticated->authenticated edge,
+  /// which triggers a drain, so documents queued for account A were uploaded to
+  /// account B. Nullable only because rows predating this column exist; the
+  /// drain refuses to send those rather than guess.
+  final String? serverUrl;
   const PendingUpload({
     required this.id,
     required this.filePath,
@@ -2333,6 +2364,7 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
     required this.retryCount,
     this.lastError,
     required this.isFailed,
+    this.serverUrl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2361,6 +2393,9 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
       map['last_error'] = Variable<String>(lastError);
     }
     map['is_failed'] = Variable<bool>(isFailed);
+    if (!nullToAbsent || serverUrl != null) {
+      map['server_url'] = Variable<String>(serverUrl);
+    }
     return map;
   }
 
@@ -2390,6 +2425,9 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
           ? const Value.absent()
           : Value(lastError),
       isFailed: Value(isFailed),
+      serverUrl: serverUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUrl),
     );
   }
 
@@ -2411,6 +2449,7 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
       retryCount: serializer.fromJson<int>(json['retryCount']),
       lastError: serializer.fromJson<String?>(json['lastError']),
       isFailed: serializer.fromJson<bool>(json['isFailed']),
+      serverUrl: serializer.fromJson<String?>(json['serverUrl']),
     );
   }
   @override
@@ -2429,6 +2468,7 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
       'retryCount': serializer.toJson<int>(retryCount),
       'lastError': serializer.toJson<String?>(lastError),
       'isFailed': serializer.toJson<bool>(isFailed),
+      'serverUrl': serializer.toJson<String?>(serverUrl),
     };
   }
 
@@ -2445,6 +2485,7 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
     int? retryCount,
     Value<String?> lastError = const Value.absent(),
     bool? isFailed,
+    Value<String?> serverUrl = const Value.absent(),
   }) => PendingUpload(
     id: id ?? this.id,
     filePath: filePath ?? this.filePath,
@@ -2460,6 +2501,7 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
     retryCount: retryCount ?? this.retryCount,
     lastError: lastError.present ? lastError.value : this.lastError,
     isFailed: isFailed ?? this.isFailed,
+    serverUrl: serverUrl.present ? serverUrl.value : this.serverUrl,
   );
   PendingUpload copyWithCompanion(PendingUploadsCompanion data) {
     return PendingUpload(
@@ -2481,6 +2523,7 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
           : this.retryCount,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
       isFailed: data.isFailed.present ? data.isFailed.value : this.isFailed,
+      serverUrl: data.serverUrl.present ? data.serverUrl.value : this.serverUrl,
     );
   }
 
@@ -2498,7 +2541,8 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
           ..write('queuedAt: $queuedAt, ')
           ..write('retryCount: $retryCount, ')
           ..write('lastError: $lastError, ')
-          ..write('isFailed: $isFailed')
+          ..write('isFailed: $isFailed, ')
+          ..write('serverUrl: $serverUrl')
           ..write(')'))
         .toString();
   }
@@ -2517,6 +2561,7 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
     retryCount,
     lastError,
     isFailed,
+    serverUrl,
   );
   @override
   bool operator ==(Object other) =>
@@ -2533,7 +2578,8 @@ class PendingUpload extends DataClass implements Insertable<PendingUpload> {
           other.queuedAt == this.queuedAt &&
           other.retryCount == this.retryCount &&
           other.lastError == this.lastError &&
-          other.isFailed == this.isFailed);
+          other.isFailed == this.isFailed &&
+          other.serverUrl == this.serverUrl);
 }
 
 class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
@@ -2549,6 +2595,7 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
   final Value<int> retryCount;
   final Value<String?> lastError;
   final Value<bool> isFailed;
+  final Value<String?> serverUrl;
   const PendingUploadsCompanion({
     this.id = const Value.absent(),
     this.filePath = const Value.absent(),
@@ -2562,6 +2609,7 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
     this.retryCount = const Value.absent(),
     this.lastError = const Value.absent(),
     this.isFailed = const Value.absent(),
+    this.serverUrl = const Value.absent(),
   });
   PendingUploadsCompanion.insert({
     this.id = const Value.absent(),
@@ -2576,6 +2624,7 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
     this.retryCount = const Value.absent(),
     this.lastError = const Value.absent(),
     this.isFailed = const Value.absent(),
+    this.serverUrl = const Value.absent(),
   }) : filePath = Value(filePath),
        filename = Value(filename),
        queuedAt = Value(queuedAt);
@@ -2592,6 +2641,7 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
     Expression<int>? retryCount,
     Expression<String>? lastError,
     Expression<bool>? isFailed,
+    Expression<String>? serverUrl,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2606,6 +2656,7 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
       if (retryCount != null) 'retry_count': retryCount,
       if (lastError != null) 'last_error': lastError,
       if (isFailed != null) 'is_failed': isFailed,
+      if (serverUrl != null) 'server_url': serverUrl,
     });
   }
 
@@ -2622,6 +2673,7 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
     Value<int>? retryCount,
     Value<String?>? lastError,
     Value<bool>? isFailed,
+    Value<String?>? serverUrl,
   }) {
     return PendingUploadsCompanion(
       id: id ?? this.id,
@@ -2636,6 +2688,7 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
       retryCount: retryCount ?? this.retryCount,
       lastError: lastError ?? this.lastError,
       isFailed: isFailed ?? this.isFailed,
+      serverUrl: serverUrl ?? this.serverUrl,
     );
   }
 
@@ -2678,6 +2731,9 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
     if (isFailed.present) {
       map['is_failed'] = Variable<bool>(isFailed.value);
     }
+    if (serverUrl.present) {
+      map['server_url'] = Variable<String>(serverUrl.value);
+    }
     return map;
   }
 
@@ -2695,7 +2751,8 @@ class PendingUploadsCompanion extends UpdateCompanion<PendingUpload> {
           ..write('queuedAt: $queuedAt, ')
           ..write('retryCount: $retryCount, ')
           ..write('lastError: $lastError, ')
-          ..write('isFailed: $isFailed')
+          ..write('isFailed: $isFailed, ')
+          ..write('serverUrl: $serverUrl')
           ..write(')'))
         .toString();
   }
@@ -5240,6 +5297,7 @@ typedef $$PendingUploadsTableCreateCompanionBuilder =
       Value<int> retryCount,
       Value<String?> lastError,
       Value<bool> isFailed,
+      Value<String?> serverUrl,
     });
 typedef $$PendingUploadsTableUpdateCompanionBuilder =
     PendingUploadsCompanion Function({
@@ -5255,6 +5313,7 @@ typedef $$PendingUploadsTableUpdateCompanionBuilder =
       Value<int> retryCount,
       Value<String?> lastError,
       Value<bool> isFailed,
+      Value<String?> serverUrl,
     });
 
 class $$PendingUploadsTableFilterComposer
@@ -5323,6 +5382,11 @@ class $$PendingUploadsTableFilterComposer
 
   ColumnFilters<bool> get isFailed => $composableBuilder(
     column: $table.isFailed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serverUrl => $composableBuilder(
+    column: $table.serverUrl,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5395,6 +5459,11 @@ class $$PendingUploadsTableOrderingComposer
     column: $table.isFailed,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get serverUrl => $composableBuilder(
+    column: $table.serverUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PendingUploadsTableAnnotationComposer
@@ -5447,6 +5516,9 @@ class $$PendingUploadsTableAnnotationComposer
 
   GeneratedColumn<bool> get isFailed =>
       $composableBuilder(column: $table.isFailed, builder: (column) => column);
+
+  GeneratedColumn<String> get serverUrl =>
+      $composableBuilder(column: $table.serverUrl, builder: (column) => column);
 }
 
 class $$PendingUploadsTableTableManager
@@ -5494,6 +5566,7 @@ class $$PendingUploadsTableTableManager
                 Value<int> retryCount = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<bool> isFailed = const Value.absent(),
+                Value<String?> serverUrl = const Value.absent(),
               }) => PendingUploadsCompanion(
                 id: id,
                 filePath: filePath,
@@ -5507,6 +5580,7 @@ class $$PendingUploadsTableTableManager
                 retryCount: retryCount,
                 lastError: lastError,
                 isFailed: isFailed,
+                serverUrl: serverUrl,
               ),
           createCompanionCallback:
               ({
@@ -5522,6 +5596,7 @@ class $$PendingUploadsTableTableManager
                 Value<int> retryCount = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<bool> isFailed = const Value.absent(),
+                Value<String?> serverUrl = const Value.absent(),
               }) => PendingUploadsCompanion.insert(
                 id: id,
                 filePath: filePath,
@@ -5535,6 +5610,7 @@ class $$PendingUploadsTableTableManager
                 retryCount: retryCount,
                 lastError: lastError,
                 isFailed: isFailed,
+                serverUrl: serverUrl,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
