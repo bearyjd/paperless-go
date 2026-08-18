@@ -78,6 +78,23 @@ fault boundary — which is the structural fix Codex recommended under item 1 be
 bolted on. Two tests cover it (expired row released with no server configured; a row whose
 bookkeeping write throws does not strand the rows behind it), both verified RED first.
 
+Reviewed afterwards by two independent agents; four further findings, all fixed:
+
+- **Outcome recorded after the bytes were released.** A failed write or a kill between the two left
+  the file gone and the row still reading as pending — neither present nor recorded. Marking first
+  converges instead.
+- **The fault-boundary test proved less than its name.** `getPendingUploads()` has no `ORDER BY`,
+  and failing the *last* row swept is vacuous: a boundary-less sweep dies after the final row and
+  strands nothing. Demonstrated by reversing the order with the boundary removed — green. Now fails
+  whichever row the sweep reaches first, latched across passes, asserting on database state.
+- **The signed-out fixture asserted against a state the app cannot produce** (authenticated auth
+  state + throwing API; in the app the second follows from the first). Corrected to unauthenticated,
+  and re-verified RED against `6dfd27c` so the regression coverage is known to be real.
+- **The retention timer was not a bound at all** — see item 2 below.
+
+Worth recording: the two reviewers overlapped on nothing, and the finding that changed the design
+came from the adversarial one, not the checklist one.
+
 ---
 
 ## OPEN — start here
@@ -94,17 +111,29 @@ Codex's recommended design (session `01a0157f-46a8-7582-b292-c63d645e70ae`, resu
 - **Sealed decision types** in the upload pass (`deferTerminal`, `deferWrongServer`,
   `failMissingFile`, `attemptUpload`) so a new outcome breaks exhaustive switches loudly.
 - **Per-row fault boundaries** — in the *upload* pass, a malformed `tagsJson`, a failed retry write,
-  or a failed row removal can still escape and abandon every later row. The existing "one failure
-  does not abandon the rest" test only proves the missing-file case. (The retention sweep now has
-  this boundary; the upload pass does not.)
+  or a failed row removal can still escape and abandon every later row. Worse, `getPendingUploads()`
+  materializes every row eagerly, outside any boundary, so a row that fails to deserialize takes
+  down the sweep too. (The retention sweep has a boundary; the upload pass does not.)
 - No Drift schema change needed.
 
-### 2. Queue has no UI at all
+Filed as **#26**. Adjacent, same root cause as the retention clock finding, filed as **#27**:
+`edit_queue_service.dart:16` orders pending edits by `queuedAt`, so a backwards clock jump applies
+queued edits out of order.
 
-Failed rows, `lastError`, wrong-profile rows and legacy rows are all invisible. Retention now gives
-up on a document after 30 days and tells the user nothing. Codex's position, which I agree with:
-either ship minimal queue visibility with this work, or change the retention policy until it exists.
-Silently discarding the only remaining copy is not defensible while the queue is invisible.
+### 2. Queue has no UI at all — and retention now pays for that
+
+Failed rows, `lastError`, wrong-profile rows and legacy rows are all invisible.
+
+**Decided:** retention no longer deletes. Expiry after 30 days records the outcome and keeps the
+bytes. An adversarial review found the timer was `DateTime.now()`, which is not monotonic — a clock
+jump expires rows that are days old, and a `queuedAt` stamped while the clock ran ahead never
+expires at all. A plausibility heuristic can't fix the forward direction (a 45-day jump is
+indistinguishable from 45 days elapsed against a 30-day window), so it would only narrow the hole.
+
+The cost: app-documents storage is not evictable, so abandoned files now accumulate until the user
+clears app data. **This is the wrong way round long-term.** Shipping queue visibility — a failed row,
+its `lastError`, retry and delete — is what makes releasing the file defensible again, and until
+then storage grows. That is the strongest reason to build the UI next.
 
 ### 3. Second `/codex review` never completed
 
