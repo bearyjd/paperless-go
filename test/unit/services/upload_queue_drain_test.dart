@@ -436,12 +436,12 @@ void main() {
     );
   }
 
-  group('storage stays bounded', () {
-    test('a row for a server that never comes back is eventually released',
+  group('retention records an outcome without destroying the document', () {
+    test('a row for a server that never comes back is eventually given up on',
         () async {
-      // Regression: unreachable failures stopped consuming retries (so the row
-      // never becomes isFailed) and retention cleanup only ran for isFailed
-      // rows — so the file sat in non-evictable app-documents storage forever.
+      // Regression: unreachable failures stopped consuming retries, so the row
+      // never became isFailed and retention — which only ran for isFailed rows
+      // — never recorded any outcome for it at all.
       final path = await queuedFile('abandoned.pdf');
       api.failure = DioException(
         requestOptions: RequestOptions(path: '/'),
@@ -453,15 +453,17 @@ void main() {
 
       await drain();
 
-      expect(await File(path).exists(), isFalse,
-          reason: 'the document cannot be held indefinitely');
       final row = (await cache.getPendingUploads()).single;
-      expect(row.isFailed, isTrue, reason: 'and the outcome is on the record');
+      expect(row.isFailed, isTrue, reason: 'the outcome is on the record');
+      expect(row.lastError, contains('Gave up'));
+      expect(await File(path).exists(), isTrue,
+          reason: 'the file IS the document, and no UI can warn about losing '
+              'it — expiry stops retrying, it does not delete');
     });
 
-    test('a row whose profile was deleted is also released', () async {
+    test('a row whose profile was deleted is also given up on', () async {
       // Rows for another server are skipped before any cleanup, so a deleted
-      // profile used to orphan its documents permanently.
+      // profile used to leave its documents with no recorded outcome forever.
       final source = File(p.join(root.path, 'src', 'deleted-profile.pdf'))
         ..createSync(recursive: true)
         ..writeAsStringSync('PDF');
@@ -476,7 +478,9 @@ void main() {
 
       await drain();
 
-      expect(await File(persisted).exists(), isFalse);
+      expect((await cache.getPendingUploads()).single.isFailed, isTrue);
+      expect(await File(persisted).exists(), isTrue,
+          reason: 'a deleted profile is not a reason to destroy the document');
     });
 
     /// A genuinely signed-out launch.
@@ -504,10 +508,11 @@ void main() {
       return c;
     }
 
-    test('an expired row is released even with no server configured', () async {
+    test('an expired row is given up on even with no server configured',
+        () async {
       // Regression: the drain returned as soon as paperlessApiProvider threw,
-      // so the retention sweep never ran for a signed-out user — who then held
-      // queued documents in non-evictable storage forever.
+      // so the retention sweep never ran for a signed-out user — whose queue
+      // then grew with no outcome ever recorded for any of it.
       final path = await queuedFile('signed-out.pdf');
       await ageRow((await cache.getPendingUploads()).single.id,
           const Duration(days: 31));
@@ -516,9 +521,9 @@ void main() {
           .read(uploadQueueServiceProvider.notifier)
           .drainNow();
 
-      expect(await File(path).exists(), isFalse,
+      expect((await cache.getPendingUploads()).single.isFailed, isTrue,
           reason: 'retention cannot depend on being signed in');
-      expect((await cache.getPendingUploads()).single.isFailed, isTrue);
+      expect(await File(path).exists(), isTrue);
     });
 
     test('a row the sweep cannot record does not strand the rest', () async {
@@ -552,9 +557,8 @@ void main() {
           swept.map((r) => r.id).where((id) => id != threw),
           reason: 'every row behind the one that threw is still swept');
 
-      final stranded = swept.firstWhere((r) => r.id == threw);
-      expect(await File(stranded.filePath).exists(), isTrue,
-          reason: 'a failed write must leave the bytes, not orphan them');
+      expect(swept.every((r) => File(r.filePath).existsSync()), isTrue,
+          reason: 'the sweep never deletes, whether or not its write succeeds');
     });
 
     test('a recent row is untouched while signed out', () async {
