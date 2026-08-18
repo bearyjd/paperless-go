@@ -76,6 +76,21 @@ class UploadQueueService extends _$UploadQueueService {
   /// The last one is why the sweep runs before the API is resolved rather than
   /// as a guard inside the upload loop.
   ///
+  /// KNOWN HOLE, both directions, from comparing two wall-clock samples taken
+  /// up to 30 days apart with no sanity check on either:
+  ///  - a [queuedAt] stamped while the clock was ahead makes the difference
+  ///    negative, so the row is never swept and its file is held forever —
+  ///    this bound does not actually bound that row;
+  ///  - a clock that jumps forward ages rows early, and past [_retention] the
+  ///    sweep releases a document the user still wants and tells them nothing.
+  ///
+  /// Not patched with a plausibility heuristic on purpose: a forward jump is
+  /// indistinguishable from elapsed time in exactly the band that matters
+  /// (a 45-day jump against a 30-day window), so a threshold can only narrow
+  /// the hole, never close it. The real fix is for retention to stop deleting
+  /// the only copy while the queue has no UI to warn about it — a policy
+  /// decision, tracked in the handoff, not something to paper over here.
+  ///
   /// The window is deliberately generous, because the file IS the document.
   static const _retention = Duration(days: 30);
 
