@@ -129,6 +129,16 @@ void main() {
     await container.read(uploadQueueServiceProvider.notifier).drainNow();
   }
 
+  /// Awaits the drain a trigger started, instead of polling a wall clock.
+  /// A timed loop fails as "expected [x], got []" on a slow runner, which is
+  /// indistinguishable from a real regression.
+  Future<void> settle(ProviderContainer c) async {
+    for (var i = 0; i < 5; i++) {
+      await c.read(uploadQueueServiceProvider.notifier).debugActiveDrain;
+      await Future<void>.delayed(Duration.zero);
+    }
+  }
+
   test('a queued upload is sent, its row removed and its file released',
       () async {
     final path = await queuedFile('obb tix.pdf');
@@ -242,11 +252,7 @@ void main() {
     addTearDown(fresh.dispose);
 
     fresh.read(uploadQueueServiceProvider);
-    // The startup drain is async (it awaits the store provider), so poll
-    // rather than assuming a single microtask turn is enough.
-    for (var i = 0; i < 100 && freshApi.uploaded.isEmpty; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-    }
+    await settle(fresh);
 
     expect(freshApi.uploaded, [path],
         reason: 'no explicit drain was requested — startup alone must flush');
@@ -286,7 +292,7 @@ void main() {
         paperlessApiProvider.overrideWith((ref) {
           final status = ref.watch(authStateProvider).valueOrNull;
           if (status == null || !status.isAuthenticated) {
-            throw StateError('Not authenticated');
+            throw const NotAuthenticatedException();
           }
           return freshApi;
         }),
@@ -299,9 +305,7 @@ void main() {
     expect(freshApi.uploaded, isEmpty, reason: 'not logged in yet');
 
     auth.authenticate();
-    for (var i = 0; i < 100 && freshApi.uploaded.isEmpty; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-    }
+    await settle(pending);
 
     expect(freshApi.uploaded, [path],
         reason: 'logging in must flush the queue on its own');
@@ -317,7 +321,7 @@ void main() {
         connectivityNotifierProvider.overrideWith(_FakeOnline.new),
         authStateProvider.overrideWith(_FakeAuthenticated.new),
         paperlessApiProvider.overrideWith(
-          (ref) => throw StateError('Not authenticated'),
+          (ref) => throw const NotAuthenticatedException(),
         ),
       ],
     );

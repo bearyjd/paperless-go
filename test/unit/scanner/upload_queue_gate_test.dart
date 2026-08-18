@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:paperless_go/core/auth/auth_provider.dart';
 import 'package:paperless_go/features/scanner/upload_notifier.dart';
 
 /// Which failures park a document in the upload queue instead of dropping it.
@@ -20,7 +21,7 @@ void main() {
   group('queues, so the document survives', () {
     test('no server configured / not authenticated', () {
       expect(
-        UploadNotifier.shouldQueueForLater(StateError('Not authenticated')),
+        UploadNotifier.shouldQueueForLater(const NotAuthenticatedException()),
         isTrue,
       );
     });
@@ -84,6 +85,16 @@ void main() {
       );
       expect(
         UploadNotifier.shouldQueueForLater(dio(DioExceptionType.badCertificate)),
+        isFalse,
+      );
+    });
+
+    test('an unrelated StateError — a real bug, not a missing session', () {
+      // Guards the over-broad match this replaced: `e is StateError` would
+      // queue-and-retry every bad-state bug in the upload path, five times,
+      // with nothing surfaced to the user.
+      expect(
+        UploadNotifier.shouldQueueForLater(StateError('Bad state: no element')),
         isFalse,
       );
     });

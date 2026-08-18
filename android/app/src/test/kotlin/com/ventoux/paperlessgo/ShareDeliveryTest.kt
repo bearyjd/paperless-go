@@ -82,6 +82,26 @@ class ShareDeliveryBufferTest {
     }
 }
 
+class ShareMarkOnDeliveryTest {
+    @Test
+    fun `a resolved file burns the intent`() {
+        assertTrue(shouldMarkDelivered(1))
+    }
+
+    @Test
+    fun `an empty resolve leaves the intent reusable`() {
+        // copyToCache swallows IO failures and returns nothing. Marking
+        // unconditionally turned a transient copy failure into a permanently
+        // unrecoverable share — cost a rebuild to find on device.
+        assertFalse(shouldMarkDelivered(0))
+    }
+
+    @Test
+    fun `a multi-file share burns the intent once`() {
+        assertTrue(shouldMarkDelivered(3))
+    }
+}
+
 class ShareDeliveryMarkTest {
     @Test
     fun `a fresh share intent has not been delivered`() {

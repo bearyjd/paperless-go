@@ -19,11 +19,21 @@ class UploadQueueService extends _$UploadQueueService {
   bool _draining = false;
   bool _drainRequested = false;
 
+  /// The drain currently in flight, if any.
+  ///
+  /// Every trigger is deliberately fire-and-forget, which leaves tests nothing
+  /// to await — they used to poll on a wall clock, so a slow CI runner failed
+  /// with "expected [x], got []", indistinguishable from a real regression.
+  Future<void>? _activeDrain;
+
+  @visibleForTesting
+  Future<void>? get debugActiveDrain => _activeDrain;
+
   @override
   void build() {
     ref.listen(connectivityNotifierProvider, (previous, next) {
       if (previous == false && next == true) {
-        _drainQueue();
+        _activeDrain = _drainQueue();
       }
     });
 
@@ -36,15 +46,15 @@ class UploadQueueService extends _$UploadQueueService {
           previous?.valueOrNull?.isAuthenticated ?? false;
       final isAuthenticated = next.valueOrNull?.isAuthenticated ?? false;
       if (!wasAuthenticated && isAuthenticated) {
-        // Deferred a turn on purpose. dioProvider throws StateError while
-        // unauthenticated, and Riverpod serves that cached error to dependents
+        // Deferred a turn on purpose. dioProvider throws while unauthenticated,
+        // and Riverpod serves that cached error to dependents
         // until the invalidation from this very state change propagates —
         // draining synchronously here reads the stale error and gives up.
-        Future.microtask(_drainQueue);
+        _activeDrain = Future.microtask(_drainQueue);
       }
     });
 
-    Future.microtask(_drainQueue);
+    _activeDrain = Future.microtask(_drainQueue);
   }
 
   /// Retries every queued upload now. Safe to call at any time — a drain
@@ -127,6 +137,11 @@ class UploadQueueService extends _$UploadQueueService {
             created: upload.created,
           );
 
+          // At-least-once, not exactly-once. If the process dies between the
+          // server accepting the upload and this row being removed, the next
+          // drain re-uploads it and paperless-ngx — which does no dedupe by
+          // default — keeps both copies. Narrow window, but real; suppressing
+          // it needs a checksum check against the server before re-upload.
           await cache.removePendingUpload(upload.id);
           uploaded = true;
         } catch (e) {
@@ -150,12 +165,21 @@ class UploadQueueService extends _$UploadQueueService {
           }
         }
       }
-    } on Exception catch (e) {
-      // The drain is fire-and-forget (a microtask on startup, a ref.listen on
-      // the auth edge), so anything escaping here is an unhandled async error
-      // that kills the pass silently. Queue rows are untouched by a failed
-      // pass, so the next trigger retries them.
-      debugPrint('Upload queue drain aborted: $e');
+    } catch (e) {
+      // Catches Error as well as Exception, deliberately. The drain is
+      // fire-and-forget (a startup microtask, a ref.listen on the auth edge),
+      // so anything escaping is an unhandled async error that kills the pass
+      // silently — and the likeliest escapee is a StateError from a provider,
+      // which `on Exception` does not catch. Queue rows are untouched by a
+      // failed pass, so the next trigger retries them.
+      //
+      // Behind an assert: a DioException stringifies with the full request URL,
+      // i.e. the user's self-hosted server address, which must not reach a
+      // release logcat. Same rule friendlyApiMessage follows.
+      assert(() {
+        debugPrint('Upload queue drain aborted: $e');
+        return true;
+      }());
     } finally {
       _draining = false;
     }
