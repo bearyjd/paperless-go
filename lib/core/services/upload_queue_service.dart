@@ -84,22 +84,30 @@ class UploadQueueService extends _$UploadQueueService {
   /// Returns true when the row was handled and the caller should move on. The
   /// row itself is kept — deleting it is how a document disappears with no
   /// trace — but its bytes are released.
+  ///
+  /// The outcome is recorded BEFORE the bytes are released, which is the only
+  /// ordering that converges. Discarding first leaves a window — a failed
+  /// write, a killed process — where the file is gone and the row still reads
+  /// as pending: the sweep then skips it as handled and the upload pass never
+  /// sees it, so the document is neither there nor recorded as given up on.
+  /// Marking first, a crash in the same window leaves the row failed with its
+  /// file intact, and the next sweep finishes the job.
   Future<bool> _releaseIfExpired(
     CacheRepository cache,
     PendingUploadStore store,
     PendingUpload upload,
   ) async {
     if (DateTime.now().difference(upload.queuedAt) < _retention) return false;
-    try {
-      await store.discard(upload.filePath);
-    } on FileSystemException catch (_) {
-      // Nothing to reclaim; the row still records the outcome.
-    }
     if (!upload.isFailed) {
       await cache.markUploadFailed(
         upload.id,
         'Gave up after ${_retention.inDays} days without reaching the server.',
       );
+    }
+    try {
+      await store.discard(upload.filePath);
+    } on FileSystemException catch (_) {
+      // Nothing to reclaim; the row already records the outcome.
     }
     return true;
   }
