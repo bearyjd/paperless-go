@@ -155,11 +155,17 @@ class UploadQueueService extends _$UploadQueueService {
           // One unreadable row must not strand the sweep for every row behind
           // it — the whole point of the sweep is that it always runs.
           //
-          // Catches Error as well as Exception, deliberately, for the same
-          // reason as the outer catch below: the likeliest escapee is a Drift
-          // StateError, which `on Exception` would let through to the outer
-          // handler — abandoning every row behind this one, which is exactly
-          // the boundary this block exists to draw.
+          // Catches Error as well as Exception, deliberately: the likeliest
+          // escapee is a Drift StateError, which `on Exception` would let
+          // through to the outer handler — abandoning every row behind this
+          // one, which is exactly the boundary this block exists to draw.
+          //
+          // The assert-guard is NOT for the outer catch's reason. That one
+          // hides a DioException, which stringifies with the user's
+          // self-hosted server URL; a Drift StateError carries no such
+          // payload. It is guarded only because a dropped row has nowhere
+          // better to go until the queue has a UI and this can reach
+          // `lastError`.
           assert(() {
             debugPrint('Upload queue retention skipped a row: $e');
             return true;
