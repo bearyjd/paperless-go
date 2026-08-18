@@ -553,6 +553,11 @@ void main() {
       final swept = await cache.getPendingUploads();
       final threw = repo.failedId;
       expect(threw, isNotNull, reason: 'the sweep must have reached a row');
+      // Guards the proof itself: with a single row the expected set and the
+      // actual set are both empty, so this passes while proving nothing.
+      // There must be a row BEHIND the one that threw for it to mean anything.
+      expect(swept, hasLength(greaterThan(1)),
+          reason: 'a one-row version of this test is vacuous');
       expect(swept.where((r) => r.isFailed).map((r) => r.id),
           swept.map((r) => r.id).where((id) => id != threw),
           reason: 'every row behind the one that threw is still swept');
