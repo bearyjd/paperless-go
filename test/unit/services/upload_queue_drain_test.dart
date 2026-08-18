@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -391,6 +392,75 @@ void main() {
     await drain();
 
     expect((await cache.getPendingUploads()).single.retryCount, 1);
+  });
+
+  /// Ages a row so retention logic can be exercised without waiting 30 days.
+  Future<void> ageRow(int id, Duration age) async {
+    await (db.update(db.pendingUploads)..where((t) => t.id.equals(id))).write(
+      PendingUploadsCompanion(queuedAt: Value(DateTime.now().subtract(age))),
+    );
+  }
+
+  group('storage stays bounded', () {
+    test('a row for a server that never comes back is eventually released',
+        () async {
+      // Regression: unreachable failures stopped consuming retries (so the row
+      // never becomes isFailed) and retention cleanup only ran for isFailed
+      // rows — so the file sat in non-evictable app-documents storage forever.
+      final path = await queuedFile('abandoned.pdf');
+      api.failure = DioException(
+        requestOptions: RequestOptions(path: '/'),
+        type: DioExceptionType.connectionError,
+      );
+      await drain();
+      await ageRow((await cache.getPendingUploads()).single.id,
+          const Duration(days: 31));
+
+      await drain();
+
+      expect(await File(path).exists(), isFalse,
+          reason: 'the document cannot be held indefinitely');
+      final row = (await cache.getPendingUploads()).single;
+      expect(row.isFailed, isTrue, reason: 'and the outcome is on the record');
+    });
+
+    test('a row whose profile was deleted is also released', () async {
+      // Rows for another server are skipped before any cleanup, so a deleted
+      // profile used to orphan its documents permanently.
+      final source = File(p.join(root.path, 'src', 'deleted-profile.pdf'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('PDF');
+      final persisted = await store.persist(source.path);
+      await cache.enqueueUpload(
+        filePath: persisted,
+        filename: 'deleted-profile.pdf',
+        serverUrl: 'https://server-that-no-longer-exists.example.com',
+      );
+      await ageRow((await cache.getPendingUploads()).single.id,
+          const Duration(days: 31));
+
+      await drain();
+
+      expect(await File(persisted).exists(), isFalse);
+    });
+
+    test('a recent row for another server is left completely alone', () async {
+      final source = File(p.join(root.path, 'src', 'other-recent.pdf'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('PDF');
+      final persisted = await store.persist(source.path);
+      await cache.enqueueUpload(
+        filePath: persisted,
+        filename: 'other-recent.pdf',
+        serverUrl: 'https://other.example.com',
+      );
+
+      await drain();
+
+      expect(await File(persisted).exists(), isTrue);
+      expect((await cache.getPendingUploads()).single.isFailed, isFalse);
+      expect(api.uploaded, isEmpty);
+    });
   });
 
   test('drains without a server configured are a no-op, not a crash', () async {
