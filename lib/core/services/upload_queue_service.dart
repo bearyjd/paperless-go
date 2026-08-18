@@ -63,11 +63,9 @@ class UploadQueueService extends _$UploadQueueService {
   /// already in flight is a no-op.
   Future<void> drainNow() => _drainQueue();
 
-  /// How long a queued upload keeps its file on disk before being given up on.
+  /// How long the drain keeps retrying a queued upload before giving up on it.
   ///
-  /// app-documents storage is not evictable by the OS, so anything the drain
-  /// stops acting on holds the user's document until they wipe app data. Four
-  /// ways a row stops being acted on, and all of them need this bound:
+  /// Four ways a row stops being acted on, and all of them need a stop:
   ///  - terminally failed, so the drain skips it;
   ///  - its server is unreachable, which deliberately does not consume retries;
   ///  - it belongs to another profile, possibly one since deleted;
@@ -76,40 +74,36 @@ class UploadQueueService extends _$UploadQueueService {
   /// The last one is why the sweep runs before the API is resolved rather than
   /// as a guard inside the upload loop.
   ///
-  /// KNOWN HOLE, both directions, from comparing two wall-clock samples taken
-  /// up to 30 days apart with no sanity check on either:
-  ///  - a [queuedAt] stamped while the clock was ahead makes the difference
-  ///    negative, so the row is never swept and its file is held forever —
-  ///    this bound does not actually bound that row;
-  ///  - a clock that jumps forward ages rows early, and past [_retention] the
-  ///    sweep releases a document the user still wants and tells them nothing.
+  /// Expiring a row records an outcome. It does NOT delete the file, which is
+  /// the user's only copy of that document — app-documents storage is not
+  /// evictable, so those bytes now accumulate until the user clears app data.
+  /// That is a deliberate trade, and it is the wrong way round long-term:
   ///
-  /// Not patched with a plausibility heuristic on purpose: a forward jump is
-  /// indistinguishable from elapsed time in exactly the band that matters
-  /// (a 45-day jump against a 30-day window), so a threshold can only narrow
-  /// the hole, never close it. The real fix is for retention to stop deleting
-  /// the only copy while the queue has no UI to warn about it — a policy
-  /// decision, tracked in the handoff, not something to paper over here.
+  ///  - [DateTime.now] is not monotonic. This compares two wall-clock samples
+  ///    taken up to 30 days apart with no sanity check on either, so a device
+  ///    clock jump can expire a row that is days old — and a [queuedAt]
+  ///    stamped while the clock ran ahead makes the difference negative, so
+  ///    that row never expires at all.
+  ///  - A plausibility heuristic cannot fix the first case: a 45-day forward
+  ///    jump is indistinguishable from 45 days elapsed against a 30-day
+  ///    window, so any threshold narrows the hole without closing it.
+  ///  - There is no queue UI, so the user is never told any of this happens.
   ///
-  /// The window is deliberately generous, because the file IS the document.
+  /// Deleting on a timer you cannot trust, with no way to warn anyone, is how
+  /// a document disappears with no trace. Keeping the bytes makes a clock jump
+  /// cost storage instead of the document. Once the queue is visible — and can
+  /// show a failed row, its `lastError`, and offer retry or delete — releasing
+  /// the file here becomes defensible again.
   static const _retention = Duration(days: 30);
 
-  /// Gives up on a row that has outlived [_retention], releasing its file.
+  /// Gives up on a row that has outlived [_retention].
   ///
-  /// Returns true when the row was handled and the caller should move on. The
-  /// row itself is kept — deleting it is how a document disappears with no
-  /// trace — but its bytes are released.
-  ///
-  /// The outcome is recorded BEFORE the bytes are released, which is the only
-  /// ordering that converges. Discarding first leaves a window — a failed
-  /// write, a killed process — where the file is gone and the row still reads
-  /// as pending: the sweep then skips it as handled and the upload pass never
-  /// sees it, so the document is neither there nor recorded as given up on.
-  /// Marking first, a crash in the same window leaves the row failed with its
-  /// file intact, and the next sweep finishes the job.
-  Future<bool> _releaseIfExpired(
+  /// Returns true when the row was handled and the caller should move on. Both
+  /// the row and its file are kept: the row because deleting it is how a
+  /// document disappears with no trace, the file because it IS the document.
+  /// See [_retention] for why nothing is deleted here yet.
+  Future<bool> _giveUpIfExpired(
     CacheRepository cache,
-    PendingUploadStore store,
     PendingUpload upload,
   ) async {
     if (DateTime.now().difference(upload.queuedAt) < _retention) return false;
@@ -118,11 +112,6 @@ class UploadQueueService extends _$UploadQueueService {
         upload.id,
         'Gave up after ${_retention.inDays} days without reaching the server.',
       );
-    }
-    try {
-      await store.discard(upload.filePath);
-    } on FileSystemException catch (_) {
-      // Nothing to reclaim; the row already records the outcome.
     }
     return true;
   }
@@ -154,14 +143,14 @@ class UploadQueueService extends _$UploadQueueService {
       final pending = await cache.getPendingUploads();
 
       // The retention sweep is a separate pass, ahead of resolving the API on
-      // purpose. Anything that stops the drain acting on a row also stops it
-      // being cleaned up, and the biggest of those is having no server at all:
-      // as a guard inside the upload pass, retention never ran for a
-      // signed-out user, who then held queued documents forever.
+      // purpose. Anything that stops the drain acting on a row also stops that
+      // row's outcome ever being recorded, and the biggest of those is having
+      // no server at all: as a guard inside the upload pass, retention never
+      // ran for a signed-out user, whose queue then grew without record.
       final live = <PendingUpload>[];
       for (final upload in pending) {
         try {
-          if (await _releaseIfExpired(cache, store, upload)) continue;
+          if (await _giveUpIfExpired(cache, upload)) continue;
         } catch (e) {
           // One unreadable row must not strand the sweep for every row behind
           // it — the whole point of the sweep is that it always runs.
