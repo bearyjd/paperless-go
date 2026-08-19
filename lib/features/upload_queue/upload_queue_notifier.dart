@@ -78,16 +78,22 @@ class UploadQueueActions extends _$UploadQueueActions {
   /// Only `isFailed` rows: anything still retrying might yet succeed, and a
   /// bulk action that quietly swept those up would destroy documents the user
   /// never chose to give up on.
+  /// Returns how many were actually deleted, which is not always how many were
+  /// tried: a row whose delete throws stays in the queue, and reporting it as
+  /// cleared would have the snackbar claim a number the user can see is wrong
+  /// on the list behind it.
   Future<int> clearFailed() async {
     final rows = await ref.read(cacheRepositoryProvider).getFailedUploads();
+    var deleted = 0;
     for (final row in rows) {
       // Per row, so one failure does not abandon the rest of the sweep.
       try {
         await delete(row);
+        deleted++;
       } catch (_) {
         continue;
       }
     }
-    return rows.length;
+    return deleted;
   }
 }

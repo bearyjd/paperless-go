@@ -244,6 +244,18 @@ class UploadQueueService extends _$UploadQueueService {
     PendingUpload upload,
     List<int>? tags,
   ) async {
+    // Last check before the bytes leave. The queue screen can delete a row
+    // while this pass is running, and the drain is working from a snapshot
+    // taken before the user tapped Delete — without this it would upload a
+    // document the user has just told it to throw away.
+    //
+    // This NARROWS the window to the gap between here and the POST; it does
+    // not close it. A send already in flight cannot be recalled without a
+    // per-row CancelToken threaded through the API client, which is a larger
+    // change. The residual outcome is an unwanted document on the server,
+    // recoverable from its trash — not lost data.
+    if (await cache.getPendingUpload(upload.id) == null) return;
+
     var uploaded = false;
     try {
       await api.uploadDocument(

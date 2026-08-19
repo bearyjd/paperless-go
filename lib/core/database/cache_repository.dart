@@ -249,13 +249,29 @@ class CacheRepository {
   /// reset that left `retryCount` at its limit would be skipped again on the
   /// very next pass, and a stale `lastError` would keep describing a failure
   /// the user has explicitly asked to retry past.
+  ///
+  /// `queuedAt` is restamped for the same reason, and it is not cosmetic: the
+  /// retention sweep runs BEFORE the upload pass, so a row that retention gave
+  /// up on is still older than the window when the drain next looks at it. It
+  /// would be re-failed without a single upload attempt, making Retry a
+  /// guaranteed no-op on exactly the rows this screen exists to rescue.
+  /// Restarting the clock is also the honest reading of the button: the user
+  /// has just said they want this document delivered, so the countdown to
+  /// giving up on it starts again from now.
   Future<void> resetUploadForRetry(int id) async {
     await (_db.update(_db.pendingUploads)..where((t) => t.id.equals(id)))
-        .write(const PendingUploadsCompanion(
-      isFailed: Value(false),
-      retryCount: Value(0),
-      lastError: Value(null),
+        .write(PendingUploadsCompanion(
+      isFailed: const Value(false),
+      retryCount: const Value(0),
+      lastError: const Value(null),
+      queuedAt: Value(DateTime.now()),
     ));
+  }
+
+  /// One queued row, or null when it has since been removed.
+  Future<PendingUpload?> getPendingUpload(int id) async {
+    return (_db.select(_db.pendingUploads)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
   }
 
   Future<List<PendingUpload>> getFailedUploads() async {

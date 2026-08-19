@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,7 @@ import 'package:paperless_go/core/database/cache_provider.dart';
 import 'package:paperless_go/core/database/cache_repository.dart';
 import 'package:paperless_go/core/services/connectivity_service.dart';
 import 'package:paperless_go/core/services/pending_upload_store.dart';
+import 'package:paperless_go/core/services/upload_queue_service.dart';
 import 'package:paperless_go/features/upload_queue/upload_queue_notifier.dart';
 import 'package:path/path.dart' as p;
 
@@ -45,6 +47,21 @@ class _FakeAuthenticated extends AuthState {
         serverUrl: 'https://paperless.example.com',
         token: 'test-token',
       );
+}
+
+/// Deletes every row the drain just snapshotted, standing in for the user
+/// tapping Delete in the instant between the snapshot and the send.
+class _DeletesAfterSnapshot extends CacheRepository {
+  _DeletesAfterSnapshot(super.db);
+
+  @override
+  Future<List<PendingUpload>> getPendingUploads() async {
+    final rows = await super.getPendingUploads();
+    for (final row in rows) {
+      await super.removePendingUpload(row.id);
+    }
+    return rows;
+  }
 }
 
 class _FakeOnline extends ConnectivityNotifier {
@@ -149,6 +166,27 @@ void main() {
     });
   });
 
+  test('retry rescues a row retention already gave up on', () async {
+    // Found by /codex review, then reproduced: retention marks a 30-day-old row
+    // failed, and the sweep runs BEFORE the upload pass — so a reset that left
+    // queuedAt alone was re-failed on the very next drain without a single
+    // upload attempt. Retry was a guaranteed no-op on exactly the rows this
+    // screen exists to rescue.
+    final row = await queued('ancient.pdf');
+    await (db.update(db.pendingUploads)..where((t) => t.id.equals(row.id)))
+        .write(PendingUploadsCompanion(
+            queuedAt: Value(DateTime.now().subtract(const Duration(days: 31)))));
+    await container.read(uploadQueueServiceProvider.notifier).drainNow();
+    final expired = (await cache.getPendingUploads()).single;
+    expect(expired.isFailed, isTrue, reason: 'retention gave up on it');
+
+    await actions().retry(expired);
+
+    expect(api.uploaded, hasLength(1),
+        reason: 'retry must actually send a retention-expired document');
+    expect(await cache.getPendingUploads(), isEmpty);
+  });
+
   group('delete', () {
     test('removes the row and the file', () async {
       final row = await queued('unwanted.pdf');
@@ -178,11 +216,37 @@ void main() {
       final cleared = await actions().clearFailed();
 
       expect(cleared, 2);
+      // The count is what was actually deleted, not what was attempted.
       final left = await cache.getPendingUploads();
       expect(left.single.id, waiting.id,
           reason: 'a row that might still succeed must survive a bulk clear');
       expect(await File(waiting.filePath).exists(), isTrue);
     });
+  });
+
+  test('a row deleted after the drain snapshot is not uploaded anyway',
+      () async {
+    // The race Codex flagged. Deleting BEFORE the drain proves nothing — the
+    // snapshot simply never contains the row. The window that matters is
+    // between the snapshot and the POST, so the fake deletes the row at
+    // exactly that point.
+    final deleting = _DeletesAfterSnapshot(db);
+    final racing = ProviderContainer(
+      overrides: [
+        cacheRepositoryProvider.overrideWithValue(deleting),
+        paperlessApiProvider.overrideWithValue(api),
+        pendingUploadStoreProvider.overrideWith((ref) async => store),
+        authStateProvider.overrideWith(_FakeAuthenticated.new),
+        connectivityNotifierProvider.overrideWith(_FakeOnline.new),
+      ],
+    );
+    addTearDown(racing.dispose);
+    await queued('deleted-mid-flight.pdf');
+
+    await racing.read(uploadQueueServiceProvider.notifier).drainNow();
+
+    expect(api.uploaded, isEmpty,
+        reason: 'a document the user deleted must not reach the server');
   });
 
   group('uploadsNeedingAttention', () {
