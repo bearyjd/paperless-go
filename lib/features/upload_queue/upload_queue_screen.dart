@@ -57,7 +57,7 @@ class UploadQueueScreen extends ConsumerWidget {
             itemCount: rows.length + 1,
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
-              if (index == rows.length) return const _RetentionFootnote();
+              if (index == rows.length) return const _QueueFootnotes();
               return _QueueRow(
                 upload: rows[index],
                 activeServer: activeServer,
@@ -291,6 +291,40 @@ class _DetailLine extends StatelessWidget {
           Expanded(child: SelectableText(value, style: textTheme.bodySmall)),
         ],
       ),
+    );
+  }
+}
+
+/// The footer: why storage grows, plus a notice if any row is unreadable.
+class _QueueFootnotes extends ConsumerWidget {
+  const _QueueFootnotes();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadable = ref.watch(unreadableUploadsProvider).valueOrNull ?? 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _RetentionFootnote(),
+        if (unreadable > 0)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                Spacing.lg, 0, Spacing.lg, Spacing.sm),
+            child: Text(
+              unreadable == 1
+                  ? '1 queued item is damaged and cannot be read. Its file is '
+                      'still on this device. Clearing the app\'s storage is '
+                      'the only way to reclaim it.'
+                  : '$unreadable queued items are damaged and cannot be read. '
+                      'Their files are still on this device. Clearing the '
+                      'app\'s storage is the only way to reclaim them.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+      ],
     );
   }
 }

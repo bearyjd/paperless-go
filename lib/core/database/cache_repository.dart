@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/correspondent.dart';
 import '../models/custom_field.dart';
@@ -213,6 +214,54 @@ class CacheRepository {
         ));
   }
 
+  /// Decodes queued rows one at a time, skipping any the mapper rejects.
+  ///
+  /// A plain `select(...).get()` decodes the whole result set as a unit, so a
+  /// single corrupt row takes down the entire read — and SQLite makes that
+  /// reachable: its column affinity accepts a text value in the `queued_at`
+  /// INTEGER column, after which mapping throws
+  /// `FormatException: Invalid radix-10 number`. Verified with a probe.
+  ///
+  /// One bad row would then kill the retention sweep AND the upload pass for
+  /// every OTHER row, permanently, with the queue screen showing only "Could
+  /// not read the queue". Per-row decoding is the same fault-boundary argument
+  /// the drain already makes, applied one layer down.
+  ///
+  /// Skipped rows are counted, not silently dropped — see
+  /// [countUnreadablePendingUploads]. A row that cannot be decoded still holds
+  /// a file, and this queue's whole history is about not losing documents
+  /// invisibly.
+  List<PendingUpload> _decodeUploads(List<QueryRow> raw) {
+    final rows = <PendingUpload>[];
+    for (final row in raw) {
+      try {
+        rows.add(_db.pendingUploads.map(row.data));
+      } catch (e) {
+        assert(() {
+          debugPrint('Skipping an undecodable pending_uploads row: $e');
+          return true;
+        }());
+      }
+    }
+    return rows;
+  }
+
+  static const _pendingUploadsByIdSql =
+      'SELECT * FROM pending_uploads ORDER BY id ASC';
+
+  /// How many queued rows cannot be decoded at all.
+  ///
+  /// Zero in every healthy install. Non-zero means corrupt rows are holding
+  /// files that nothing can act on, which the queue screen surfaces rather
+  /// than leaving the user to wonder where their storage went.
+  Future<int> countUnreadablePendingUploads() async {
+    final raw = await _db
+        .customSelect(_pendingUploadsByIdSql,
+            readsFrom: {_db.pendingUploads})
+        .get();
+    return raw.length - _decodeUploads(raw).length;
+  }
+
   /// Queued uploads, oldest first.
   ///
   /// Ordered by `id`, not `queuedAt`. Both are insertion-ordered in the normal
@@ -227,9 +276,9 @@ class CacheRepository {
   /// strand the row behind it" cannot be written when there is no defined
   /// behind.
   Future<List<PendingUpload>> getPendingUploads() async {
-    return (_db.select(_db.pendingUploads)
-          ..orderBy([(t) => OrderingTerm.asc(t.id)]))
-        .get();
+    return _decodeUploads(await _db
+        .customSelect(_pendingUploadsByIdSql, readsFrom: {_db.pendingUploads})
+        .get());
   }
 
   /// Live view of the queue, oldest first, for the queue screen and its badge.
@@ -238,9 +287,10 @@ class CacheRepository {
   /// from outside any UI event — a retry that succeeds while the screen is open
   /// should remove the row, not leave a stale one the user can act on.
   Stream<List<PendingUpload>> watchPendingUploads() {
-    return (_db.select(_db.pendingUploads)
-          ..orderBy([(t) => OrderingTerm.asc(t.id)]))
-        .watch();
+    return _db
+        .customSelect(_pendingUploadsByIdSql, readsFrom: {_db.pendingUploads})
+        .watch()
+        .map(_decodeUploads);
   }
 
   /// Puts a terminally failed row back in play.
