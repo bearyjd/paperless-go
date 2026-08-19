@@ -11,9 +11,21 @@ class EditQueueService {
   final AppDatabase _db;
   EditQueueService(this._db);
 
+  /// Queued edits in the order they were made.
+  ///
+  /// Ordered by `id`, not `queuedAt`. The processor applies this list in
+  /// sequence and stops at the first failure specifically to preserve order,
+  /// so the ordering is load-bearing: get it wrong and the document ends up
+  /// with the value of an edit the user made earlier.
+  ///
+  /// `queuedAt` comes from [DateTime.now], which is not monotonic — an NTP
+  /// correction, a manual date change, or a device booting with a reset RTC
+  /// moves it backwards, and the newer edit then sorts first. `id` is
+  /// autoIncrement and cannot go backwards. Same fix as the upload queue's
+  /// `getPendingUploads`.
   Future<List<PendingEdit>> pending() async {
     return (_db.select(_db.pendingEdits)
-          ..orderBy([(t) => OrderingTerm.asc(t.queuedAt)]))
+          ..orderBy([(t) => OrderingTerm.asc(t.id)]))
         .get();
   }
 
