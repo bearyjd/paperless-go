@@ -152,12 +152,17 @@ class _QueueRow extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            TextButton.icon(
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              onPressed: () => _retry(context, ref),
-            ),
-            const SizedBox(width: Spacing.sm),
+            // No Retry for a legacy row: it has no server, so decideUpload
+            // always skips it. The button would clear the recorded failure,
+            // say "Retrying…", and change nothing — worse than absent.
+            if (status != QueueRowStatus.legacy) ...[
+              TextButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                onPressed: () => _retry(context, ref),
+              ),
+              const SizedBox(width: Spacing.sm),
+            ],
             TextButton.icon(
               icon: const Icon(Icons.delete_outline),
               style: TextButton.styleFrom(foregroundColor: colorScheme.error),
