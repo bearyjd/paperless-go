@@ -50,8 +50,31 @@ final uploadsNeedingAttentionProvider = AutoDisposeProvider<int>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef UploadsNeedingAttentionRef = AutoDisposeProviderRef<int>;
+String _$unreadableUploadsHash() => r'c0b49e4049a2c2a6a0369b32f9fe1a5d0fb22e6c';
+
+/// Queued rows the app cannot decode at all.
+///
+/// Zero in every healthy install. Non-zero means corrupt rows are holding files
+/// that nothing can act on — invisible storage, which is the failure mode this
+/// whole screen exists to end.
+///
+/// Copied from [unreadableUploads].
+@ProviderFor(unreadableUploads)
+final unreadableUploadsProvider = AutoDisposeFutureProvider<int>.internal(
+  unreadableUploads,
+  name: r'unreadableUploadsProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$unreadableUploadsHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef UnreadableUploadsRef = AutoDisposeFutureProviderRef<int>;
 String _$uploadQueueActionsHash() =>
-    r'60689e5f079b640509c2516a6c2d708273978e94';
+    r'7b94d3a3e0128e13a069da45a707710d1a731b35';
 
 /// Actions the queue screen can take on a row.
 ///

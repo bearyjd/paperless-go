@@ -38,11 +38,13 @@ PendingUpload _row({
 }
 
 void main() {
-  Future<void> pumpQueue(WidgetTester tester, List<PendingUpload> rows) async {
+  Future<void> pumpQueue(WidgetTester tester, List<PendingUpload> rows,
+      {int unreadable = 0}) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           pendingUploadsProvider.overrideWith((ref) => Stream.value(rows)),
+          unreadableUploadsProvider.overrideWith((ref) async => unreadable),
           authStateProvider.overrideWith(_FakeAuthenticated.new),
         ],
         child: MaterialApp(
@@ -190,5 +192,20 @@ void main() {
     await pumpQueue(tester, [_row(isFailed: true)]);
 
     expect(find.textContaining('may be the only copy'), findsOneWidget);
+  });
+
+  testWidgets('a damaged row is reported rather than vanishing', (tester) async {
+    // It cannot be decoded, so it cannot be listed or deleted — but it still
+    // holds a file. Saying nothing would be the invisible-storage failure this
+    // screen exists to end.
+    await pumpQueue(tester, [_row()], unreadable: 2);
+
+    expect(find.textContaining('2 queued items are damaged'), findsOneWidget);
+  });
+
+  testWidgets('no damage notice when nothing is damaged', (tester) async {
+    await pumpQueue(tester, [_row()]);
+
+    expect(find.textContaining('damaged'), findsNothing);
   });
 }

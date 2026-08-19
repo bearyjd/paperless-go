@@ -33,6 +33,18 @@ int uploadsNeedingAttention(Ref ref) {
       .length;
 }
 
+/// Queued rows the app cannot decode at all.
+///
+/// Zero in every healthy install. Non-zero means corrupt rows are holding files
+/// that nothing can act on — invisible storage, which is the failure mode this
+/// whole screen exists to end.
+@riverpod
+Future<int> unreadableUploads(Ref ref) {
+  // Rebuilds with the queue so clearing rows updates the notice.
+  ref.watch(pendingUploadsProvider);
+  return ref.watch(cacheRepositoryProvider).countUnreadablePendingUploads();
+}
+
 /// Actions the queue screen can take on a row.
 ///
 /// Separate from [UploadQueueService], which owns the drain. This is the user
