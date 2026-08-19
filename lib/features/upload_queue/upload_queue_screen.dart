@@ -70,16 +70,46 @@ class UploadQueueScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmClearFailed(BuildContext context, WidgetRef ref) async {
-    final failedCount = (ref.read(pendingUploadsProvider).valueOrNull ?? const [])
+    final failed = (ref.read(pendingUploadsProvider).valueOrNull ?? const [])
         .where((r) => r.isFailed)
-        .length;
+        .toList();
+    final activeServer = ref.read(authStateProvider).valueOrNull?.serverUrl;
+
+    // This action deliberately spans every profile, matching the list it sits
+    // above. Scoping it to the active server would be worse, not safer: an
+    // other-server row can only ever be marked failed by the retention sweep
+    // (the upload pass skips it), so those rows ARE the abandoned ones, and a
+    // scoped sweep would leave them unclearable in bulk while a button reading
+    // "Delete all failed" quietly left failed rows behind.
+    //
+    // What it must not do is span profiles silently.
+    final elsewhere = failed
+        .where((r) => r.serverUrl != null && r.serverUrl != activeServer)
+        .toList();
+    final unknownServer = failed.where((r) => r.serverUrl == null).length;
+
+    final warnings = <String>[
+      if (elsewhere.isNotEmpty)
+        '${elsewhere.length} of ${elsewhere.length == 1 ? 'them was' : 'them were'} '
+            'queued for a different server '
+            '(${elsewhere.map((r) => r.serverUrl!).toSet().join(', ')}).',
+      if (unknownServer > 0)
+        '$unknownServer ${unknownServer == 1 ? 'was' : 'were'} queued before '
+            'server profiles existed, so there is no record of where '
+            '${unknownServer == 1 ? 'it belongs' : 'they belong'}.',
+    ];
+
     final confirmed = await _confirmDestructive(
       context,
-      title: 'Delete $failedCount failed ${failedCount == 1 ? 'upload' : 'uploads'}?',
+      title: 'Delete ${failed.length} failed '
+          '${failed.length == 1 ? 'upload' : 'uploads'}?',
       // Names the consequence rather than asking "are you sure?" — for most of
       // these rows this app holds the only copy of the document.
-      body: 'Their files are deleted from this device. If a document was only '
-          'ever shared into Paperless Go, this is the last copy of it.',
+      body: [
+        'Their files are deleted from this device. If a document was only '
+            'ever shared into Paperless Go, this is the last copy of it.',
+        ...warnings,
+      ].join('\n\n'),
       confirmLabel: 'Delete',
     );
     if (!confirmed || !context.mounted) return;
