@@ -116,6 +116,58 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
   });
 
+  testWidgets('bulk delete discloses that it spans other server profiles',
+      (tester) async {
+    // The action deliberately covers every profile (an other-server row can
+    // only be marked failed by retention, so those are the abandoned ones a
+    // scoped sweep could never clear in bulk). What it must not do is span
+    // profiles silently: this dialog is the only place the user finds out.
+    await pumpQueue(tester, [
+      _row(id: 1, filename: 'mine.pdf', isFailed: true),
+      _row(
+        id: 2,
+        filename: 'theirs.pdf',
+        isFailed: true,
+        serverUrl: 'https://other.example.com',
+      ),
+    ]);
+
+    await tester.tap(find.byTooltip('Delete all failed'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete 2 failed uploads?'), findsOneWidget);
+    expect(find.textContaining('queued for a different server'), findsOneWidget,
+        reason: 'deleting another profile\'s only copy cannot be silent');
+    expect(find.textContaining('https://other.example.com'), findsOneWidget,
+        reason: 'name the server so the user can tell what they are losing');
+  });
+
+  testWidgets('bulk delete stays quiet when every row is this server\'s',
+      (tester) async {
+    await pumpQueue(tester, [
+      _row(id: 1, filename: 'mine.pdf', isFailed: true),
+      _row(id: 2, filename: 'also-mine.pdf', isFailed: true),
+    ]);
+
+    await tester.tap(find.byTooltip('Delete all failed'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('different server'), findsNothing,
+        reason: 'no cross-profile warning when there is nothing to warn about');
+  });
+
+  testWidgets('bulk delete flags rows that predate server profiles',
+      (tester) async {
+    await pumpQueue(tester, [
+      _row(id: 1, filename: 'legacy.pdf', isFailed: true, serverUrl: null),
+    ]);
+
+    await tester.tap(find.byTooltip('Delete all failed'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('before server profiles existed'), findsOneWidget);
+  });
+
   testWidgets('a row for another server explains itself rather than failing',
       (tester) async {
     await pumpQueue(tester, [
