@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/auth/server_profiles.dart';
 import '../../core/design_tokens.dart';
+import '../upload_queue/upload_queue_notifier.dart';
 import '../../core/services/biometric_service.dart';
 import '../ai_chat/chat_notifier.dart';
 
@@ -206,6 +207,7 @@ class SettingsScreen extends ConsumerWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/templates'),
               ),
+              _UploadQueueTile(tokens: tokens),
               ListTile(
                 leading: Icon(Icons.delete_outline, color: tokens.stamp),
                 title: Text('Trash', style: TextStyle(color: tokens.stamp)),
@@ -608,6 +610,59 @@ class _SettingsSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Settings entry point for the upload queue, badged when something is stuck.
+///
+/// The badge is the point: uploads that have stopped retrying hold onto their
+/// files, and before this there was nothing anywhere in the app that said so.
+class _UploadQueueTile extends ConsumerWidget {
+  const _UploadQueueTile({required this.tokens});
+
+  final AppTokens tokens;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stuck = ref.watch(uploadsNeedingAttentionProvider);
+    final waiting =
+        (ref.watch(pendingUploadsProvider).valueOrNull ?? const []).length;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ListTile(
+      leading: Icon(Icons.upload_file_outlined, color: tokens.inkSoft),
+      title: const Text('Upload queue'),
+      subtitle: Text(
+        switch ((waiting, stuck)) {
+          (0, _) => 'Nothing waiting to upload',
+          (_, 0) => '$waiting waiting to upload',
+          (_, final s) => '$waiting waiting · $s need attention',
+        },
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (stuck > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.sm, vertical: 2),
+              decoration: BoxDecoration(
+                color: colorScheme.error,
+                borderRadius: BorderRadius.circular(Radii.pill),
+              ),
+              child: Text(
+                '$stuck',
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(color: colorScheme.onError),
+              ),
+            ),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
+      onTap: () => context.push('/upload-queue'),
     );
   }
 }

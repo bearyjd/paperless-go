@@ -14,6 +14,7 @@ import '../../shared/widgets/stamp_chip.dart';
 import '../scanner/processing/metadata_matcher.dart';
 import 'inbox_notifier.dart';
 import 'inbox_suggestions_provider.dart';
+import '../upload_queue/queue_status_banner.dart';
 
 /// Inbox as a swipeable card stack — the highest-frequency workflow.
 ///
@@ -43,6 +44,8 @@ class InboxScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Renders nothing unless an upload has actually stopped trying.
+            const QueueStatusBanner(),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   Spacing.xl, Spacing.lg, Spacing.md, Spacing.sm),
