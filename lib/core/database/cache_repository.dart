@@ -232,6 +232,32 @@ class CacheRepository {
         .get();
   }
 
+  /// Live view of the queue, oldest first, for the queue screen and its badge.
+  ///
+  /// A stream rather than a one-shot read because the drain mutates these rows
+  /// from outside any UI event — a retry that succeeds while the screen is open
+  /// should remove the row, not leave a stale one the user can act on.
+  Stream<List<PendingUpload>> watchPendingUploads() {
+    return (_db.select(_db.pendingUploads)
+          ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+        .watch();
+  }
+
+  /// Puts a terminally failed row back in play.
+  ///
+  /// Clears `isFailed`, the retry count and the recorded error together — a
+  /// reset that left `retryCount` at its limit would be skipped again on the
+  /// very next pass, and a stale `lastError` would keep describing a failure
+  /// the user has explicitly asked to retry past.
+  Future<void> resetUploadForRetry(int id) async {
+    await (_db.update(_db.pendingUploads)..where((t) => t.id.equals(id)))
+        .write(const PendingUploadsCompanion(
+      isFailed: Value(false),
+      retryCount: Value(0),
+      lastError: Value(null),
+    ));
+  }
+
   Future<List<PendingUpload>> getFailedUploads() async {
     return (_db.select(_db.pendingUploads)
           ..where((t) => t.isFailed.equals(true)))

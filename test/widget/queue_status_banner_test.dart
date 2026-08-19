@@ -1,0 +1,92 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:paperless_go/core/auth/auth_provider.dart';
+import 'package:paperless_go/core/database/app_database.dart';
+import 'package:paperless_go/core/theme.dart';
+import 'package:paperless_go/features/upload_queue/queue_status_banner.dart';
+import 'package:paperless_go/features/upload_queue/upload_queue_notifier.dart';
+
+class _FakeAuthenticated extends AuthState {
+  @override
+  Future<AuthStatus> build() async => const AuthStatus.authenticated(
+        serverUrl: 'https://paperless.example.com',
+        token: 'test-token',
+      );
+}
+
+PendingUpload _row({
+  int id = 1,
+  bool isFailed = false,
+  String? serverUrl = 'https://paperless.example.com',
+}) {
+  return PendingUpload(
+    id: id,
+    filePath: '/queue/doc$id.pdf',
+    filename: 'doc$id.pdf',
+    queuedAt: DateTime(2026, 8, 1),
+    retryCount: 0,
+    isFailed: isFailed,
+    serverUrl: serverUrl,
+  );
+}
+
+void main() {
+  Future<void> pumpBanner(WidgetTester tester, List<PendingUpload> rows) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          pendingUploadsProvider.overrideWith((ref) => Stream.value(rows)),
+          authStateProvider.overrideWith(_FakeAuthenticated.new),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const Scaffold(body: QueueStatusBanner()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('says nothing when the queue is empty', (tester) async {
+    await pumpBanner(tester, const []);
+    expect(find.textContaining('never reached'), findsNothing);
+  });
+
+  testWidgets('says nothing for uploads that are merely waiting',
+      (tester) async {
+    // The property that keeps this from becoming noise. A queue full of
+    // documents waiting for signal is normal; interrupting the user about it
+    // trains them to ignore the banner on the day it matters.
+    await pumpBanner(tester, [_row(), _row(id: 2)]);
+    expect(find.textContaining('never reached'), findsNothing);
+  });
+
+  testWidgets('speaks up when an upload has stopped trying', (tester) async {
+    await pumpBanner(tester, [_row(), _row(id: 2, isFailed: true)]);
+
+    expect(find.text('1 upload never reached your server'), findsOneWidget);
+    expect(find.text('Review'), findsOneWidget);
+  });
+
+  testWidgets('counts only what needs attention, and pluralises',
+      (tester) async {
+    await pumpBanner(tester, [
+      _row(isFailed: true),
+      _row(id: 2, isFailed: true),
+      _row(id: 3),
+    ]);
+
+    expect(find.text('2 uploads never reached your server'), findsOneWidget);
+  });
+
+  testWidgets('can be dismissed for this visit', (tester) async {
+    await pumpBanner(tester, [_row(isFailed: true)]);
+    expect(find.textContaining('never reached'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Dismiss'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('never reached'), findsNothing);
+  });
+}

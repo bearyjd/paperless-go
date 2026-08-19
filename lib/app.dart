@@ -33,6 +33,7 @@ import 'features/scanner/upload_screen.dart';
 import 'features/annotate/annotate_screen.dart';
 import 'features/search/similar_screen.dart';
 import 'features/trash/trash_screen.dart';
+import 'features/upload_queue/upload_queue_screen.dart';
 
 part 'app.g.dart';
 
@@ -162,6 +163,10 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/trash',
         builder: (_, __) => const TrashScreen(),
+      ),
+      GoRoute(
+        path: '/upload-queue',
+        builder: (_, __) => const UploadQueueScreen(),
       ),
       GoRoute(
         path: '/annotate',
