@@ -1,0 +1,12 @@
+New:
+* Upload queue screen. Documents waiting to reach your server used to be invisible — Settings > Upload queue now shows what is queued, why an upload failed, and lets you retry or delete each one. A banner appears on the Inbox when an upload has stopped trying
+
+Bug fixes:
+* Retry now works on an upload the app gave up on after 30 days — it previously did nothing at all on exactly those uploads
+* Deleting a queued upload no longer risks it being uploaded anyway a moment later
+* One damaged queue entry no longer hides the whole queue
+* Offline edits (title, correspondent, document type, storage path) apply in the order you made them, even if the device clock changes
+* A queued upload no longer burns its retry budget on tags it cannot read
+
+Other changes:
+* Deleting all failed uploads now tells you when some of them belong to a different server profile

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-19
+
+### Added
+- **Upload queue screen.** Documents waiting to reach your server were completely invisible until now. Settings > Upload queue shows everything queued, what state it is in, and why an upload failed, with Retry and Delete on each one. A banner appears on the Inbox when an upload has stopped trying, so you find out without going looking
+
+### Fixed
+- Retry now works on an upload the app had given up on after 30 days. It previously cleared the failure and then did nothing at all, on exactly the uploads most in need of rescuing
+- Deleting a queued upload no longer risks it being uploaded anyway a moment later
+- A single damaged queue entry no longer hides the entire queue. One unreadable row used to make every other queued document invisible and unsendable, permanently; damaged entries are now skipped and reported
+- Edits you make offline (title, correspondent, document type, storage path) are applied in the order you made them, even if the device clock changes between them. A clock moving backwards could previously leave a document with a value you had already replaced
+- A queued upload no longer burns its retry budget on tags it cannot read
+
+### Changed
+- Deleting all failed uploads now tells you when some of them belong to a different server profile, and which
+
 ## [1.1.9] - 2026-08-18
 
 ### Fixed
