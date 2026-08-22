@@ -83,6 +83,38 @@ void main() {
     });
   });
 
+  group('queueErrorDetail', () {
+    test('a stringified exception is worth expanding', () {
+      // A self-hoster debugging their own server wants this.
+      const raw = 'DioException [connectionError]: SocketException: '
+          'Failed host lookup: paperless.private.lan';
+      expect(queueErrorDetail(raw), raw);
+    });
+
+    test('our own plain-language messages are not', () {
+      // Seen on a real device: the summary and the "Details" line said the
+      // same thing in slightly different words, one directly under the other.
+      expect(
+        queueErrorDetail('Gave up after 30 days without reaching the server.'),
+        isNull,
+      );
+      expect(
+        queueErrorDetail(
+            'The queued file is no longer available on this device.'),
+        isNull,
+      );
+      expect(
+        queueErrorDetail('The queued tags for this document are unreadable.'),
+        isNull,
+      );
+    });
+
+    test('nothing to expand when there is no error', () {
+      expect(queueErrorDetail(null), isNull);
+      expect(queueErrorDetail('  '), isNull);
+    });
+  });
+
   group('queueErrorSummary', () {
     test('nothing to say when there is no error', () {
       expect(queueErrorSummary(null), isNull);
@@ -99,9 +131,8 @@ void main() {
 
     test('the retention message is recognised', () {
       expect(
-        queueErrorSummary(
-            'Gave up after 30 days without reaching the server.'),
-        contains('Given up on'),
+        queueErrorSummary('Gave up after 30 days without reaching the server.'),
+        'Stopped trying after waiting too long to reach it.',
       );
     });
 

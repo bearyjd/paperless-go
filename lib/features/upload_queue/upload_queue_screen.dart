@@ -176,8 +176,8 @@ class _QueueRow extends ConsumerWidget {
           ),
         if (upload.retryCount > 0)
           _DetailLine(label: 'Attempts', value: '${upload.retryCount}'),
-        if (upload.lastError != null)
-          _DetailLine(label: 'Details', value: upload.lastError!),
+        if (queueErrorDetail(upload.lastError) case final detail?)
+          _DetailLine(label: 'Details', value: detail),
         const SizedBox(height: Spacing.sm),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
