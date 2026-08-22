@@ -77,10 +77,29 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // No keystore -> UNSIGNED. Never the debug key.
+            //
+            // The debug fallback that used to live here produced an APK that
+            // looked entirely legitimate — right applicationId, right version,
+            // minified and shrunk — but carried the universal Android debug
+            // key. One of those was sideloaded onto a real phone as "v1.1.7"
+            // and could only be replaced by wiping the app: a correctly signed
+            // release cannot upgrade it, in either direction.
+            //
+            // The upgrade breakage is the smaller half. The debug key is
+            // public, so ANY apk anyone signs with it and this applicationId
+            // can upgrade such an install in place and inherit its data
+            // directory — which holds the Paperless server URL and API token.
+            // A debug-signed release does not just inconvenience the user, it
+            // removes the signature as a trust boundary.
+            //
+            // Unsigned is the honest outcome for a source build: whoever
+            // builds signs it themselves, which is what F-Droid and
+            // distro packagers do anyway.
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
-                signingConfigs.getByName("debug")
+                null
             }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
