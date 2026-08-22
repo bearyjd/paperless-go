@@ -57,7 +57,15 @@ jobs:
         run: |
           set -euo pipefail
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
-          APKSIGNER=$(ls "$SDK"/build-tools/*/apksigner | sort -V | tail -1)
+          APKSIGNER=""
+          if [ -n "$SDK" ]; then
+            APKSIGNER=$(ls "$SDK"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1 || true)
+          fi
+          [ -z "$APKSIGNER" ] && APKSIGNER=$(command -v apksigner || true)
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::apksigner not found; cannot verify the release signature."
+            exit 1
+          fi
           # Public value on purpose: a certificate fingerprint is published in
           # every APK, and committing it is what makes it a tripwire.
           EXPECTED=a25ed068ab331c292cccb58b791d9ab65b9711549542bcc88b63087bddd58e81
