@@ -48,6 +48,29 @@ jobs:
       - name: Build release AAB
         run: flutter build appbundle --release --obfuscate --split-debug-info=./debug-info-aab/
 
+      # A release APK signed with the wrong key cannot be fixed after the fact:
+      # anyone who installs it can only move to a correctly signed build by
+      # uninstalling, which destroys their server config, credentials and any
+      # queued uploads. One debug-signed build already reached a real phone.
+      # Fail the publish instead of shipping it.
+      - name: Verify the release APK carries the release key
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          APKSIGNER=$(ls "$SDK"/build-tools/*/apksigner | sort -V | tail -1)
+          # Public value on purpose: a certificate fingerprint is published in
+          # every APK, and committing it is what makes it a tripwire.
+          EXPECTED=a25ed068ab331c292cccb58b791d9ab65b9711549542bcc88b63087bddd58e81
+          ACTUAL=$("$APKSIGNER" verify --print-certs \
+            build/app/outputs/flutter-apk/app-release.apk \
+            | awk -F': ' '/Signer #1 certificate SHA-256 digest/ {print $2}')
+          echo "expected: $EXPECTED"
+          echo "actual:   $ACTUAL"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::Release APK is not signed with the Paperless Go release key - refusing to publish."
+            exit 1
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
