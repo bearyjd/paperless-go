@@ -23,7 +23,7 @@ String? queueErrorSummary(String? rawError) {
   // matches several of these, and "could not reach the server" is the more
   // useful of the two readings.
   const patterns = <String, String>{
-    'Gave up after': 'Given up on after waiting too long to reach the server.',
+    'Gave up after': 'Stopped trying after waiting too long to reach it.',
     'no longer available': 'The file is no longer on this device.',
     'unreadable': 'The saved tags for this document could not be read.',
     'SocketException': 'Could not reach the server.',
@@ -43,4 +43,28 @@ String? queueErrorSummary(String? rawError) {
     if (raw.contains(entry.key)) return entry.value;
   }
   return 'The upload did not complete.';
+}
+
+/// Messages this app wrote itself, in plain language, into `lastError`.
+///
+/// These need no "Details" expander: the stored string IS the explanation, so
+/// showing it under a summary of itself just says the same thing twice in
+/// slightly different words — which is exactly how it read on a real device.
+const _ownMessages = [
+  'Gave up after',
+  'The queued file is no longer available',
+  'The queued tags for this document are unreadable',
+];
+
+/// The raw error, or null when there is nothing a summary has not already said.
+///
+/// Only a stringified exception earns the expander. That is the case where the
+/// detail genuinely helps — a self-hoster wants to see `Failed host lookup` and
+/// their own server address; nobody needs to expand a row to re-read a sentence
+/// this app composed.
+String? queueErrorDetail(String? rawError) {
+  final raw = rawError?.trim();
+  if (raw == null || raw.isEmpty) return null;
+  if (_ownMessages.any(raw.contains)) return null;
+  return raw;
 }
