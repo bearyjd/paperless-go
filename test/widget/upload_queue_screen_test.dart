@@ -104,6 +104,28 @@ void main() {
     expect(find.text('Delete'), findsOneWidget);
   });
 
+  testWidgets('a retention row does not repeat itself in Details',
+      (tester) async {
+    // Seen on a Pixel 9: the summary and the Details line said the same thing
+    // in slightly different words, one directly under the other.
+    await pumpQueue(tester, [
+      _row(
+        isFailed: true,
+        lastError: 'Gave up after 30 days without reaching the server.',
+      ),
+    ]);
+    await tester.tap(find.text('invoice.pdf'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stopped trying after waiting too long to reach it.'),
+        findsOneWidget);
+    expect(find.text('Details'), findsNothing,
+        reason: 'the stored message IS the explanation; do not restate it');
+    // The actions still have to be there.
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Delete'), findsOneWidget);
+  });
+
   testWidgets('deleting asks first, and says what is lost', (tester) async {
     await pumpQueue(tester, [_row(isFailed: true)]);
     await tester.tap(find.text('invoice.pdf'));
